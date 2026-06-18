@@ -1,26 +1,77 @@
+/*
+ * Tailwind CSS v4: используем @import "tailwindcss" вместо @tailwind directives
+ * Кастомная dark variant для class-based переключения (не media query)
+ */
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Цветовая палитра извлечена из public/logo.png:
+ * Доминантный зелёный #507850, акцентный синий #3c78c8
+ */
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #1a1a2e;
+  --surface: #f8f9fa;
+  --surface-secondary: #f1f3f5;
+  --border: #e5e7eb;
+  --text-secondary: #6b7280;
+  --primary: #507850;
+  --primary-hover: #3a583a;
+  --primary-foreground: #ffffff;
+  --accent: #3c78c8;
+  --accent-hover: #2a5ca0;
+  --muted: #7a8291;
+  --header-bg: rgba(255, 255, 255, 0.85);
+  --footer-bg: #f8f9fa;
 }
 
+/*
+ * Тёмная тема: класс .dark на <html> управляется ThemeProvider + inline script
+ */
+.dark {
+  --background: #0f0f13;
+  --foreground: #e5e5e5;
+  --surface: #1a1a24;
+  --surface-secondary: #22222e;
+  --border: #2a2a3a;
+  --text-secondary: #9ca3af;
+  --primary: #6a9a6a;
+  --primary-hover: #7aae7a;
+  --primary-foreground: #0f0f13;
+  --accent: #5a9ae0;
+  --accent-hover: #7ab0f0;
+  --muted: #7a8291;
+  --header-bg: rgba(15, 15, 19, 0.85);
+  --footer-bg: #1a1a24;
+}
+
+/*
+ * Маппинг CSS-переменных в Tailwind-токены через @theme inline,
+ * чтобы использовать в классах вида bg-surface, text-primary и т.д.
+ */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-secondary: var(--surface-secondary);
+  --color-border: var(--border);
+  --color-text-secondary: var(--text-secondary);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-muted: var(--muted);
+  --color-header-bg: var(--header-bg);
+  --color-footer-bg: var(--footer-bg);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
