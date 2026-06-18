@@ -1,0 +1,151 @@
+/*
+ * Клиентский компонент списка пользователей с кнопками удаления.
+ * После удаления показывает toast и обновляет список.
+ */
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { deleteUserAction } from "../lib/auth";
+import { useToast } from "../components/ui/Toast";
+
+interface SafeUser {
+  id: string;
+  name: string;
+  email: string;
+  roles: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const roleLabels: Record<string, string> = {
+  ADMIN: "Администратор",
+  HEAD_OF_SUPPLY: "Начальник снабжения",
+  SUPPLY_DEPT: "Отдел снабжения",
+  WAREHOUSE: "Склад",
+};
+
+const roleColors: Record<string, { bg: string; text: string; ring: string }> = {
+  ADMIN:        { bg: "bg-rose-50 dark:bg-rose-950",     text: "text-rose-700 dark:text-rose-300",     ring: "ring-rose-600/20" },
+  HEAD_OF_SUPPLY: { bg: "bg-violet-50 dark:bg-violet-950", text: "text-violet-700 dark:text-violet-300", ring: "ring-violet-600/20" },
+  SUPPLY_DEPT:  { bg: "bg-blue-50 dark:bg-blue-950",    text: "text-blue-700 dark:text-blue-300",     ring: "ring-blue-600/20" },
+  WAREHOUSE:    { bg: "bg-amber-50 dark:bg-amber-950",  text: "text-amber-700 dark:text-amber-300",   ring: "ring-amber-600/20" },
+};
+
+export function AdminUserList({
+  users,
+  currentUserId,
+}: {
+  users: SafeUser[];
+  currentUserId: string;
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const { showToast } = useToast();
+
+  async function handleDelete(id: string) {
+    if (!confirm("Вы уверены, что хотите удалить пользователя?")) return;
+
+    startTransition(async () => {
+      const result = await deleteUserAction(id);
+      if ("error" in result) {
+        showToast(result.error, "error");
+      } else {
+        showToast(result.message, "success");
+        router.refresh();
+      }
+    });
+  }
+
+  return (
+    <div>
+      <div className="mb-6 flex items-center justify-between">
+        <p className="text-sm text-text-secondary">
+          Всего пользователей: {users.length}
+        </p>
+        <a
+          href="/admin/users/new"
+          className="inline-flex h-9 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover"
+        >
+          + Создать пользователя
+        </a>
+      </div>
+
+      {users.length === 0 ? (
+        <div className="rounded-xl border border-border bg-surface p-12 text-center">
+          <p className="text-text-secondary">Нет пользователей</p>
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-border">
+          <table className="w-full text-sm">
+            <thead className="bg-surface-secondary">
+              <tr>
+                <th className="px-4 py-3 text-left font-medium text-text-secondary">
+                  Имя
+                </th>
+                <th className="px-4 py-3 text-left font-medium text-text-secondary">
+                  Email
+                </th>
+                <th className="px-4 py-3 text-left font-medium text-text-secondary">
+                  Роли
+                </th>
+                <th className="px-4 py-3 text-left font-medium text-text-secondary">
+                  Создан
+                </th>
+                <th className="px-4 py-3 text-right font-medium text-text-secondary">
+                  Действия
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {users.map((user) => (
+                <tr key={user.id} className="hover:bg-surface">
+                  <td className="px-4 py-3 font-medium text-foreground">
+                    {user.name}
+                  </td>
+                  <td className="px-4 py-3 text-text-secondary">
+                    {user.email}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      {user.roles.map((role) => (
+                        <span
+                          key={role}
+                          className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${roleColors[role]?.bg || "bg-surface-secondary"} ${roleColors[role]?.text || "text-foreground"} ${roleColors[role]?.ring || "ring-border"}`}
+                        >
+                          {roleLabels[role] || role}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-text-secondary">
+                    {new Date(user.createdAt).toLocaleDateString("ru-RU")}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-3">
+                      <a
+                        href={`/admin/users/${user.id}/edit`}
+                        className="text-sm text-accent transition-colors hover:text-accent-hover"
+                      >
+                        Редактировать
+                      </a>
+                      {user.id !== currentUserId && (
+                        <button
+                          onClick={() => handleDelete(user.id)}
+                          disabled={isPending}
+                          className="text-sm text-red-500 transition-colors hover:text-red-600 disabled:opacity-50"
+                        >
+                          {isPending ? "Удаление..." : "Удалить"}
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
