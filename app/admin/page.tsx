@@ -29,10 +29,15 @@ export default async function AdminPage() {
     roles: roles.map((r) => r.role),
   }));
 
+  const pendingResetCount = await db.passwordResetRequest.count({
+    where: { status: "PENDING" },
+  });
+
   return (
     <AdminUserList
       users={safeUsers}
       currentUserId={session?.id ?? ""}
+      pendingResetCount={pendingResetCount}
     />
   );
 }

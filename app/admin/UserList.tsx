@@ -5,7 +5,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useTransition, useEffect, useRef } from "react";
 import { deleteUserAction } from "../lib/auth";
 import { useToast } from "../components/ui/Toast";
 
@@ -35,13 +35,24 @@ const roleColors: Record<string, { bg: string; text: string; ring: string }> = {
 export function AdminUserList({
   users,
   currentUserId,
+  pendingResetCount = 0,
 }: {
   users: SafeUser[];
   currentUserId: string;
+  pendingResetCount?: number;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const { showToast } = useToast();
+  const hasShownToast = useRef(false);
+
+  useEffect(() => {
+    if (pendingResetCount > 0 && !hasShownToast.current) {
+      hasShownToast.current = true;
+      const word = pendingResetCount === 1 ? "запрос" : "запроса";
+      showToast(`${pendingResetCount} ${word} на сброс пароля`, "info");
+    }
+  }, [pendingResetCount, showToast]);
 
   async function handleDelete(id: string) {
     if (!confirm("Вы уверены, что хотите удалить пользователя?")) return;
@@ -59,6 +70,19 @@ export function AdminUserList({
 
   return (
     <div>
+      {pendingResetCount > 0 && (
+        <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300">
+          <span className="font-medium">Внимание!</span> Есть{" "}
+          <a
+            href="/admin/reset-requests"
+            className="font-medium underline underline-offset-2 hover:text-blue-800 dark:hover:text-blue-200"
+          >
+            {pendingResetCount} ожидающих запрос{pendingResetCount === 1 ? "" : "а"} на сброс
+            пароля
+          </a>
+        </div>
+      )}
+
       <div className="mb-6 flex items-center justify-between">
         <p className="text-sm text-text-secondary">
           Всего пользователей: {users.length}

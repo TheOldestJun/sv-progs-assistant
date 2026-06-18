@@ -21,6 +21,7 @@ const COOKIE_NAME = "session";
 
 export interface SessionUser {
   id: string;
+  name: string;
   email: string;
   roles: Role[];
 }
@@ -43,6 +44,7 @@ export async function verifyToken(token: string): Promise<SessionUser | null> {
     const { payload } = await jwtVerify(token, JWT_SECRET);
     return {
       id: payload.sub as string,
+      name: (payload.name as string) || "",
       email: payload.email as string,
       roles: (payload.roles as Role[]) || [],
     };
@@ -76,12 +78,18 @@ export async function loginAction(
   if (!user) return { error: "Неверный email или пароль" };
 
   const valid = await bcrypt.compare(password, user.password);
-  if (!valid) return { error: "Неверный email или пароль" };
+  if (!valid) {
+    if (user.mustChangePassword) {
+      return { error: "Ваш пароль был сброшен администратором. Используйте временный пароль для входа." };
+    }
+    return { error: "Неверный email или пароль" };
+  }
 
   const roles = user.roles.map((r) => r.role);
 
   const token = await new SignJWT({
     sub: user.id,
+    name: user.name,
     email: user.email,
     roles,
   })
@@ -98,7 +106,11 @@ export async function loginAction(
     maxAge: 60 * 60 * 24,
   });
 
-  redirect("/admin");
+  if (user.mustChangePassword) {
+    redirect("/change-password");
+  }
+
+  redirect(roles.includes("ADMIN") ? "/admin" : "/dashboard");
 }
 
 /** Server Action: выход из системы */
@@ -179,6 +191,92 @@ export async function updateUserAction(
   ]);
 
   return { success: true, message: "Пользователь успешно обновлён" };
+}
+
+/** Server Action: запрос сброса пароля (создаёт PENDING-запрос для админа) */
+export async function requestPasswordResetAction(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const email = (formData.get("email") as string)?.trim();
+  if (!email) return { error: "Введите email" };
+
+  const user = await db.user.findUnique({ where: { email } });
+  if (!user) {
+    return { success: true, message: "Запрос отправлен администратору" };
+  }
+
+  const existing = await db.passwordResetRequest.findFirst({
+    where: { userId: user.id, status: "PENDING" },
+  });
+  if (!existing) {
+    await db.passwordResetRequest.create({ data: { userId: user.id } });
+  }
+
+  return { success: true, message: "Запрос отправлен администратору" };
+}
+
+/** Server Action: сбросить пароль пользователя на reset123 (только ADMIN) */
+export async function resetUserPasswordAction(
+  requestId: string
+): Promise<{ success: true; message: string } | { error: string }> {
+  const session = await getSession();
+  if (!session || !session.roles.includes("ADMIN")) {
+    return { error: "Доступ запрещён" };
+  }
+
+  const request = await db.passwordResetRequest.findUnique({
+    where: { id: requestId },
+  });
+  if (!request || request.status !== "PENDING") {
+    return { error: "Запрос не найден или уже обработан" };
+  }
+
+  const defaultPassword = "reset123";
+  const hashed = await hashPassword(defaultPassword);
+
+  await db.$transaction([
+    db.passwordResetRequest.update({
+      where: { id: requestId },
+      data: { status: "RESET", resolvedAt: new Date() },
+    }),
+    db.user.update({
+      where: { id: request.userId },
+      data: { password: hashed, mustChangePassword: true },
+    }),
+  ]);
+
+  return {
+    success: true,
+    message: `Пароль сброшен на ${defaultPassword}. Пользователь сменит его при входе.`,
+  };
+}
+
+/** Server Action: сменить пароль (для mustChangePassword или по желанию) */
+export async function changePasswordAction(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const session = await getSession();
+  if (!session) return { error: "Необходимо войти в систему" };
+
+  const password = formData.get("password") as string;
+  const confirm = formData.get("confirm") as string;
+
+  if (!password || password.length < 6) {
+    return { error: "Пароль должен быть не менее 6 символов" };
+  }
+  if (password !== confirm) {
+    return { error: "Пароли не совпадают" };
+  }
+
+  const hashed = await hashPassword(password);
+  await db.user.update({
+    where: { id: session.id },
+    data: { password: hashed, mustChangePassword: false },
+  });
+
+  return { success: true, message: "Пароль успешно изменён" };
 }
 
 /** Server Action: удалить пользователя (только ADMIN, нельзя удалить себя) */

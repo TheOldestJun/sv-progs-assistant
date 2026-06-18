@@ -1,6 +1,7 @@
 /*
- * Middleware: защита маршрутов /admin.
- * Проверяет JWT в httpOnly cookie session, пускает только ADMIN.
+ * Middleware:
+ * - /admin/* — только ADMIN
+ * - /change-password, /dashboard — любой аутентифицированный пользователь
  * Редиректит на /login при отсутствии/невалидности токена.
  */
 import { NextResponse } from "next/server";
@@ -11,8 +12,31 @@ const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "fallback-dev-secret"
 );
 
+async function requireAuth(request: NextRequest): Promise<boolean> {
+  const token = request.cookies.get("session")?.value;
+  if (!token) return false;
+  try {
+    await jwtVerify(token, JWT_SECRET);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  /*
+   * /change-password и /dashboard — защищённые маршруты,
+   * доступны любому аутентифицированному пользователю.
+   */
+  if (pathname === "/change-password" || pathname === "/dashboard") {
+    const authed = await requireAuth(request);
+    if (!authed) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+    return NextResponse.next();
+  }
 
   if (!pathname.startsWith("/admin")) return NextResponse.next();
 
@@ -35,5 +59,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: "/admin/:path*",
+  matcher: ["/admin/:path*", "/change-password", "/dashboard"],
 };
