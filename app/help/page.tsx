@@ -1,3 +1,8 @@
+/*
+ * Страница «Помощь» (route: /help).
+ * Статическая информация о приложении и его функциях (тема и т.д.).
+ * Server component, без интерактива.
+ */
 import Link from "next/link";
 
 export default function HelpPage() {

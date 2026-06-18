@@ -11,11 +11,12 @@ import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "./db";
-import type { Role } from "../generated/prisma/enums";
+import { Role } from "../generated/prisma/enums";
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "fallback-dev-secret"
-);
+if (!process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET не задан в .env");
+}
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
 const COOKIE_NAME = "session";
 
@@ -33,6 +34,11 @@ export type ActionResult =
   | null
   | undefined;
 
+/** Простейшая валидация email */
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 /** Хэширует пароль (bcrypt, 12 раундов) */
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 12);
@@ -42,11 +48,12 @@ export async function hashPassword(password: string): Promise<string> {
 export async function verifyToken(token: string): Promise<SessionUser | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
+    const roles = (payload.roles as Role[]) || [];
     return {
       id: payload.sub as string,
       name: (payload.name as string) || "",
       email: payload.email as string,
-      roles: (payload.roles as Role[]) || [],
+      roles: roles.includes("ADMIN") ? Object.values(Role) : roles,
     };
   } catch {
     return null;
@@ -138,6 +145,12 @@ export async function createUserAction(
   if (!name || !email || !password || selectedRoles.length === 0) {
     return { error: "Заполните все поля и выберите хотя бы одну роль" };
   }
+  if (!isValidEmail(email)) {
+    return { error: "Некорректный формат email" };
+  }
+  if (password.length < 6) {
+    return { error: "Пароль должен быть не менее 6 символов" };
+  }
 
   const existing = await db.user.findUnique({ where: { email } });
   if (existing) return { error: "Пользователь с таким email уже существует" };
@@ -175,6 +188,12 @@ export async function updateUserAction(
 
   if (!id || !name || !email || selectedRoles.length === 0) {
     return { error: "Заполните все поля и выберите хотя бы одну роль" };
+  }
+  if (!isValidEmail(email)) {
+    return { error: "Некорректный формат email" };
+  }
+  if (password && password.length < 6) {
+    return { error: "Пароль должен быть не менее 6 символов" };
   }
 
   const updateData: Record<string, string> = { name, email };

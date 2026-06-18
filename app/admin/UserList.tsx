@@ -132,14 +132,20 @@ export function AdminUserList({
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
-                      {user.roles.map((role) => (
-                        <span
-                          key={role}
-                          className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${roleColors[role]?.bg || "bg-surface-secondary"} ${roleColors[role]?.text || "text-foreground"} ${roleColors[role]?.ring || "ring-border"}`}
-                        >
-                          {roleLabels[role] || role}
-                        </span>
-                      ))}
+                      {user.roles.includes("ADMIN")
+                        ? (
+                          <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-950 dark:text-rose-300">
+                            {roleLabels.ADMIN}
+                          </span>
+                        )
+                        : user.roles.map((role) => (
+                          <span
+                            key={role}
+                            className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${roleColors[role]?.bg || "bg-surface-secondary"} ${roleColors[role]?.text || "text-foreground"} ${roleColors[role]?.ring || "ring-border"}`}
+                          >
+                            {roleLabels[role] || role}
+                          </span>
+                        ))}
                     </div>
                   </td>
                   <td className="px-4 py-3 text-text-secondary">

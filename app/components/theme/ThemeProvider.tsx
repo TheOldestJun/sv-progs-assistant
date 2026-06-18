@@ -1,5 +1,13 @@
 "use client";
 
+/*
+ * ThemeProvider — контекст темы (light / dark / system).
+ * - Хранит тему в localStorage (ключ "theme")
+ * - Синхронизируется с системной темой через prefers-color-scheme
+ * - Предотвращает FOUC через inline-скрипт в layout.tsx
+ * - useSyncExternalStore для нуль-ререндеров
+ * Экспорт: ThemeProvider (обёртка), useTheme (хук)
+ */
 import { createContext, useContext, useCallback, useSyncExternalStore } from "react";
 
 type Theme = "light" | "dark" | "system";

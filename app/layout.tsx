@@ -1,3 +1,10 @@
+/*
+ * Root layout (обёртка всех страниц).
+ * - Geist шрифты через CSS-переменные
+ * - ThemeProvider + ToastProvider (клиентские контексты)
+ * - Header + Footer (server components)
+ * - Inline-скрипт против FOUC темы (выполняется до первого paint)
+ */
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";

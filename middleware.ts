@@ -8,9 +8,10 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "fallback-dev-secret"
-);
+if (!process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET не задан в .env");
+}
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
 async function requireAuth(request: NextRequest): Promise<boolean> {
   const token = request.cookies.get("session")?.value;

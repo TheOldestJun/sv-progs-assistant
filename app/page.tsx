@@ -1,3 +1,8 @@
+/*
+ * Главная страница (route: /).
+ * Логотип + приветственный текст + кнопка «Вход» (ведёт на /login).
+ * Статический server component, без интерактива.
+ */
 import Image from "next/image";
 import Link from "next/link";
 
