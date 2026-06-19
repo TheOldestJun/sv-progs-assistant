@@ -46,25 +46,39 @@ model PasswordResetRequest {
 }
 
 model Product {
-  id     String  @id @default(cuid())
+  id     String      @id @default(cuid())
   title  String
-  orders Order[]
+  items  OrderItem[]
 }
 
 model Unit {
-  id     String  @id @default(cuid())
+  id     String      @id @default(cuid())
   title  String
+  items  OrderItem[]
+}
+
+model Requester {
+  id     String  @id @default(cuid())
+  name   String
   orders Order[]
 }
 
 model Order {
-  id        String   @id @default(cuid())
-  createdBy String
-  product   Product  @relation(fields: [productId], references: [id])
+  id          String      @id @default(cuid())
+  requester   Requester   @relation(fields: [requesterId], references: [id])
+  requesterId String
+  notes       String?
+  created     DateTime    @default(now()) @db.Date
+  items       OrderItem[]
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String
+  product   Product @relation(fields: [productId], references: [id])
   productId String
-  units     Unit     @relation(fields: [unitId], references: [id])
+  units     Unit    @relation(fields: [unitId], references: [id])
   unitId    String
   quantity  Float
-  notes     String?
-  created   DateTime @default(now()) @db.Date
 }
