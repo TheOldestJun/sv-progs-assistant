@@ -9,7 +9,7 @@ import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createUserAction } from "@/app/lib/auth";
-import { useToast } from "@/app/components/ui/Toast";
+import { useToast } from "@/components/ui/Toast";
 
 const allRoles = [
   { value: "ADMIN", label: "Администратор" },

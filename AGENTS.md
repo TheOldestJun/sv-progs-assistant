@@ -8,6 +8,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 - Run `npm run dev` in a **separate terminal** to avoid timeout crashes
 - Do NOT build production (`next build`) in dev mode — dev server only
+- "запускай" → run `npm run dev:chrome` (separate window + clean Chrome profile)
 
 ## Database
 

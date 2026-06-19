@@ -8,10 +8,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "./components/theme/ThemeProvider";
-import { ToastProvider } from "./components/ui/Toast";
-import { Header } from "./components/layout/Header";
-import { Footer } from "./components/layout/Footer";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { ToastProvider } from "@/components/ui/Toast";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 
 // Подключение шрифтов Geist через CSS-переменные (Tailwind v4 @theme)
 const geistSans = Geist({

@@ -1,35 +1,35 @@
-/*
- * Дашбоард для пользователей (не ADMIN).
- * Показывает разный контент в зависимости от роли.
- */
 import { getSession, logoutAction } from "@/app/lib/auth";
 import { redirect } from "next/navigation";
+import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
+import { HeadOfSupplyDashboard } from "@/components/dashboard/HeadOfSupplyDashboard";
+import { SupplyDeptDashboard } from "@/components/dashboard/SupplyDeptDashboard";
+import { WarehouseDashboard } from "@/components/dashboard/WarehouseDashboard";
+import { db } from "@/app/lib/db";
 
-
-const roleLabels: Record<string, string> = {
-  ADMIN: "Администратор",
-  HEAD_OF_SUPPLY: "Начальник снабжения",
-  SUPPLY_DEPT: "Отдел снабжения",
-  WAREHOUSE: "Склад",
+const roleMeta: Record<string, { label: string; icon: string }> = {
+  ADMIN: { label: "Администратор", icon: "⚙" },
+  HEAD_OF_SUPPLY: { label: "Начальник снабжения", icon: "📋" },
+  SUPPLY_DEPT: { label: "Отдел снабжения", icon: "📦" },
+  WAREHOUSE: { label: "Склад", icon: "🏭" },
 };
 
-const roleIcons: Record<string, string> = {
-  HEAD_OF_SUPPLY: "📋",
-  SUPPLY_DEPT: "📦",
-  WAREHOUSE: "🏭",
-};
-
-const roleDescriptions: Record<string, string> = {
-  HEAD_OF_SUPPLY: "Управление заявками на снабжение, контроль поставок.",
-  SUPPLY_DEPT: "Работа с поставщиками, оформление заказов.",
-  WAREHOUSE: "Приёмка товаров, учёт остатков на складе.",
+const dashboardComponents: Record<string, React.ElementType> = {
+  HEAD_OF_SUPPLY: HeadOfSupplyDashboard,
+  SUPPLY_DEPT: SupplyDeptDashboard,
+  WAREHOUSE: WarehouseDashboard,
 };
 
 export default async function DashboardPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
+  const products = await db.product.findMany({
+    select: { id: true, title: true },
+    orderBy: { title: "asc" },
+  });
+
   const { roles, name, email } = session;
+  const dashboards = roles.filter((r) => dashboardComponents[r]);
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-10 sm:px-6 lg:px-8">
@@ -39,7 +39,7 @@ export default async function DashboardPage() {
             Рабочий стол
           </h1>
           <p className="mt-1 text-sm text-text-secondary">
-            {name || email} — {roles.map((r) => roleLabels[r] || r).join(", ")}
+            {name || email} — {roles.map((r) => roleMeta[r]?.label || r).join(", ")}
           </p>
         </div>
         <form action={logoutAction}>
@@ -57,32 +57,37 @@ export default async function DashboardPage() {
         </form>
       </div>
 
-      <div className="grid gap-6">
-        {roles.map((role) => (
-          <section
-            key={role}
-            className="rounded-xl border border-border bg-surface p-6"
-          >
-            <div className="mb-4 flex items-center gap-3">
-              <span className="text-2xl">{roleIcons[role] || "📌"}</span>
-              <div>
-                <h2 className="text-lg font-semibold text-foreground">
-                  {roleLabels[role] || role}
-                </h2>
-                <p className="text-sm text-text-secondary">
-                  {roleDescriptions[role] || ""}
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-dashed border-border bg-surface-secondary p-6 text-center">
-              <p className="text-sm text-text-secondary">
-                Раздел в разработке
-              </p>
-            </div>
-          </section>
-        ))}
-      </div>
+      {dashboards.length > 1 ? (
+        <DashboardTabs
+          tabs={dashboards.map((r) => ({
+            role: r,
+            label: roleMeta[r]?.label || r,
+            icon: roleMeta[r]?.icon || "📄",
+          }))}
+        >
+          {dashboards.map((role) => {
+            const Component = dashboardComponents[role];
+            return Component === HeadOfSupplyDashboard ? (
+              <HeadOfSupplyDashboard key={role} initialProducts={products} />
+            ) : (
+              <Component key={role} />
+            );
+          })}
+        </DashboardTabs>
+      ) : dashboards.length === 1 ? (
+        (() => {
+          const Component = dashboardComponents[dashboards[0]];
+          return Component === HeadOfSupplyDashboard ? (
+            <HeadOfSupplyDashboard initialProducts={products} />
+          ) : (
+            <Component />
+          );
+        })()
+      ) : (
+        <p className="text-center text-sm text-text-secondary">
+          Нет доступных разделов для вашей роли
+        </p>
+      )}
     </div>
   );
 }

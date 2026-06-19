@@ -7,7 +7,7 @@
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { resetUserPasswordAction } from "@/app/lib/auth";
-import { useToast } from "@/app/components/ui/Toast";
+import { useToast } from "@/components/ui/Toast";
 
 interface ResetRequest {
   id: string;

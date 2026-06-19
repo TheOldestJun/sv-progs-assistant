@@ -7,7 +7,7 @@
 import { useRouter } from "next/navigation";
 import { useTransition, useEffect, useRef } from "react";
 import { deleteUserAction } from "../lib/auth";
-import { useToast } from "../components/ui/Toast";
+import { useToast } from "@/components/ui/Toast";
 
 interface SafeUser {
   id: string;
