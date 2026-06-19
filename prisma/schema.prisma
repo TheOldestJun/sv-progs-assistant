@@ -46,11 +46,25 @@ model PasswordResetRequest {
 }
 
 model Product {
-  id    String @id @default(cuid())
-  title String
+  id     String  @id @default(cuid())
+  title  String
+  orders Order[]
 }
 
 model Unit {
-  id    String @id @default(cuid())
-  title String
+  id     String  @id @default(cuid())
+  title  String
+  orders Order[]
+}
+
+model Order {
+  id        String   @id @default(cuid())
+  createdBy String
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String
+  units     Unit     @relation(fields: [unitId], references: [id])
+  unitId    String
+  quantity  Float
+  notes     String?
+  created   DateTime @default(now()) @db.Date
 }
