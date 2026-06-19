@@ -4,7 +4,6 @@ import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
 import { HeadOfSupplyDashboard } from "@/components/dashboard/HeadOfSupplyDashboard";
 import { SupplyDeptDashboard } from "@/components/dashboard/SupplyDeptDashboard";
 import { WarehouseDashboard } from "@/components/dashboard/WarehouseDashboard";
-import { db } from "@/app/lib/db";
 
 const roleMeta: Record<string, { label: string; icon: string }> = {
   ADMIN: { label: "Администратор", icon: "⚙" },
@@ -22,11 +21,6 @@ const dashboardComponents: Record<string, React.ElementType> = {
 export default async function DashboardPage() {
   const session = await getSession();
   if (!session) redirect("/login");
-
-  const products = await db.product.findMany({
-    select: { id: true, title: true },
-    orderBy: { title: "asc" },
-  });
 
   const { roles, name, email } = session;
   const dashboards = roles.filter((r) => dashboardComponents[r]);
@@ -67,21 +61,13 @@ export default async function DashboardPage() {
         >
           {dashboards.map((role) => {
             const Component = dashboardComponents[role];
-            return Component === HeadOfSupplyDashboard ? (
-              <HeadOfSupplyDashboard key={role} initialProducts={products} />
-            ) : (
-              <Component key={role} />
-            );
+            return <Component key={role} />;
           })}
         </DashboardTabs>
       ) : dashboards.length === 1 ? (
         (() => {
           const Component = dashboardComponents[dashboards[0]];
-          return Component === HeadOfSupplyDashboard ? (
-            <HeadOfSupplyDashboard initialProducts={products} />
-          ) : (
-            <Component />
-          );
+          return <Component />;
         })()
       ) : (
         <p className="text-center text-sm text-text-secondary">

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 
-const UNITS = ["шт", "кг", "л", "м", "уп"];
+const UNITS = ["ШТ", "КГ", "Л", "М", "УП"];
 
 export async function GET() {
   const created: string[] = [];

@@ -2,21 +2,28 @@
 
 import { useState } from "react";
 import { Autocomplete, type AutocompleteItem } from "@/components/ui/Autocomplete";
+import { useProducts, type Product } from "@/hooks/useProducts";
+import { useToast } from "@/components/ui/Toast";
 
-interface HeadOfSupplyDashboardProps {
-  initialProducts: AutocompleteItem[];
-}
+export function HeadOfSupplyDashboard() {
+  const { products, creation } = useProducts();
+  const { showToast } = useToast();
+  const [selected, setSelected] = useState<Product | null>(null);
 
-let nextId = 999;
-
-export function HeadOfSupplyDashboard({ initialProducts }: HeadOfSupplyDashboardProps) {
-  const [products, setProducts] = useState(initialProducts);
-  const [selected, setSelected] = useState<AutocompleteItem | null>(null);
+  function handleSelect(item: AutocompleteItem) {
+    setSelected(products.find((p) => p.id === item.id) || null);
+  }
 
   function handleCreate(title: string): AutocompleteItem {
-    const item: AutocompleteItem = { id: String(++nextId), title };
-    setProducts((prev) => [...prev, item]);
-    return item;
+    creation.mutate(title, {
+      onSuccess: (product) => {
+        showToast(`Продукт «${product.title}» создан`, "success");
+      },
+      onError: (err) => {
+        showToast(err.message || "Ошибка при создании продукта", "error");
+      },
+    });
+    return { id: `optimistic-${Date.now()}`, title };
   }
 
   return (
@@ -37,9 +44,12 @@ export function HeadOfSupplyDashboard({ initialProducts }: HeadOfSupplyDashboard
         <Autocomplete
           label="Продукт"
           placeholder="Начните вводить название продукта..."
-          items={products}
+          items={creation.isPending
+            ? [...products, { id: "pending", title: "Сохранение..." }]
+            : products
+          }
           value={selected}
-          onSelect={setSelected}
+          onSelect={handleSelect}
           onCreate={handleCreate}
         />
       </div>
