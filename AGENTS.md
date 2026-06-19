@@ -9,6 +9,11 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Run `npm run dev` in a **separate terminal** to avoid timeout crashes
 - Do NOT build production (`next build`) in dev mode — dev server only
 
+## Database
+
+- Never use `db push` in dev mode. Only use `prisma migrate dev` for schema changes.
+- `db push` skips migration history and causes drift; migrations keep history in sync.
+
 ## Debug browser
 
 - Use `npm run dev:chrome` to start the dev server and open Chrome with a **clean temporary profile** (no accounts, no extensions, no history).

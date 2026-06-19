@@ -44,3 +44,13 @@ model PasswordResetRequest {
   createdAt  DateTime  @default(now())
   resolvedAt DateTime?
 }
+
+model Product {
+  id    String @id @default(cuid())
+  title String
+}
+
+model Unit {
+  id    String @id @default(cuid())
+  title String
+}
