@@ -9,6 +9,12 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Run `npm run dev` in a **separate terminal** to avoid timeout crashes
 - Do NOT build production (`next build`) in dev mode — dev server only
 
+## Debug browser
+
+- Use `npm run dev:chrome` to start the dev server and open Chrome with a **clean temporary profile** (no accounts, no extensions, no history).
+- Chrome data dir: `%TEMP%\chrome-debug` (auto-created, disposable).
+- The server starts in a separate window; Chrome opens after ~11s once the server is ready.
+
 ## Code comments
 
 - Cover all code with necessary comments clear enough for AI agents to understand context across different machines
