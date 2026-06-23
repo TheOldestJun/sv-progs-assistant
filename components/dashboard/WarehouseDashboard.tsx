@@ -1,3 +1,8 @@
+/*
+ * WarehouseDashboard — заглушка для роли WAREHOUSE.
+ * TODO: реализовать функционал склада
+ * (приёмка товаров, учёт остатков, инвентаризация).
+ */
 export function WarehouseDashboard() {
   return (
     <section className="rounded-xl border border-border bg-surface p-6">

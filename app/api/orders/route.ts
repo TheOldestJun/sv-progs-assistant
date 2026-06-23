@@ -1,3 +1,9 @@
+/*
+ * API: /api/orders
+ * POST — создание заявки с позициями (requesterId + items[{productId, unitId, quantity}])
+ * Валидация входных данных, создание Order + OrderItem через вложенный create.
+ * Требуется аутентификация.
+ */
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";

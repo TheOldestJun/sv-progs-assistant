@@ -1,3 +1,10 @@
+/*
+ * Hook: useUnits
+ * - useQuery для загрузки списка единиц измерения (/api/units)
+ * - useMutation для создания новой единицы с optimistic update
+ * - Откат к предыдущему состоянию при ошибке
+ * Возвращает { units, creation, ...query }
+ */
 import {
   useQuery,
   useMutation,

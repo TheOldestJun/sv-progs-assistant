@@ -1,3 +1,10 @@
+/*
+ * Hook: useProducts
+ * - useQuery для загрузки списка продуктов (/api/products)
+ * - useMutation для создания нового продукта с optimistic update
+ * - Откат к предыдущему состоянию при ошибке
+ * Возвращает { products, creation, ...query }
+ */
 import {
   useQuery,
   useMutation,

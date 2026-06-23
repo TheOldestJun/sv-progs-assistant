@@ -1,3 +1,8 @@
+/*
+ * ThemeSwitcher — переключатель темы (light / dark / system).
+ * Три кнопки с иконками, активная подсвечивается primary-цветом.
+ * Использует useTheme из ThemeProvider.
+ */
 "use client";
 
 import { useTheme } from "./ThemeProvider";

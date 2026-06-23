@@ -1,3 +1,8 @@
+/*
+ * QueryProvider — обёртка TanStack React Query для всего приложения.
+ * Создаёт QueryClient с настройками: staleTime 30s, retry 1.
+ * Используется в root layout.
+ */
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

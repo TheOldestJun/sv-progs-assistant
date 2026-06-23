@@ -1,13 +1,12 @@
-import Link from "next/link";
-import Image from "next/image";
-import { ThemeSwitcher } from "../theme/ThemeSwitcher";
-
 /*
  * Header:
  * - Слева: логотип + название (скрыто на мобильных)
  * - Справа: ссылка "Помощь" + переключатель темы
  * - Прилипает к верху (sticky), полупрозрачный фон с блюром
  */
+import Link from "next/link";
+import Image from "next/image";
+import { ThemeSwitcher } from "../theme/ThemeSwitcher";
 export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-header-bg backdrop-blur-md">

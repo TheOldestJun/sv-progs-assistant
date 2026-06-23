@@ -1,3 +1,10 @@
+/*
+ * Hook: useRequesters
+ * - useQuery для загрузки списка заявителей (/api/requesters)
+ * - useMutation для создания нового заявителя с optimistic update
+ * - Откат при ошибке
+ * Возвращает { requesters, creation, ...query }
+ */
 import {
   useQuery,
   useMutation,

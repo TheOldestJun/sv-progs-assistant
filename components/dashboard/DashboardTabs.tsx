@@ -1,3 +1,9 @@
+/*
+ * DashboardTabs — клиентский компонент с табами для дашборда.
+ * Принимает массив TabInfo (role, label, icon) и children-элементы.
+ * Активный таб подсвечивается border-bottom accent-цветом.
+ * Используется на /dashboard когда у пользователя несколько ролей.
+ */
 "use client";
 
 import { Children, isValidElement, useState } from "react";

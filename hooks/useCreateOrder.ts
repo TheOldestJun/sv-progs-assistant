@@ -1,3 +1,9 @@
+/*
+ * Hook: useCreateOrder
+ * - useMutation для отправки заявки на /api/orders (POST)
+ * - Принимает OrderInput { requesterId, items[], notes }
+ * - Без optimistic update (простая отправка)
+ */
 import { useMutation } from "@tanstack/react-query";
 
 interface OrderItemInput {

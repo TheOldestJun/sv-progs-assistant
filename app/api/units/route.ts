@@ -1,3 +1,9 @@
+/*
+ * API: /api/units
+ * GET  — список всех единиц измерения (сортировка по title)
+ * POST — создание новой единицы (title → UPPERCASE, проверка на дубликат)
+ * Требуется аутентификация.
+ */
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";

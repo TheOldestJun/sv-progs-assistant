@@ -1,3 +1,7 @@
+/*
+ * Seed API: /api/seed/requesters
+ * GET — идемпотентное заполнение таблицы Requester начальными данными.
+ */
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 

@@ -1,3 +1,9 @@
+/*
+ * API: /api/requesters
+ * GET  — список заявителей (возвращается как AutocompleteItem[])
+ * POST — создание нового заявителя (проверка на дубликат)
+ * Требуется аутентификация.
+ */
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";

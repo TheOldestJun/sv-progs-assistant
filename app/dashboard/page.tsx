@@ -1,3 +1,10 @@
+/*
+ * Страница /dashboard — рабочий стол в зависимости от роли.
+ * - Определяет компоненты для каждой роли через dashboardComponents
+ * - Если роль одна — рендерит её напрямую
+ * - Если несколько — рендерит вкладки (DashboardTabs)
+ * - Кнопка «Выйти» с красным стилем
+ */
 import { getSession, logoutAction } from "@/app/lib/auth";
 import { redirect } from "next/navigation";
 import { DashboardTabs } from "@/components/dashboard/DashboardTabs";

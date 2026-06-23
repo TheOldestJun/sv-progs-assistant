@@ -1,3 +1,7 @@
+/*
+ * Seed API: /api/seed/products
+ * GET — идемпотентное заполнение таблицы Product начальными данными.
+ */
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 

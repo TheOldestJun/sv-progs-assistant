@@ -1,3 +1,7 @@
+/*
+ * Seed API: /api/seed/units
+ * GET — идемпотентное заполнение таблицы Unit начальными данными.
+ */
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 

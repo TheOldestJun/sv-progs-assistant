@@ -1,3 +1,8 @@
+/*
+ * SupplyDeptDashboard — заглушка для роли SUPPLY_DEPT.
+ * TODO: реализовать функционал отдела снабжения
+ * (работа с поставщиками, оформление заказов у поставщиков).
+ */
 export function SupplyDeptDashboard() {
   return (
     <section className="rounded-xl border border-border bg-surface p-6">

@@ -1,5 +1,3 @@
-"use client";
-
 /*
  * ThemeProvider — контекст темы (light / dark / system).
  * - Хранит тему в localStorage (ключ "theme")
@@ -8,6 +6,7 @@
  * - useSyncExternalStore для нуль-ререндеров
  * Экспорт: ThemeProvider (обёртка), useTheme (хук)
  */
+"use client";
 import { createContext, useContext, useCallback, useSyncExternalStore } from "react";
 
 type Theme = "light" | "dark" | "system";
