@@ -1,12 +1,40 @@
 /*
  * API: /api/orders
- * POST — создание заявки с позициями (requesterId + items[{productId, unitId, quantity}])
- * Валидация входных данных, создание Order + OrderItem через вложенный create.
+ * GET — список всех заявок с позициями (для отдела снабжения, склада).
+ * POST — создание заявки с позициями (requesterId + items[{productId, unitId, quantity}]).
  * Требуется аутентификация.
  */
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";
+
+export async function GET() {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const orders = await db.order.findMany({
+    orderBy: { created: "desc" },
+    include: {
+      requester: { select: { name: true } },
+      items: {
+        include: {
+          product: { select: { title: true } },
+          units: { select: { title: true } },
+          statusLogs: {
+            orderBy: { changedAt: "desc" },
+            include: {
+              changedBy: { select: { name: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return NextResponse.json(orders);
+}
 
 export async function POST(request: Request) {
   const session = await getSession();

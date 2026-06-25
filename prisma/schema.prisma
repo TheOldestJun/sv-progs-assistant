@@ -9,6 +9,14 @@ datasource db {
   provider = "mysql"
 }
 
+enum OrderItemStatus {
+  ACCEPTED
+  INVOICE_RECEIVED
+  INVOICE_PAID
+  SHIPPED
+  RECEIVED
+}
+
 enum Role {
   ADMIN
   HEAD_OF_SUPPLY
@@ -17,15 +25,16 @@ enum Role {
 }
 
 model User {
-  id                 String                 @id @default(cuid())
+  id                 String                  @id @default(cuid())
   name               String
-  email              String                 @unique
+  email              String                  @unique
   password           String
-  mustChangePassword Boolean                @default(false)
+  mustChangePassword Boolean                 @default(false)
   roles              UserRole[]
   resetRequests      PasswordResetRequest[]
-  createdAt          DateTime               @default(now())
-  updatedAt          DateTime               @updatedAt
+  statusChanges      OrderItemStatusLog[]
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
 }
 
 model UserRole {
@@ -73,12 +82,25 @@ model Order {
 }
 
 model OrderItem {
-  id        String  @id @default(cuid())
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  id        String              @id @default(cuid())
+  order     Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
   orderId   String
-  product   Product @relation(fields: [productId], references: [id])
+  product   Product             @relation(fields: [productId], references: [id])
   productId String
-  units     Unit    @relation(fields: [unitId], references: [id])
+  units     Unit                @relation(fields: [unitId], references: [id])
   unitId    String
   quantity  Float
+  status    OrderItemStatus     @default(ACCEPTED)
+  statusLogs OrderItemStatusLog[]
+}
+
+model OrderItemStatusLog {
+  id          String          @id @default(cuid())
+  orderItem   OrderItem       @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  orderItemId String
+  oldStatus   OrderItemStatus?
+  newStatus   OrderItemStatus
+  changedBy   User            @relation(fields: [changedById], references: [id])
+  changedById String
+  changedAt   DateTime        @default(now())
 }

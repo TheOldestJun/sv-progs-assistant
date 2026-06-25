@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useTransition, useEffect, useRef } from "react";
 import { deleteUserAction } from "../lib/auth";
 import { useToast } from "@/components/ui/Toast";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 interface SafeUser {
   id: string;
@@ -44,6 +45,7 @@ export function AdminUserList({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const { showToast } = useToast();
+  const { confirm } = useConfirmDialog();
   const hasShownToast = useRef(false);
 
   useEffect(() => {
@@ -55,7 +57,14 @@ export function AdminUserList({
   }, [pendingResetCount, showToast]);
 
   async function handleDelete(id: string) {
-    if (!confirm("Вы уверены, что хотите удалить пользователя?")) return;
+    const ok = await confirm({
+      title: "Удаление пользователя",
+      message: "Вы уверены, что хотите удалить пользователя? Это действие нельзя отменить.",
+      confirmText: "Удалить",
+      cancelText: "Отмена",
+      variant: "danger",
+    });
+    if (!ok) return;
 
     startTransition(async () => {
       const result = await deleteUserAction(id);
