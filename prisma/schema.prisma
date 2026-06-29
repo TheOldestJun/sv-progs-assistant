@@ -76,7 +76,6 @@ model Order {
   id          String      @id @default(cuid())
   requester   Requester   @relation(fields: [requesterId], references: [id])
   requesterId String
-  notes       String?
   created     DateTime    @default(now()) @db.Date
   items       OrderItem[]
 }
@@ -90,6 +89,7 @@ model OrderItem {
   units     Unit                @relation(fields: [unitId], references: [id])
   unitId    String
   quantity  Float
+  comment   String?
   status    OrderItemStatus     @default(ACCEPTED)
   statusLogs OrderItemStatusLog[]
 }

@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { requesterId, items, notes } = body;
+  const { requesterId, items } = body;
 
   if (!requesterId || !items || !Array.isArray(items) || items.length === 0) {
     return NextResponse.json(
@@ -65,12 +65,12 @@ export async function POST(request: Request) {
     const order = await db.order.create({
       data: {
         requesterId,
-        notes: notes || null,
         items: {
-          create: items.map((item: { productId: string; unitId: string; quantity: number }) => ({
+          create: items.map((item: { productId: string; unitId: string; quantity: number; comment?: string }) => ({
             productId: item.productId,
             unitId: item.unitId,
             quantity: item.quantity,
+            comment: item.comment || null,
           })),
         },
       },

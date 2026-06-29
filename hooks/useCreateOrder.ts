@@ -10,12 +10,12 @@ interface OrderItemInput {
   productId: string;
   unitId: string;
   quantity: number;
+  comment?: string;
 }
 
 interface OrderInput {
   requesterId: string;
   items: OrderItemInput[];
-  notes: string | null;
 }
 
 async function createOrder(input: OrderInput) {

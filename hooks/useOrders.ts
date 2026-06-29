@@ -42,6 +42,7 @@ export interface OrderItem {
   productId: string;
   unitId: string;
   quantity: number;
+  comment: string | null;
   status: OrderItemStatus;
   product: { title: string };
   units: { title: string };
@@ -51,7 +52,6 @@ export interface OrderItem {
 export interface Order {
   id: string;
   requesterId: string;
-  notes: string | null;
   created: string;
   requester: { name: string };
   items: OrderItem[];
