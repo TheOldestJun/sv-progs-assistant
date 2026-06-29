@@ -246,6 +246,7 @@ export function HeadOfSupplyDashboard() {
 
                 <input
                   type="number"
+                  aria-label="Количество"
                   step="0.001"
                   min="0"
                   value={item.quantity}

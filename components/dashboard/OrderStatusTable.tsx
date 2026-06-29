@@ -74,7 +74,11 @@ export function OrderStatusTable() {
       return;
     }
     const rect = buttonEl.getBoundingClientRect();
-    setMenuPos({ top: rect.bottom + 4, left: rect.left });
+    const menuWidth = 224; // w-56 = 224px
+    const left = rect.left + menuWidth > window.innerWidth
+      ? window.innerWidth - menuWidth - 8
+      : rect.left;
+    setMenuPos({ top: rect.bottom + 4, left });
     setOpenSelect(itemId);
   }
 
@@ -145,7 +149,8 @@ export function OrderStatusTable() {
             </span>
           </div>
 
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
             <thead className="bg-surface">
               <tr>
                 <th className="px-4 py-2 text-left font-medium text-text-secondary">Продукт</th>
@@ -299,7 +304,8 @@ export function OrderStatusTable() {
                 </React.Fragment>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       ))}
 

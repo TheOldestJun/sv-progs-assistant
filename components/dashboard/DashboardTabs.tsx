@@ -28,7 +28,7 @@ export function DashboardTabs({
     <div>
       {/* Tab bar */}
       <div className="-mt-2 mb-6 border-b border-border">
-        <nav className="-mb-px flex gap-1" role="tablist">
+        <nav className="-mb-px flex gap-1 overflow-x-auto" role="tablist">
           {tabs.map((tab, i) => (
             <button
               key={tab.role}

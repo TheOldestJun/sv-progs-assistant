@@ -153,13 +153,13 @@ export function ConfirmProvider({
             <div className="flex justify-end gap-3 border-t border-border bg-surface-secondary px-6 py-4">
               <button
                 onClick={handleCancel}
-                className="inline-flex h-9 items-center rounded-lg border border-border bg-surface px-4 text-sm font-medium text-foreground transition-colors hover:bg-surface-secondary"
+                className="inline-flex h-10 items-center rounded-lg border border-border bg-surface px-4 text-sm font-medium text-foreground transition-colors hover:bg-surface-secondary"
               >
                 {options.cancelText}
               </button>
               <button
                 onClick={handleConfirm}
-                className={`inline-flex h-9 items-center rounded-lg px-4 text-sm font-medium text-white transition-colors ${
+                className={`inline-flex h-10 items-center rounded-lg px-4 text-sm font-medium text-white transition-colors ${
                   options.variant === "danger"
                     ? "bg-red-600 hover:bg-red-700"
                     : "bg-blue-600 hover:bg-blue-700"
