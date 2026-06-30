@@ -6,19 +6,12 @@
  */
 "use server";
 
-import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "./db";
-import { Role } from "../generated/prisma/enums";
-
-if (!process.env.JWT_SECRET) {
-  throw new Error("JWT_SECRET не задан в .env");
-}
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
-
-const COOKIE_NAME = "session";
+import type { Role } from "../generated/prisma/enums";
+import { verifyToken as verifyJwt, signToken } from "./jwt";
 
 export interface SessionUser {
   id: string;
@@ -26,6 +19,8 @@ export interface SessionUser {
   email: string;
   roles: Role[];
 }
+
+const COOKIE_NAME = "session";
 
 /** Результат server action: успех с сообщением, либо ошибка */
 export type ActionResult =
@@ -44,28 +39,12 @@ export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 12);
 }
 
-/** Верифицирует JWT-токен и возвращает данные сессии */
-export async function verifyToken(token: string): Promise<SessionUser | null> {
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
-    const roles = (payload.roles as Role[]) || [];
-    return {
-      id: payload.sub as string,
-      name: (payload.name as string) || "",
-      email: payload.email as string,
-      roles: roles.includes("ADMIN") ? Object.values(Role) : roles,
-    };
-  } catch {
-    return null;
-  }
-}
-
 /** Читает session cookie и возвращает данные пользователя */
 export async function getSession(): Promise<SessionUser | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
   if (!token) return null;
-  return verifyToken(token);
+  return verifyJwt(token);
 }
 
 /** Server Action: вход в систему */
@@ -94,15 +73,12 @@ export async function loginAction(
 
   const roles = user.roles.map((r) => r.role);
 
-  const token = await new SignJWT({
+  const token = await signToken({
     sub: user.id,
     name: user.name,
     email: user.email,
     roles,
-  })
-    .setProtectedHeader({ alg: "HS256" })
-    .setExpirationTime("24h")
-    .sign(JWT_SECRET);
+  });
 
   const cookieStore = await cookies();
   cookieStore.set(COOKIE_NAME, token, {

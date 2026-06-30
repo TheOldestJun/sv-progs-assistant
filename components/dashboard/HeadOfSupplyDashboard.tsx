@@ -9,9 +9,7 @@
 
 import { useState } from "react";
 import { Autocomplete, type AutocompleteItem } from "@/components/ui/Autocomplete";
-import { useProducts } from "@/hooks/useProducts";
-import { useUnits } from "@/hooks/useUnits";
-import { useRequesters } from "@/hooks/useRequesters";
+import { useReferenceData } from "@/hooks/useReferenceData";
 import { useCreateOrder } from "@/hooks/useCreateOrder";
 import { useToast } from "@/components/ui/Toast";
 import { OrderStatusTable } from "./OrderStatusTable";
@@ -35,9 +33,13 @@ function isItemComplete(item: OrderItem): boolean {
 }
 
 export function HeadOfSupplyDashboard() {
-  const { products, creation: productCreation } = useProducts();
-  const { units, creation: unitCreation } = useUnits();
-  const { requesters, creation: requesterCreation } = useRequesters();
+  const { data: products, creation: productCreation } = useReferenceData("products", "/api/products");
+  const { data: units, creation: unitCreation } = useReferenceData("units", "/api/units");
+  const { data: requesters, creation: requesterCreation } = useReferenceData(
+    "requesters",
+    "/api/requesters",
+    (v) => ({ name: v }),
+  );
   const { showToast } = useToast();
   const createOrder = useCreateOrder();
 
@@ -142,8 +144,6 @@ export function HeadOfSupplyDashboard() {
         comment: it.comment.trim() || undefined,
       })),
     };
-
-    console.log("Order payload:", payload);
 
     createOrder.mutate(payload, {
       onSuccess: () => {

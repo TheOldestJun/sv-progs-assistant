@@ -14,26 +14,33 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const orders = await db.order.findMany({
-    orderBy: { created: "desc" },
-    include: {
-      requester: { select: { name: true } },
-      items: {
-        include: {
-          product: { select: { title: true } },
-          units: { select: { title: true } },
-          statusLogs: {
-            orderBy: { changedAt: "desc" },
-            include: {
-              changedBy: { select: { name: true } },
+  try {
+    const orders = await db.order.findMany({
+      orderBy: { created: "desc" },
+      include: {
+        requester: { select: { name: true } },
+        items: {
+          include: {
+            product: { select: { title: true } },
+            units: { select: { title: true } },
+            statusLogs: {
+              orderBy: { changedAt: "desc" },
+              include: {
+                changedBy: { select: { name: true } },
+              },
             },
           },
         },
       },
-    },
-  });
+    });
 
-  return NextResponse.json(orders);
+    return NextResponse.json(orders);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 },
+    );
+  }
 }
 
 export async function POST(request: Request) {

@@ -7,10 +7,15 @@
  */
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import * as React from "react";
 import { useOrders, useUpdateOrderItemStatus, STATUS_LABELS, STATUS_ORDER, type OrderItemStatus } from "@/hooks/useOrders";
+import { useDeleteOrder } from "@/hooks/useDeleteOrder";
 import { useToast } from "@/components/ui/Toast";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { IconSearch, IconTrash } from "@/components/ui/Icon";
+
+const PAGE_SIZE = 10;
 
 const STATUS_COLORS: Record<OrderItemStatus, string> = {
   ACCEPTED: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
@@ -59,13 +64,17 @@ function StatusIcon({ status, className }: { status: OrderItemStatus; className?
   }
 }
 
-export function OrderStatusTable() {
+export function OrderStatusTable({ warehouseMode = false }: { warehouseMode?: boolean }) {
   const { data: orders, isLoading, isError, error } = useOrders();
   const updateStatus = useUpdateOrderItemStatus();
+  const deleteOrder = useDeleteOrder();
   const { showToast } = useToast();
+  const { confirm } = useConfirmDialog();
   const [openSelect, setOpenSelect] = useState<string | null>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
 
   function openMenu(itemId: string, buttonEl: HTMLButtonElement) {
     if (openSelect === itemId) {
@@ -102,6 +111,44 @@ export function OrderStatusTable() {
     );
   }
 
+  async function handleDeleteOrder(orderId: string) {
+    const ok = await confirm({
+      title: "Удаление заявки",
+      message: "Вы уверены, что хотите удалить эту заявку? Все позиции и история изменений будут удалены.",
+      confirmText: "Удалить",
+      variant: "danger",
+    });
+    if (!ok) return;
+    deleteOrder.mutate(orderId, {
+      onSuccess: () => showToast("Заявка удалена", "success"),
+      onError: (err) => showToast(err.message, "error"),
+    });
+  }
+
+  const filtered = useMemo(() => {
+    if (!orders) return [];
+    let result = orders;
+    if (warehouseMode) {
+      result = result
+        .map((o) => ({
+          ...o,
+          items: o.items.filter((it) => it.status === "SHIPPED"),
+        }))
+        .filter((o) => o.items.length > 0);
+    }
+    if (!search.trim()) return result;
+    const q = search.toLowerCase();
+    return result.filter(
+      (o) =>
+        o.requester.name.toLowerCase().includes(q) ||
+        o.items.some((it) => it.product.title.toLowerCase().includes(q)),
+    );
+  }, [orders, search, warehouseMode]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages - 1);
+  const paged = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -130,7 +177,19 @@ export function OrderStatusTable() {
 
   return (
     <div className="space-y-4">
-      {orders.map((order) => (
+      {/* Поиск */}
+      <div className="relative">
+        <IconSearch className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-text-secondary" />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+          placeholder="Поиск по заявителю или продукту..."
+          className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-sm text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary"
+        />
+      </div>
+
+      {paged.map((order) => (
         <div
           key={order.id}
           className="overflow-hidden rounded-lg border border-border"
@@ -144,9 +203,18 @@ export function OrderStatusTable() {
                 {new Date(order.created).toLocaleDateString("ru-RU")}
               </span>
             </div>
-            <span className="text-xs text-text-secondary">
-              {order.items.reduce((s, it) => s + it.quantity, 0)} ед.
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-text-secondary">
+                {order.items.reduce((s, it) => s + it.quantity, 0)} ед.
+              </span>
+              <button
+                onClick={() => handleDeleteOrder(order.id)}
+                disabled={deleteOrder.isPending}
+                className="flex size-7 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50 dark:hover:bg-red-950 dark:hover:text-red-400"
+              >
+                <IconTrash className="size-3.5" />
+              </button>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -308,6 +376,44 @@ export function OrderStatusTable() {
           </div>
         </div>
       ))}
+
+      {/* Пагинация */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-1 text-sm text-text-secondary">
+          <span>
+            {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, filtered.length)} из {filtered.length}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={safePage === 0}
+              className="rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-surface-secondary disabled:opacity-30"
+            >
+              ← Назад
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => (
+              <button
+                key={i}
+                onClick={() => setPage(i)}
+                className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
+                  i === safePage
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-surface-secondary"
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={safePage === totalPages - 1}
+              className="rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-surface-secondary disabled:opacity-30"
+            >
+              Вперед →
+            </button>
+          </div>
+        </div>
+      )}
 
       {openSelect && menuPos && (
         <>

@@ -11,6 +11,7 @@ import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
 import { HeadOfSupplyDashboard } from "@/components/dashboard/HeadOfSupplyDashboard";
 import { SupplyDeptDashboard } from "@/components/dashboard/SupplyDeptDashboard";
 import { WarehouseDashboard } from "@/components/dashboard/WarehouseDashboard";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 
 const roleMeta: Record<string, { label: string; icon: string }> = {
   ADMIN: { label: "Администратор", icon: "⚙" },
@@ -68,13 +69,21 @@ export default async function DashboardPage() {
         >
           {dashboards.map((role) => {
             const Component = dashboardComponents[role];
-            return <Component key={role} />;
+            return (
+              <ErrorBoundary key={role}>
+                <Component />
+              </ErrorBoundary>
+            );
           })}
         </DashboardTabs>
       ) : dashboards.length === 1 ? (
         (() => {
           const Component = dashboardComponents[dashboards[0]];
-          return <Component />;
+          return (
+            <ErrorBoundary>
+              <Component />
+            </ErrorBoundary>
+          );
         })()
       ) : (
         <p className="text-center text-sm text-text-secondary">

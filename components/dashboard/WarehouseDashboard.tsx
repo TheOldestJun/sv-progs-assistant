@@ -1,25 +1,27 @@
 /*
- * WarehouseDashboard — заглушка для роли WAREHOUSE.
- * TODO: реализовать функционал склада
- * (приёмка товаров, учёт остатков, инвентаризация).
+ * WarehouseDashboard — приёмка товаров на склад.
+ * Показывает заявки со статусом SHIPPED для отметки RECEIVED.
  */
+"use client";
+
+import { OrderStatusTable } from "./OrderStatusTable";
+
 export function WarehouseDashboard() {
   return (
     <section className="rounded-xl border border-border bg-surface p-6">
-      <div className="mb-4 flex items-center gap-3">
+      <div className="mb-6 flex items-center gap-3">
         <span className="text-2xl">🏭</span>
         <div>
           <h2 className="text-lg font-semibold text-foreground">
-            Склад
+            Приёмка товаров
           </h2>
           <p className="text-sm text-text-secondary">
-            Приёмка товаров, учёт остатков на складе.
+            Подтвердите получение товаров на склад
           </p>
         </div>
       </div>
-      <div className="rounded-lg border border-dashed border-border bg-surface-secondary p-6 text-center">
-        <p className="text-sm text-text-secondary">Раздел в разработке</p>
-      </div>
+
+      <OrderStatusTable warehouseMode />
     </section>
   );
 }

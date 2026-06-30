@@ -4,7 +4,7 @@
  * - Принимает OrderInput { requesterId, items[], notes }
  * - Без optimistic update (простая отправка)
  */
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface OrderItemInput {
   productId: string;
@@ -32,7 +32,12 @@ async function createOrder(input: OrderInput) {
 }
 
 export function useCreateOrder() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: createOrder,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    },
   });
 }
