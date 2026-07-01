@@ -14,6 +14,7 @@ import { useCreateOrder } from "@/hooks/useCreateOrder";
 import { useToast } from "@/components/ui/Toast";
 import { OrderStatusTable } from "./OrderStatusTable";
 import { DashboardTabs } from "./DashboardTabs";
+import { DatePicker } from "@/components/ui/DatePicker";
 
 interface OrderItem {
   id: string;
@@ -59,6 +60,12 @@ export function HeadOfSupplyDashboard() {
     setItems((prev) => [...prev, createEmptyItem()]);
   }
 
+  /*
+   * Оптимистичные ID: когда пользователь создаёт новый продукт/единицу/заявителя,
+   * Autocomplete возвращает { id: "optimistic-<timestamp>", title } до ответа сервера.
+   * После успешного сохранения onSuccess заменяет optimistic ID на реальный из БД.
+   * isOptimistic() проверяет, что все optimistic ID разрешены, перед отправкой заявки.
+   */
   function handleProductCreate(title: string): AutocompleteItem {
     const optimisticId = `optimistic-${Date.now()}`;
     productCreation.mutate(title, {
@@ -194,17 +201,7 @@ export function HeadOfSupplyDashboard() {
               onSelect={setRequester}
               onCreate={handleRequesterCreate}
             />
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-foreground">
-                Дата
-              </label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
-              />
-            </div>
+            <DatePicker label="Дата" value={date} onChange={setDate} />
           </div>
 
           <hr className="border-border" />

@@ -28,6 +28,7 @@ export async function verifyToken(token: string): Promise<SessionUser | null> {
       id: payload.sub as string,
       name: (payload.name as string) || "",
       email: payload.email as string,
+      // ADMINS получают все роли неявно — любая проверка роли проходит для них
       roles: roles.includes("ADMIN" as Role) ? (Object.values(Role) as Role[]) : roles,
     };
   } catch {

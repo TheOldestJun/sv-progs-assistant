@@ -1,0 +1,64 @@
+/*
+ * GET /api/archive — архив удалённых заявок.
+ * Автоматически удаляет записи старше 2 лет.
+ */
+import { NextResponse } from "next/server";
+import { db } from "@/app/lib/db";
+import { getSession } from "@/app/lib/auth";
+
+export async function GET(request: Request) {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const requester = searchParams.get("requester")?.trim();
+    const dateFrom = searchParams.get("dateFrom");
+    const dateTo = searchParams.get("dateTo");
+
+    const twoYearsAgo = new Date();
+    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+
+    // Очищаем записи старше 2 лет
+    await db.archivedOrder.deleteMany({
+      where: { receivedAt: { lt: twoYearsAgo } },
+    });
+
+    type WhereInput = {
+      requesterName?: { contains: string };
+      orderDate?: { gte?: Date; lte?: Date };
+    };
+
+    const conditions: WhereInput = {};
+
+    if (requester) {
+      conditions.requesterName = { contains: requester };
+    }
+    if (dateFrom || dateTo) {
+      const orderDate: { gte?: Date; lte?: Date } = {};
+      if (dateFrom) {
+        const [y, m, d] = dateFrom.split("-").map(Number);
+        orderDate.gte = new Date(y, m - 1, d);
+      }
+      if (dateTo) {
+        const [y, m, d] = dateTo.split("-").map(Number);
+        orderDate.lte = new Date(y, m - 1, d, 23, 59, 59, 999);
+      }
+      conditions.orderDate = orderDate;
+    }
+
+    const archives = await db.archivedOrder.findMany({
+      where: conditions,
+      orderBy: { archivedAt: "desc" },
+    });
+
+    return NextResponse.json(archives);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 },
+    );
+  }
+}

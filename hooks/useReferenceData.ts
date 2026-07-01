@@ -2,6 +2,9 @@
  * Generic hook: useReferenceData
  * Заменяет useProducts, useUnits, useRequesters (все 3 были идентичными)
  * Принимает queryKey + endpoint и возвращает { data, creation, ...query }
+ *
+ * Параметр toPayload — колбэк, определяющий тело POST-запроса.
+ * По умолчанию { title: value }, для requesters нужно (v) => ({ name: v }).
  */
 import {
   useQuery,
@@ -62,6 +65,8 @@ export function useReferenceData(
     { previous: RefItem[] | undefined }
   >({
     mutationFn: (value: string) => createItem(endpoint, value, toPayload ?? defaultPayload),
+    // Оптимистичное добавление: сразу показываем элемент в списке (с optimistic ID),
+    // при ошибке откатываем к предыдущему состоянию кеша
     onMutate: async (value) => {
       await queryClient.cancelQueries({ queryKey: [queryKey] });
       const previous = queryClient.getQueryData<RefItem[]>([queryKey]);
@@ -77,6 +82,7 @@ export function useReferenceData(
 
       return { previous };
     },
+    // Откат при ошибке — восстанавливаем предыдущие данные
     onError: (_err, _value, context) => {
       if (context?.previous) {
         queryClient.setQueryData([queryKey], context.previous);

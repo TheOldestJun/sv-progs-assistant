@@ -21,6 +21,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Chrome data dir: `%TEMP%\chrome-debug` (auto-created, disposable).
 - The server starts in a separate window; Chrome opens after ~11s once the server is ready.
 
+## Git
+
+- Push to GitHub **only after the user explicitly requests it**. Never push on your own initiative.
+
 ## Code comments
 
 - Cover all code with necessary comments clear enough for AI agents to understand context across different machines

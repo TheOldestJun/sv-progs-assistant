@@ -11,7 +11,10 @@ import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
 import { HeadOfSupplyDashboard } from "@/components/dashboard/HeadOfSupplyDashboard";
 import { SupplyDeptDashboard } from "@/components/dashboard/SupplyDeptDashboard";
 import { WarehouseDashboard } from "@/components/dashboard/WarehouseDashboard";
+import { ArchiveDashboard } from "@/components/dashboard/ArchiveDashboard";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+
+const ARCHIVE_TAB = { role: "__archive__", label: "Архив", icon: "🗃️" };
 
 const roleMeta: Record<string, { label: string; icon: string }> = {
   ADMIN: { label: "Администратор", icon: "⚙" },
@@ -32,6 +35,7 @@ export default async function DashboardPage() {
 
   const { roles, name, email } = session;
   const dashboards = roles.filter((r) => dashboardComponents[r]);
+  const isAdmin = roles.includes("ADMIN");
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-10 sm:px-6 lg:px-8">
@@ -59,36 +63,47 @@ export default async function DashboardPage() {
         </form>
       </div>
 
-      {dashboards.length > 1 ? (
-        <DashboardTabs
-          tabs={dashboards.map((r) => ({
+      {dashboards.length === 0 ? (
+        <p className="text-center text-sm text-text-secondary">
+          Нет доступных разделов для вашей роли
+        </p>
+      ) : (
+        (() => {
+          const tabs: { role: string; label: string; icon: string }[] = dashboards.map((r) => ({
             role: r,
             label: roleMeta[r]?.label || r,
             icon: roleMeta[r]?.icon || "📄",
-          }))}
-        >
-          {dashboards.map((role) => {
+          }));
+
+          const components = dashboards.map((role) => {
             const Component = dashboardComponents[role];
             return (
               <ErrorBoundary key={role}>
                 <Component />
               </ErrorBoundary>
             );
-          })}
-        </DashboardTabs>
-      ) : dashboards.length === 1 ? (
-        (() => {
-          const Component = dashboardComponents[dashboards[0]];
+          });
+
+          // Архив для всех не-админов
+          if (!isAdmin) {
+            tabs.push(ARCHIVE_TAB);
+            components.push(
+              <ErrorBoundary key="archive">
+                <ArchiveDashboard />
+              </ErrorBoundary>,
+            );
+          }
+
+          if (tabs.length === 1) {
+            return components[0];
+          }
+
           return (
-            <ErrorBoundary>
-              <Component />
-            </ErrorBoundary>
+            <DashboardTabs tabs={tabs}>
+              {components}
+            </DashboardTabs>
           );
         })()
-      ) : (
-        <p className="text-center text-sm text-text-secondary">
-          Нет доступных разделов для вашей роли
-        </p>
       )}
     </div>
   );

@@ -20,6 +20,8 @@ export const STATUS_LABELS: Record<OrderItemStatus, string> = {
   RECEIVED: "Получено на склад",
 };
 
+// Канонический порядок жизненного цикла статусов заявки.
+// Все переходы должны соответствовать этому порядку (нельзя перескочить через шаг).
 export const STATUS_ORDER: OrderItemStatus[] = [
   "ACCEPTED",
   "INVOICE_RECEIVED",
@@ -78,15 +80,19 @@ export function useUpdateOrderItemStatus() {
       orderId,
       itemId,
       status,
+      warehouseMode,
     }: {
       orderId: string;
       itemId: string;
       status: OrderItemStatus;
+      // warehouseMode=true: склад отмечает RECEIVED, сервер проверяет роль WAREHOUSE
+      // warehouseMode=false/undefined: другие отделы, RECEIVED запрещён
+      warehouseMode?: boolean;
     }) => {
       const res = await fetch(`/api/orders/${orderId}/items/${itemId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, warehouseMode }),
       });
       if (!res.ok) {
         const err = await res.json();

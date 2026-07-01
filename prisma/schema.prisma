@@ -42,7 +42,7 @@ model UserRole {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   role   Role
 
-  @@id([userId, role])
+  @@id([userId, role]) // Составной первичный ключ: один пользователь не может иметь дублирующуюся роль
 }
 
 model PasswordResetRequest {
@@ -103,4 +103,16 @@ model OrderItemStatusLog {
   changedBy   User            @relation(fields: [changedById], references: [id])
   changedById String
   changedAt   DateTime        @default(now())
+}
+
+model ArchivedOrder {
+  id             String   @id @default(cuid())
+  originalId     String
+  requesterName  String   @map("requester_name")
+  orderDate      DateTime @map("order_date") @db.Date
+  receivedAt     DateTime @map("received_at")
+  archivedAt     DateTime @default(now()) @map("archived_at")
+  items          Json
+
+  @@map("archived_orders") // snake_case для MariaDB (Prisma по умолчанию использует camelCase)
 }

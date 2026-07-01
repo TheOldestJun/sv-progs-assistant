@@ -18,13 +18,11 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const isWarehouse = session.roles.includes(Role.WAREHOUSE);
-
   try {
     const { id, itemId } = await params;
 
     const body = await _request.json();
-    const { status } = body;
+    const { status, warehouseMode } = body;
 
     if (!status || !Object.values(OrderItemStatus).includes(status)) {
       return NextResponse.json(
@@ -33,14 +31,20 @@ export async function PATCH(
       );
     }
 
-    if (isWarehouse && status !== OrderItemStatus.RECEIVED) {
-      return NextResponse.json(
-        { error: "Кладовщик может только подтвердить получение товара (RECEIVED)" },
-        { status: 403 },
-      );
-    }
-
-    if (!isWarehouse && status === OrderItemStatus.RECEIVED) {
+    if (warehouseMode) {
+      if (!session.roles.includes(Role.WAREHOUSE)) {
+        return NextResponse.json(
+          { error: "Только кладовщик может подтвердить получение товара" },
+          { status: 403 },
+        );
+      }
+      if (status !== OrderItemStatus.RECEIVED) {
+        return NextResponse.json(
+          { error: "Кладовщик может только подтвердить получение товара (RECEIVED)" },
+          { status: 403 },
+        );
+      }
+    } else if (status === OrderItemStatus.RECEIVED) {
       return NextResponse.json(
         { error: "Только кладовщик может подтвердить получение товара" },
         { status: 403 },
@@ -53,6 +57,13 @@ export async function PATCH(
 
     if (!item) {
       return NextResponse.json({ error: "Order item not found" }, { status: 404 });
+    }
+
+    if (item.status === OrderItemStatus.RECEIVED) {
+      return NextResponse.json(
+        { error: "Нельзя изменить статус после получения товара на склад" },
+        { status: 400 },
+      );
     }
 
     const oldStatus = item.status !== status ? item.status : null;

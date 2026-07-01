@@ -22,10 +22,6 @@ const labels: Record<string, string> = {
 
 const order: Array<"light" | "dark" | "system"> = ["light", "dark", "system"];
 
-/*
- * ThemeSwitcher — переключатель между светлой, тёмной и системной темой.
- * Использует useTheme из ThemeProvider.
- */
 export function ThemeSwitcher() {
   const { theme, setTheme } = useTheme();
 

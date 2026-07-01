@@ -22,6 +22,8 @@ interface FactoryOptions {
 export function createHandlers(opts: FactoryOptions) {
   const { model, field, uppercase, asAutocompleteItem } = opts;
 
+  // as unknown as — обход строгой типизации Prisma v7 (dynamic access).
+  // db[model] возвращает any, приводим к интерфейсу findMany/findFirst/create.
   const dbModel = db[model] as unknown as {
     findMany: (args: {
       select?: Record<string, boolean>;

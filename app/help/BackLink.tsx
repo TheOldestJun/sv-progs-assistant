@@ -1,3 +1,8 @@
+/*
+ * BackLink — кнопка «← Назад» с useRouter().back().
+ * Используется на /help для возврата на предыдущую страницу.
+ * "use client" обязателен для доступа к маршрутизатору.
+ */
 "use client";
 
 import { useRouter } from "next/navigation";

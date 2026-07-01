@@ -64,6 +64,9 @@ function StatusIcon({ status, className }: { status: OrderItemStatus; className?
   }
 }
 
+// Какие статусы показывать в меню переключения:
+// - default (отдел снабжения): все, кроме RECEIVED (только склад может отмечать получение)
+// - warehouse (склад): только RECEIVED (склад принимает товары, не меняет другие статусы)
 const STATUS_CHOICES: Record<string, OrderItemStatus[]> = {
   default: STATUS_ORDER.filter((s) => s !== "RECEIVED"),
   warehouse: ["RECEIVED"],
@@ -89,7 +92,8 @@ export function OrderStatusTable({ warehouseMode = false }: { warehouseMode?: bo
       return;
     }
     const rect = buttonEl.getBoundingClientRect();
-    const menuWidth = 224; // w-56 = 224px
+    const menuWidth = 224; // w-56 = 224px — если меняешь ширину меню, обнови и тут
+    // Если меню вылезает за правый край экрана — сдвигаем влево
     const left = rect.left + menuWidth > window.innerWidth
       ? window.innerWidth - menuWidth - 8
       : rect.left;
@@ -109,7 +113,7 @@ export function OrderStatusTable({ warehouseMode = false }: { warehouseMode?: bo
   async function handleStatusChange(itemId: string, orderId: string, status: OrderItemStatus) {
     closeMenu();
     updateStatus.mutate(
-      { orderId, itemId, status },
+      { orderId, itemId, status, warehouseMode },
       {
         onSuccess: () => showToast(`Статус изменён на «${STATUS_LABELS[status]}»`, "success"),
         onError: (err) => showToast(err.message, "error"),
@@ -134,6 +138,7 @@ export function OrderStatusTable({ warehouseMode = false }: { warehouseMode?: bo
   const filtered = useMemo(() => {
     if (!orders) return [];
     let result = orders;
+    // В режиме склада показываем только отправленные (SHIPPED) позиции для приёмки
     if (warehouseMode) {
       result = result
         .map((o) => ({
@@ -142,6 +147,7 @@ export function OrderStatusTable({ warehouseMode = false }: { warehouseMode?: bo
         }))
         .filter((o) => o.items.length > 0);
     }
+    // Поиск по имени заявителя или названию продукта
     if (!search.trim()) return result;
     const q = search.toLowerCase();
     return result.filter(
@@ -287,9 +293,11 @@ export function OrderStatusTable({ warehouseMode = false }: { warehouseMode?: bo
                     <td className="px-4 py-2">
                       <div className="relative">
                         <button
-                          onClick={(e) => openMenu(item.id, e.currentTarget)}
+                          onClick={(e) => {
+                            if (item.status !== "RECEIVED") openMenu(item.id, e.currentTarget);
+                          }}
                           disabled={updateStatus.isPending}
-                          className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 transition-colors ${STATUS_COLORS[item.status]} disabled:opacity-50`}
+                          className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 transition-colors ${STATUS_COLORS[item.status]} disabled:opacity-50 ${item.status === "RECEIVED" ? "cursor-default" : "cursor-pointer"}`}
                         >
                           <StatusIcon status={item.status} />
                           {STATUS_LABELS[item.status]}
