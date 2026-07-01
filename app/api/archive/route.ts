@@ -29,9 +29,16 @@ export async function GET(request: Request) {
     type WhereInput = {
       requesterName?: { contains: string };
       orderDate?: { gte?: Date; lte?: Date };
+      createdById?: string;
     };
 
     const conditions: WhereInput = {};
+
+    // REQUESTER-only видят только свои архивные заявки
+    const isRequesterOnly = session.roles.length === 1 && session.roles.includes("REQUESTER");
+    if (isRequesterOnly) {
+      conditions.createdById = session.id;
+    }
 
     if (requester) {
       conditions.requesterName = { contains: requester };

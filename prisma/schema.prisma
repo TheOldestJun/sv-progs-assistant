@@ -22,6 +22,7 @@ enum Role {
   HEAD_OF_SUPPLY
   SUPPLY_DEPT
   WAREHOUSE
+  REQUESTER
 }
 
 model User {
@@ -33,6 +34,8 @@ model User {
   roles              UserRole[]
   resetRequests      PasswordResetRequest[]
   statusChanges      OrderItemStatusLog[]
+  requesterProfile   Requester?              // Профиль заказчика, если роль REQUESTER
+  createdOrders      Order[]                 // Заявки, созданные этим пользователем
   createdAt          DateTime                @default(now())
   updatedAt          DateTime                @updatedAt
 }
@@ -70,6 +73,8 @@ model Requester {
   id     String  @id @default(cuid())
   name   String
   orders Order[]
+  user   User?   @relation(fields: [userId], references: [id])
+  userId String? @unique
 }
 
 model Order {
@@ -78,6 +83,8 @@ model Order {
   requesterId String
   created     DateTime    @default(now()) @db.Date
   items       OrderItem[]
+  createdBy   User?       @relation(fields: [createdById], references: [id])
+  createdById String?
 }
 
 model OrderItem {
@@ -113,6 +120,7 @@ model ArchivedOrder {
   receivedAt     DateTime @map("received_at")
   archivedAt     DateTime @default(now()) @map("archived_at")
   items          Json
+  createdById    String?
 
   @@map("archived_orders") // snake_case для MariaDB (Prisma по умолчанию использует camelCase)
 }

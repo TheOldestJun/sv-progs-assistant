@@ -14,7 +14,7 @@ interface OrderItemInput {
 }
 
 interface OrderInput {
-  requesterId: string;
+  requesterId?: string;
   items: OrderItemInput[];
 }
 

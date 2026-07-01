@@ -23,10 +23,18 @@ export async function DELETE(
 
     const order = await db.order.findUnique({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        requesterId: true,
+        created: true,
+        createdById: true,
         requester: { select: { name: true } },
         items: {
-          include: {
+          select: {
+            id: true,
+            status: true,
+            quantity: true,
+            comment: true,
             product: { select: { title: true } },
             units: { select: { title: true } },
             statusLogs: {
@@ -75,6 +83,7 @@ export async function DELETE(
           orderDate: order.created,
           receivedAt,
           items,
+          createdById: order.createdById,
         },
       }),
       db.order.delete({ where: { id } }),

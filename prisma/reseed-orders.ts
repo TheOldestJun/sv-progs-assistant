@@ -11,6 +11,7 @@
 import "dotenv/config";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "../app/generated/prisma/client";
+import bcrypt from "bcryptjs";
 
 const adapter = new PrismaMariaDb({
   host: process.env.DB_HOST || "localhost",
@@ -28,6 +29,7 @@ async function main() {
   await db.orderItemStatusLog.deleteMany();
   await db.orderItem.deleteMany();
   await db.order.deleteMany();
+  await db.archivedOrder.deleteMany();
   await db.requester.deleteMany();
   await db.product.deleteMany();
   await db.unit.deleteMany();
@@ -63,17 +65,47 @@ async function main() {
   console.log(`  Единицы: ${units.length}`);
 
   // --- Заявители ---
+  // Трое первых — обычные заявители (для заявок от начальника снабжения)
   const requesterNames = [
     "Иванов Иван Иванович",
     "Петров Пётр Петрович",
     "Сидорова Анна Сергеевна",
-    "Козлов Дмитрий Алексеевич",
-    "Белова Екатерина Павловна",
   ];
   const requesters = await Promise.all(
     requesterNames.map((name) => db.requester.create({ data: { name } })),
   );
-  console.log(`  Заявители: ${requesters.length}`);
+
+  // Ещё двое — заявители с ролью REQUESTER (создают заявки сами)
+  const requesterPassword = await bcrypt.hash("requester123", 12);
+  const requesterUser1 = await db.user.upsert({
+    where: { email: "ivanova@mail.com" },
+    create: {
+      name: "Иванова Елена",
+      email: "ivanova@mail.com",
+      password: requesterPassword,
+      roles: { create: { role: "REQUESTER" } },
+    },
+    update: {},
+  });
+  const requesterUser2 = await db.user.upsert({
+    where: { email: "sokolov@mail.com" },
+    create: {
+      name: "Соколов Андрей",
+      email: "sokolov@mail.com",
+      password: requesterPassword,
+      roles: { create: { role: "REQUESTER" } },
+    },
+    update: {},
+  });
+
+  const requesterLinked1 = await db.requester.create({
+    data: { name: "Иванова Елена", userId: requesterUser1.id },
+  });
+  const requesterLinked2 = await db.requester.create({
+    data: { name: "Соколов Андрей", userId: requesterUser2.id },
+  });
+
+  console.log(`  Заявители: ${requesters.length + 2} (${requesters.length} обычных, 2 с ролью REQUESTER)`);
 
   // --- Заявки ---
   const [o1] = await Promise.all([
@@ -81,6 +113,7 @@ async function main() {
       data: {
         requesterId: requesters[0].id,
         created: new Date("2026-06-25"),
+        createdById: adminUser?.id,
         items: {
           create: [
             {
@@ -113,6 +146,7 @@ async function main() {
       data: {
         requesterId: requesters[1].id,
         created: new Date("2026-06-27"),
+        createdById: adminUser?.id,
         items: {
           create: [
             {
@@ -149,6 +183,7 @@ async function main() {
       data: {
         requesterId: requesters[2].id,
         created: new Date("2026-06-28"),
+        createdById: adminUser?.id,
         items: {
           create: [
             {
@@ -173,8 +208,9 @@ async function main() {
   const [o4] = await Promise.all([
     db.order.create({
       data: {
-        requesterId: requesters[3].id,
+        requesterId: requesterLinked1.id,
         created: new Date("2026-06-20"),
+        createdById: requesterUser1.id,
         items: {
           create: [
             {
@@ -198,8 +234,9 @@ async function main() {
   const [o5] = await Promise.all([
     db.order.create({
       data: {
-        requesterId: requesters[4].id,
+        requesterId: requesterLinked2.id,
         created: new Date("2026-06-29"),
+        createdById: requesterUser2.id,
         items: {
           create: [
             {

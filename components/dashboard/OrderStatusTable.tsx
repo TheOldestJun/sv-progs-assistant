@@ -72,7 +72,7 @@ const STATUS_CHOICES: Record<string, OrderItemStatus[]> = {
   warehouse: ["RECEIVED"],
 };
 
-export function OrderStatusTable({ warehouseMode = false }: { warehouseMode?: boolean }) {
+export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { warehouseMode?: boolean; readOnly?: boolean }) {
   const { data: orders, isLoading, isError, error } = useOrders();
   const updateStatus = useUpdateOrderItemStatus();
   const deleteOrder = useDeleteOrder();
@@ -219,18 +219,20 @@ export function OrderStatusTable({ warehouseMode = false }: { warehouseMode?: bo
               <span className="text-xs text-text-secondary">
                 {order.items.reduce((s, it) => s + it.quantity, 0)} ед.
               </span>
-              <button
-                onClick={() => handleDeleteOrder(order.id)}
-                disabled={deleteOrder.isPending || !order.items.every((it) => it.status === "RECEIVED")}
-                className="group flex size-7 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50 dark:hover:bg-red-950 dark:hover:text-red-400"
-                title={
-                  order.items.every((it) => it.status === "RECEIVED")
-                    ? "Удалить заявку"
-                    : "Удаление доступно после получения всех позиций на склад"
-                }
-              >
-                <IconTrash className="size-3.5" />
-              </button>
+              {!readOnly && (
+                <button
+                  onClick={() => handleDeleteOrder(order.id)}
+                  disabled={deleteOrder.isPending || !order.items.every((it) => it.status === "RECEIVED")}
+                  className="group flex size-7 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50 dark:hover:bg-red-950 dark:hover:text-red-400"
+                  title={
+                    order.items.every((it) => it.status === "RECEIVED")
+                      ? "Удалить заявку"
+                      : "Удаление доступно после получения всех позиций на склад"
+                  }
+                >
+                  <IconTrash className="size-3.5" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -291,18 +293,25 @@ export function OrderStatusTable({ warehouseMode = false }: { warehouseMode?: bo
                       {item.quantity}
                     </td>
                     <td className="px-4 py-2">
-                      <div className="relative">
-                        <button
-                          onClick={(e) => {
-                            if (item.status !== "RECEIVED") openMenu(item.id, e.currentTarget);
-                          }}
-                          disabled={updateStatus.isPending}
-                          className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 transition-colors ${STATUS_COLORS[item.status]} disabled:opacity-50 ${item.status === "RECEIVED" ? "cursor-default" : "cursor-pointer"}`}
-                        >
+                      {readOnly ? (
+                        <span className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 ${STATUS_COLORS[item.status]}`}>
                           <StatusIcon status={item.status} />
                           {STATUS_LABELS[item.status]}
-                        </button>
-                      </div>
+                        </span>
+                      ) : (
+                        <div className="relative">
+                          <button
+                            onClick={(e) => {
+                              if (item.status !== "RECEIVED") openMenu(item.id, e.currentTarget);
+                            }}
+                            disabled={updateStatus.isPending}
+                            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 transition-colors ${STATUS_COLORS[item.status]} disabled:opacity-50 ${item.status === "RECEIVED" ? "cursor-default" : "cursor-pointer"}`}
+                          >
+                            <StatusIcon status={item.status} />
+                            {STATUS_LABELS[item.status]}
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                   {expandedItem === item.id && (

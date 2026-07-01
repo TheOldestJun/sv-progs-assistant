@@ -15,7 +15,12 @@ export async function GET() {
   }
 
   try {
+    // REQUESTER-only видят только свои заявки
+    const isRequesterOnly = session.roles.length === 1 && session.roles.includes("REQUESTER");
+    const where = isRequesterOnly ? { createdById: session.id } : {};
+
     const orders = await db.order.findMany({
+      where,
       orderBy: { created: "desc" },
       include: {
         requester: { select: { name: true } },
@@ -52,9 +57,9 @@ export async function POST(request: Request) {
   const body = await request.json();
   const { requesterId, items } = body;
 
-  if (!requesterId || !items || !Array.isArray(items) || items.length === 0) {
+  if (!items || !Array.isArray(items) || items.length === 0) {
     return NextResponse.json(
-      { error: "requesterId and items are required" },
+      { error: "items are required" },
       { status: 400 },
     );
   }
@@ -69,9 +74,22 @@ export async function POST(request: Request) {
   }
 
   try {
+    // Для REQUESTER-пользователя: если requesterId не передан, находим/создаём его профиль
+    let resolvedRequesterId = requesterId;
+    if (!resolvedRequesterId) {
+      let requester = await db.requester.findUnique({ where: { userId: session.id } });
+      if (!requester) {
+        requester = await db.requester.create({
+          data: { name: session.name, userId: session.id },
+        });
+      }
+      resolvedRequesterId = requester.id;
+    }
+
     const order = await db.order.create({
       data: {
-        requesterId,
+        requesterId: resolvedRequesterId,
+        createdById: session.id,
         items: {
           create: items.map((item: { productId: string; unitId: string; quantity: number; comment?: string }) => ({
             productId: item.productId,

@@ -17,6 +17,7 @@ const allRoles = [
   { value: "HEAD_OF_SUPPLY", label: "Начальник снабжения" },
   { value: "SUPPLY_DEPT", label: "Отдел снабжения" },
   { value: "WAREHOUSE", label: "Склад" },
+  { value: "REQUESTER", label: "Заявитель" },
 ];
 
 export function EditUserForm({

@@ -11,6 +11,7 @@ import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
 import { HeadOfSupplyDashboard } from "@/components/dashboard/HeadOfSupplyDashboard";
 import { SupplyDeptDashboard } from "@/components/dashboard/SupplyDeptDashboard";
 import { WarehouseDashboard } from "@/components/dashboard/WarehouseDashboard";
+import { RequesterDashboard } from "@/components/dashboard/RequesterDashboard";
 import { ArchiveDashboard } from "@/components/dashboard/ArchiveDashboard";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 
@@ -21,12 +22,14 @@ const roleMeta: Record<string, { label: string; icon: string }> = {
   HEAD_OF_SUPPLY: { label: "Начальник снабжения", icon: "📋" },
   SUPPLY_DEPT: { label: "Отдел снабжения", icon: "📦" },
   WAREHOUSE: { label: "Склад", icon: "🏭" },
+  REQUESTER: { label: "Заявитель", icon: "📝" },
 };
 
 const dashboardComponents: Record<string, React.ElementType> = {
   HEAD_OF_SUPPLY: HeadOfSupplyDashboard,
   SUPPLY_DEPT: SupplyDeptDashboard,
   WAREHOUSE: WarehouseDashboard,
+  REQUESTER: RequesterDashboard,
 };
 
 export default async function DashboardPage() {
