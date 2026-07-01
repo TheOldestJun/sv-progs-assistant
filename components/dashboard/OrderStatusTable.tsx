@@ -215,8 +215,13 @@ export function OrderStatusTable({ warehouseMode = false }: { warehouseMode?: bo
               </span>
               <button
                 onClick={() => handleDeleteOrder(order.id)}
-                disabled={deleteOrder.isPending}
-                className="flex size-7 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50 dark:hover:bg-red-950 dark:hover:text-red-400"
+                disabled={deleteOrder.isPending || !order.items.every((it) => it.status === "RECEIVED")}
+                className="group flex size-7 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50 dark:hover:bg-red-950 dark:hover:text-red-400"
+                title={
+                  order.items.every((it) => it.status === "RECEIVED")
+                    ? "Удалить заявку"
+                    : "Удаление доступно после получения всех позиций на склад"
+                }
               >
                 <IconTrash className="size-3.5" />
               </button>

@@ -17,9 +17,20 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    const order = await db.order.findUnique({ where: { id } });
+    const order = await db.order.findUnique({
+      where: { id },
+      include: { items: { select: { status: true } } },
+    });
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    const allReceived = order.items.every((it) => it.status === "RECEIVED");
+    if (!allReceived) {
+      return NextResponse.json(
+        { error: "Можно удалить только заявку, все позиции которой получены на склад" },
+        { status: 400 },
+      );
     }
 
     await db.order.delete({ where: { id } });
