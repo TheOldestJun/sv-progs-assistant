@@ -7,7 +7,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";
-import { OrderItemStatus } from "@/app/generated/prisma/enums";
+import { OrderItemStatus, Role } from "@/app/generated/prisma/enums";
 
 export async function PATCH(
   _request: Request,
@@ -17,6 +17,8 @@ export async function PATCH(
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const isWarehouse = session.roles.includes(Role.WAREHOUSE);
 
   try {
     const { id, itemId } = await params;
@@ -28,6 +30,20 @@ export async function PATCH(
       return NextResponse.json(
         { error: `Invalid status. Allowed: ${Object.values(OrderItemStatus).join(", ")}` },
         { status: 400 },
+      );
+    }
+
+    if (isWarehouse && status !== OrderItemStatus.RECEIVED) {
+      return NextResponse.json(
+        { error: "Кладовщик может только подтвердить получение товара (RECEIVED)" },
+        { status: 403 },
+      );
+    }
+
+    if (!isWarehouse && status === OrderItemStatus.RECEIVED) {
+      return NextResponse.json(
+        { error: "Только кладовщик может подтвердить получение товара" },
+        { status: 403 },
       );
     }
 

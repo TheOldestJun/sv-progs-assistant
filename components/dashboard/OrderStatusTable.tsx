@@ -64,6 +64,11 @@ function StatusIcon({ status, className }: { status: OrderItemStatus; className?
   }
 }
 
+const STATUS_CHOICES: Record<string, OrderItemStatus[]> = {
+  default: STATUS_ORDER.filter((s) => s !== "RECEIVED"),
+  warehouse: ["RECEIVED"],
+};
+
 export function OrderStatusTable({ warehouseMode = false }: { warehouseMode?: boolean }) {
   const { data: orders, isLoading, isError, error } = useOrders();
   const updateStatus = useUpdateOrderItemStatus();
@@ -75,6 +80,7 @@ export function OrderStatusTable({ warehouseMode = false }: { warehouseMode?: bo
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
+  const statusChoices = warehouseMode ? STATUS_CHOICES.warehouse : STATUS_CHOICES.default;
 
   function openMenu(itemId: string, buttonEl: HTMLButtonElement) {
     if (openSelect === itemId) {
@@ -425,7 +431,7 @@ export function OrderStatusTable({ warehouseMode = false }: { warehouseMode?: bo
             className="fixed z-40 w-56 rounded-lg border border-border bg-surface py-1 shadow-lg"
             style={{ top: menuPos.top, left: menuPos.left }}
           >
-            {STATUS_ORDER.map((s) => {
+            {statusChoices.map((s) => {
               const item = orders
                 .flatMap((o) => o.items)
                 .find((i) => i.id === openSelect);
