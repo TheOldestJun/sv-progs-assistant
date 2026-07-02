@@ -1,7 +1,8 @@
 /*
  * Страница «Помощь» (route: /help).
  * Описание всего функционала приложения для не-администраторов:
- * роли, создание заявок, управление статусами, работа со складом.
+ * роли, создание заявок, управление статусами, работа со складом,
+ * архив, поиск и пагинация.
  * Server component, без интерактива.
  */
 import { BackLink } from "./BackLink";
@@ -35,6 +36,14 @@ export default function HelpPage() {
           </p>
           <ul className="mt-4 space-y-3">
             <li className="rounded-lg border border-border bg-surface p-4">
+              <strong className="text-foreground">Заявитель</strong>
+              <p className="mt-1 text-sm text-text-secondary">
+                Создание собственных заявок и отслеживание их статусов. У заявителя две вкладки:
+                «Новая заявка» (упрощённая форма, заявитель привязывается автоматически)
+                и «Мои заявки» (просмотр без возможности изменения статусов).
+              </p>
+            </li>
+            <li className="rounded-lg border border-border bg-surface p-4">
               <strong className="text-foreground">Начальник снабжения</strong>
               <p className="mt-1 text-sm text-text-secondary">
                 Создание новых заявок на снабжение. Просмотр и управление статусами всех заявок.
@@ -50,6 +59,7 @@ export default function HelpPage() {
               <strong className="text-foreground">Склад</strong>
               <p className="mt-1 text-sm text-text-secondary">
                 Просмотр заявок, ожидающих поступления, и отметка о получении товара на склад.
+                Склад может менять статус только на «Получено на склад».
               </p>
             </li>
           </ul>
@@ -68,6 +78,7 @@ export default function HelpPage() {
                 Введите ФИО сотрудника, подающего заявку. Можно найти существующего заявителя
                 через автокомплит (начните печатать) или создать нового, нажав «+».
                 Дата заполняется автоматически текущим днём.
+                Если вы заявитель — заявитель привязывается автоматически, поле выбора скрыто.
               </p>
             </div>
 
@@ -95,7 +106,7 @@ export default function HelpPage() {
               <h3 className="font-medium text-foreground">4. Отправка</h3>
               <p className="mt-1 text-sm leading-relaxed text-text-secondary">
                 Нажмите «Отправить заявку». После успешной отправки форма очистится,
-                а заявка появится в таблице «Выполнение заявок».
+                а заявка появится в таблице.
               </p>
             </div>
           </div>
@@ -109,6 +120,7 @@ export default function HelpPage() {
           <p className="mt-1 leading-relaxed text-text-secondary">
             Каждая позиция в заявке проходит последовательные статусы.
             Переход между статусами выполняют сотрудники отдела снабжения и склада.
+            Статус «Получено на склад» финальный — после него изменение невозможно.
           </p>
           <div className="mt-4 space-y-3">
             {STATUSES.map((s, i) => (
@@ -164,17 +176,101 @@ export default function HelpPage() {
           </div>
         </section>
 
+        {/* Поиск и пагинация */}
+        <section>
+          <h2 className="text-xl font-semibold text-foreground">
+            Поиск и пагинация
+          </h2>
+          <p className="mt-2 leading-relaxed text-text-secondary">
+            В таблице заявок доступны поиск и пагинация для удобной навигации
+            при большом количестве заявок.
+          </p>
+          <div className="mt-4 space-y-3">
+            <div className="rounded-lg border border-border bg-surface p-4">
+              <h3 className="font-medium text-foreground">Поиск</h3>
+              <p className="mt-1 text-sm leading-relaxed text-text-secondary">
+                Поле поиска фильтрует заявки по ФИО заявителя или названию продукта.
+                Результаты обновляются по мере ввода.
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-surface p-4">
+              <h3 className="font-medium text-foreground">Пагинация</h3>
+              <p className="mt-1 text-sm leading-relaxed text-text-secondary">
+                Заявки отображаются по 10 на страницу. Под таблицей расположены кнопки
+                «Назад», «Вперёд» и номера страниц.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Удаление заявок */}
+        <section>
+          <h2 className="text-xl font-semibold text-foreground">
+            Удаление заявок
+          </h2>
+          <p className="mt-2 leading-relaxed text-text-secondary">
+            Заявку можно удалить только после того, как все её позиции получили статус
+            «Получено на склад». Кнопка удаления находится справа от заголовка заявки.
+          </p>
+          <div className="mt-3 rounded-lg border border-border bg-surface p-4">
+            <h3 className="font-medium text-foreground">Что происходит при удалении</h3>
+            <p className="mt-1 text-sm leading-relaxed text-text-secondary">
+              Заявка не удаляется безвозвратно — она перемещается в архив.
+              Архивные заявки доступны для просмотра на вкладке «Архив».
+            </p>
+          </div>
+        </section>
+
+        {/* Архив */}
+        <section>
+          <h2 className="text-xl font-semibold text-foreground">
+            Архив
+          </h2>
+          <div className="mt-3 space-y-4">
+            <div className="rounded-lg border border-border bg-surface p-4">
+              <h3 className="font-medium text-foreground">Просмотр архива</h3>
+              <p className="mt-1 text-sm leading-relaxed text-text-secondary">
+                Вкладка «Архив» доступна на дашборде для всех пользователей, кроме админа.
+                В архиве отображаются все удалённые заявки. Каждую архивную запись можно
+                раскрыть, чтобы увидеть список позиций на момент удаления.
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-surface p-4">
+              <h3 className="font-medium text-foreground">Фильтры в архиве</h3>
+              <p className="mt-1 text-sm leading-relaxed text-text-secondary">
+                Для поиска в архиве можно отфильтровать записи по заявителю
+                и по диапазону дат (от/до).
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-surface p-4">
+              <h3 className="font-medium text-foreground">Автоматическая очистка</h3>
+              <p className="mt-1 text-sm leading-relaxed text-text-secondary">
+                Записи старше 3 лет автоматически удаляются при просмотре архива.
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* Склад */}
         <section>
           <h2 className="text-xl font-semibold text-foreground">
             Работа склада
           </h2>
           <p className="mt-2 leading-relaxed text-text-secondary">
-            Сотрудники склада видят таблицу заявок со статусами. Основная задача —
-            отмечать получение товара (статус «Получено на склад»), когда заказ
-            фактически поступил. До этого момента склад может отслеживать
-            статус отгрузки.
+            Сотрудники склада видят таблицу заявок со статусами. На вкладке склада
+            отображаются только позиции со статусом «Отправлено поставщиком»,
+            ожидающие поступления.
           </p>
+          <div className="mt-3 space-y-3">
+            <div className="rounded-lg border border-border bg-surface p-4">
+              <h3 className="font-medium text-foreground">Приёмка товара</h3>
+              <p className="mt-1 text-sm leading-relaxed text-text-secondary">
+                Склад может изменить статус позиции только на «Получено на склад».
+                Остальные статусы недоступны. После получения статус становится финальным
+                и не подлежит изменению.
+              </p>
+            </div>
+          </div>
         </section>
 
         {/* Переключение темы */}

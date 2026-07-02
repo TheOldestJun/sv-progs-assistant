@@ -1,17 +1,19 @@
 /*
  * Сброс и перезаполнение таблиц заявок (Order, OrderItem, OrderItemStatusLog).
- * Очищает: Requester, Product, Unit, Order, OrderItem, OrderItemStatusLog.
+ * Очищает: Requester, Product, Unit, Order, OrderItem, OrderItemStatusLog,
+ *          PasswordResetRequest, ArchivedOrder.
+ * Данные пользователей (User, UserRole) НЕ ТРОГАЮТСЯ.
+ *
  * Затем создаёт заново тестовые продукты, единицы, заявителей и несколько заявок
  * с разными статусами позиций и историей изменений.
- * Запуск: npm run reseed
+ * REQUESTER-пользователи (ivanova@mail.com, sokolov@mail.com) ДОЛЖНЫ уже существовать —
+ * им создаются только Requester-записи.
  *
- * ВАЖНО: данные пользователей (User, UserRole) не трогаются.
- * Комментарии к позициям создаются с осмысленным текстом.
+ * Запуск: npm run reseed
  */
 import "dotenv/config";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "../app/generated/prisma/client";
-import bcrypt from "bcryptjs";
 
 const adapter = new PrismaMariaDb({
   host: process.env.DB_HOST || "localhost",
@@ -24,7 +26,7 @@ const adapter = new PrismaMariaDb({
 const db = new PrismaClient({ adapter });
 
 async function main() {
-  console.log("🔄 Очистка таблиц заявок...");
+  console.log("🔄 Очистка таблиц (кроме пользователей)...");
 
   await db.orderItemStatusLog.deleteMany();
   await db.orderItem.deleteMany();
@@ -33,8 +35,16 @@ async function main() {
   await db.requester.deleteMany();
   await db.product.deleteMany();
   await db.unit.deleteMany();
+  await db.passwordResetRequest.deleteMany();
 
   const adminUser = await db.user.findFirst({ where: { email: "admin@mail.com" } });
+  const ivanovaUser = await db.user.findFirst({ where: { email: "ivanova@mail.com" } });
+  const sokolovUser = await db.user.findFirst({ where: { email: "sokolov@mail.com" } });
+
+  if (!adminUser) {
+    console.error("❌ Пользователь admin@mail.com не найден. Сначала выполните seed.");
+    process.exit(1);
+  }
 
   console.log("✅ Таблицы очищены");
   console.log("🌱 Создание тестовых данных...");
@@ -65,7 +75,7 @@ async function main() {
   console.log(`  Единицы: ${units.length}`);
 
   // --- Заявители ---
-  // Трое первых — обычные заявители (для заявок от начальника снабжения)
+  // Трое первых — обычные заявители (для заявок от начальника снабжения или отдела снабжения)
   const requesterNames = [
     "Иванов Иван Иванович",
     "Петров Пётр Петрович",
@@ -75,37 +85,15 @@ async function main() {
     requesterNames.map((name) => db.requester.create({ data: { name } })),
   );
 
-  // Ещё двое — заявители с ролью REQUESTER (создают заявки сами)
-  const requesterPassword = await bcrypt.hash("requester123", 12);
-  const requesterUser1 = await db.user.upsert({
-    where: { email: "ivanova@mail.com" },
-    create: {
-      name: "Иванова Елена",
-      email: "ivanova@mail.com",
-      password: requesterPassword,
-      roles: { create: { role: "REQUESTER" } },
-    },
-    update: {},
-  });
-  const requesterUser2 = await db.user.upsert({
-    where: { email: "sokolov@mail.com" },
-    create: {
-      name: "Соколов Андрей",
-      email: "sokolov@mail.com",
-      password: requesterPassword,
-      roles: { create: { role: "REQUESTER" } },
-    },
-    update: {},
-  });
+  // REQUESTER-пользователи: создаём Requester-записи, привязанные к существующим пользователям
+  const requesterLinked1 = ivanovaUser
+    ? await db.requester.create({ data: { name: "Иванова Елена", userId: ivanovaUser.id } })
+    : null;
+  const requesterLinked2 = sokolovUser
+    ? await db.requester.create({ data: { name: "Соколов Андрей", userId: sokolovUser.id } })
+    : null;
 
-  const requesterLinked1 = await db.requester.create({
-    data: { name: "Иванова Елена", userId: requesterUser1.id },
-  });
-  const requesterLinked2 = await db.requester.create({
-    data: { name: "Соколов Андрей", userId: requesterUser2.id },
-  });
-
-  console.log(`  Заявители: ${requesters.length + 2} (${requesters.length} обычных, 2 с ролью REQUESTER)`);
+  console.log(`  Заявители: ${requesters.length}${requesterLinked1 ? " + Иванова Елена" : ""}${requesterLinked2 ? " + Соколов Андрей" : ""}`);
 
   // --- Заявки ---
   const [o1] = await Promise.all([
@@ -205,58 +193,62 @@ async function main() {
     }),
   ]);
 
-  const [o4] = await Promise.all([
-    db.order.create({
-      data: {
-        requesterId: requesterLinked1.id,
-        created: new Date("2026-06-20"),
-        createdById: requesterUser1.id,
-        items: {
-          create: [
-            {
-              productId: products[2].id,
-              unitId: units[1].id,
-              quantity: 30,
+  const [o4] = requesterLinked1
+    ? await Promise.all([
+        db.order.create({
+          data: {
+            requesterId: requesterLinked1.id,
+            created: new Date("2026-06-20"),
+            createdById: ivanovaUser!.id,
+            items: {
+              create: [
+                {
+                  productId: products[2].id,
+                  unitId: units[1].id,
+                  quantity: 30,
+                },
+                {
+                  productId: products[3].id,
+                  unitId: units[0].id,
+                  quantity: 50,
+                  comment: "Пластиковые, формат А4",
+                },
+              ],
             },
-            {
-              productId: products[3].id,
-              unitId: units[0].id,
-              quantity: 50,
-              comment: "Пластиковые, формат А4",
-            },
-          ],
-        },
-      },
-      include: { items: true },
-    }),
-  ]);
+          },
+          include: { items: true },
+        }),
+      ])
+    : [];
 
-  const [o5] = await Promise.all([
-    db.order.create({
-      data: {
-        requesterId: requesterLinked2.id,
-        created: new Date("2026-06-29"),
-        createdById: requesterUser2.id,
-        items: {
-          create: [
-            {
-              productId: products[1].id,
-              unitId: units[1].id,
-              quantity: 5,
-              comment: "Для Canon i-SENSYS",
+  const [o5] = requesterLinked2
+    ? await Promise.all([
+        db.order.create({
+          data: {
+            requesterId: requesterLinked2.id,
+            created: new Date("2026-06-29"),
+            createdById: sokolovUser!.id,
+            items: {
+              create: [
+                {
+                  productId: products[1].id,
+                  unitId: units[1].id,
+                  quantity: 5,
+                  comment: "Для Canon i-SENSYS",
+                },
+                {
+                  productId: products[8].id,
+                  unitId: units[2].id,
+                  quantity: 4,
+                  comment: "Красные, зелёные, синие — по 1 коробке, чёрные — 2 коробки",
+                },
+              ],
             },
-            {
-              productId: products[8].id,
-              unitId: units[2].id,
-              quantity: 4,
-              comment: "Красные, зелёные, синие — по 1 коробке, чёрные — 2 коробки",
-            },
-          ],
-        },
-      },
-      include: { items: true },
-    }),
-  ]);
+          },
+          include: { items: true },
+        }),
+      ])
+    : [];
 
   if (adminUser) {
     // Статус-логи для первой заявки — часть позиций уже продвинута
@@ -289,67 +281,72 @@ async function main() {
     });
 
     // Четвёртая заявка — все позиции уже получены на склад
-    for (const item of o4.items) {
-      await db.orderItemStatusLog.create({
-        data: {
-          orderItemId: item.id,
-          oldStatus: null,
-          newStatus: "ACCEPTED",
-          changedById: adminUser.id,
-          changedAt: new Date("2026-06-20T10:00:00"),
-        },
-      });
-      await db.orderItemStatusLog.create({
-        data: {
-          orderItemId: item.id,
-          oldStatus: "ACCEPTED",
-          newStatus: "INVOICE_RECEIVED",
-          changedById: adminUser.id,
-          changedAt: new Date("2026-06-21T11:00:00"),
-        },
-      });
-      await db.orderItemStatusLog.create({
-        data: {
-          orderItemId: item.id,
-          oldStatus: "INVOICE_RECEIVED",
-          newStatus: "INVOICE_PAID",
-          changedById: adminUser.id,
-          changedAt: new Date("2026-06-22T09:00:00"),
-        },
-      });
-      await db.orderItemStatusLog.create({
-        data: {
-          orderItemId: item.id,
-          oldStatus: "INVOICE_PAID",
-          newStatus: "SHIPPED",
-          changedById: adminUser.id,
-          changedAt: new Date("2026-06-23T16:00:00"),
-        },
-      });
-      await db.orderItemStatusLog.create({
-        data: {
-          orderItemId: item.id,
-          oldStatus: "SHIPPED",
-          newStatus: "RECEIVED",
-          changedById: adminUser.id,
-          changedAt: new Date("2026-06-24T12:00:00"),
-        },
-      });
+    if (o4) {
+      for (const item of o4.items) {
+        await db.orderItemStatusLog.create({
+          data: {
+            orderItemId: item.id,
+            oldStatus: null,
+            newStatus: "ACCEPTED",
+            changedById: adminUser.id,
+            changedAt: new Date("2026-06-20T10:00:00"),
+          },
+        });
+        await db.orderItemStatusLog.create({
+          data: {
+            orderItemId: item.id,
+            oldStatus: "ACCEPTED",
+            newStatus: "INVOICE_RECEIVED",
+            changedById: adminUser.id,
+            changedAt: new Date("2026-06-21T11:00:00"),
+          },
+        });
+        await db.orderItemStatusLog.create({
+          data: {
+            orderItemId: item.id,
+            oldStatus: "INVOICE_RECEIVED",
+            newStatus: "INVOICE_PAID",
+            changedById: adminUser.id,
+            changedAt: new Date("2026-06-22T09:00:00"),
+          },
+        });
+        await db.orderItemStatusLog.create({
+          data: {
+            orderItemId: item.id,
+            oldStatus: "INVOICE_PAID",
+            newStatus: "SHIPPED",
+            changedById: adminUser.id,
+            changedAt: new Date("2026-06-23T16:00:00"),
+          },
+        });
+        await db.orderItemStatusLog.create({
+          data: {
+            orderItemId: item.id,
+            oldStatus: "SHIPPED",
+            newStatus: "RECEIVED",
+            changedById: adminUser.id,
+            changedAt: new Date("2026-06-24T12:00:00"),
+          },
+        });
+      }
     }
 
     // Пятая заявка — свежая, только создана
-    await db.orderItemStatusLog.create({
-      data: {
-        orderItemId: o5.items[0].id,
-        oldStatus: null,
-        newStatus: "ACCEPTED",
-        changedById: adminUser.id,
-        changedAt: new Date("2026-06-29T08:00:00"),
-      },
-    });
+    if (o5) {
+      await db.orderItemStatusLog.create({
+        data: {
+          orderItemId: o5.items[0].id,
+          oldStatus: null,
+          newStatus: "ACCEPTED",
+          changedById: adminUser.id,
+          changedAt: new Date("2026-06-29T08:00:00"),
+        },
+      });
+    }
   }
 
-  console.log("  Заявки: 5");
+  const orderCount = [o1, o2, o3].filter(Boolean).length + (o4 ? 1 : 0) + (o5 ? 1 : 0);
+  console.log(`  Заявок: ${orderCount}`);
   console.log("✅ Перезаполнение завершено");
 }
 

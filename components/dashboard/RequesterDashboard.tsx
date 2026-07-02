@@ -1,9 +1,8 @@
 /*
  * RequesterDashboard — дашборд заявителя (роль REQUESTER).
- * Три вкладки:
+ * Две вкладки:
  * - «Новая заявка» — упрощённая форма (без выбора заявителя, привязывается автоматически)
- * - «Мои заявки» — таблица собственных заявок
- * - «Архив» — архив собственных заявок
+ * - «Мои заявки» — таблица собственных заявок (только просмотр)
  * API автоматически определяет заявителя по сессии (userId → Requester).
  */
 "use client";
@@ -14,7 +13,6 @@ import { useReferenceData } from "@/hooks/useReferenceData";
 import { useCreateOrder } from "@/hooks/useCreateOrder";
 import { useToast } from "@/components/ui/Toast";
 import { OrderStatusTable } from "./OrderStatusTable";
-import { ArchiveTable } from "./ArchiveTable";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { DashboardTabs } from "./DashboardTabs";
 
@@ -159,7 +157,6 @@ export function RequesterDashboard() {
         tabs={[
           { role: "create", label: "Новая заявка", icon: "✏️" },
           { role: "orders", label: "Мои заявки", icon: "📋" },
-          { role: "archive", label: "Архив", icon: "🗃️" },
         ]}
       >
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -205,10 +202,11 @@ export function RequesterDashboard() {
                 <input
                   type="number"
                   aria-label="Количество"
-                  step="0.001"
+                  step="0.1"
                   min="0"
                   value={item.quantity}
                   onChange={(e) => updateItem(item.id, { quantity: e.target.value })}
+                  onWheel={(e) => (e.target as HTMLInputElement).blur()}
                   placeholder="0"
                   className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary"
                 />
@@ -266,10 +264,6 @@ export function RequesterDashboard() {
 
         <div>
           <OrderStatusTable readOnly />
-        </div>
-
-        <div>
-          <ArchiveTable />
         </div>
       </DashboardTabs>
     </section>

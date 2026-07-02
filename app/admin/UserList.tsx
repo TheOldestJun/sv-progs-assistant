@@ -5,10 +5,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useTransition, useEffect, useRef } from "react";
+import { useTransition, useEffect, useRef, useState } from "react";
 import { deleteUserAction } from "../lib/auth";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
+
+const PAGE_SIZE = 10;
 
 interface SafeUser {
   id: string;
@@ -49,6 +51,7 @@ export function AdminUserList({
   const { showToast } = useToast();
   const { confirm } = useConfirmDialog();
   const hasShownToast = useRef(false);
+  const [page, setPage] = useState(0);
 
   useEffect(() => {
     if (pendingResetCount > 0 && !hasShownToast.current) {
@@ -57,6 +60,10 @@ export function AdminUserList({
       showToast(`${pendingResetCount} ${word} на сброс пароля`, "info");
     }
   }, [pendingResetCount, showToast]);
+
+  const totalPages = Math.ceil(users.length / PAGE_SIZE);
+  const safePage = Math.min(page, totalPages - 1);
+  const pagedUsers = users.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
   async function handleDelete(id: string) {
     const ok = await confirm({
@@ -133,7 +140,7 @@ export function AdminUserList({
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {users.map((user) => (
+              {pagedUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-surface">
                   <td className="px-4 py-3 font-medium text-foreground">
                     {user.name}
@@ -185,6 +192,43 @@ export function AdminUserList({
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between text-sm text-text-secondary">
+          <span>
+            {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, users.length)} из {users.length}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={safePage === 0}
+              className="rounded-md px-3 py-1.5 transition-colors hover:bg-surface-secondary disabled:opacity-30"
+            >
+              ← Назад
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => (
+              <button
+                key={i}
+                onClick={() => setPage(i)}
+                className={`rounded-md px-3 py-1.5 transition-colors ${
+                  i === safePage
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-surface-secondary"
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={safePage === totalPages - 1}
+              className="rounded-md px-3 py-1.5 transition-colors hover:bg-surface-secondary disabled:opacity-30"
+            >
+              Вперед →
+            </button>
+          </div>
         </div>
       )}
     </div>

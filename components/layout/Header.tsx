@@ -1,17 +1,21 @@
 /*
  * Header:
- * - Слева: логотип + название (скрыто на мобильных)
+ * - Слева: логотип + название (скрыто на мобильных) — ведёт в дашборд или на главную
  * - Справа: ссылка "Помощь" + переключатель темы
  * - Прилипает к верху (sticky), полупрозрачный фон с блюром
  */
 import Link from "next/link";
 import Image from "next/image";
 import { ThemeSwitcher } from "../theme/ThemeSwitcher";
-export function Header() {
+import { getSession } from "@/app/lib/auth";
+export async function Header() {
+  const session = await getSession();
+  const homeHref = session ? "/dashboard" : "/";
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-header-bg backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-80">
+        <Link href={homeHref} className="flex items-center gap-3 transition-opacity hover:opacity-80">
           <Image
             src="/logo.png"
             alt="SV Progs Assistant"

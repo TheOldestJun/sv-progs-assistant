@@ -1,6 +1,6 @@
 /*
  * GET /api/archive — архив удалённых заявок.
- * Автоматически удаляет записи старше 2 лет.
+ * Автоматически удаляет записи старше 3 лет.
  */
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
@@ -18,12 +18,12 @@ export async function GET(request: Request) {
     const dateFrom = searchParams.get("dateFrom");
     const dateTo = searchParams.get("dateTo");
 
-    const twoYearsAgo = new Date();
-    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+    const threeYearsAgo = new Date();
+    threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
 
-    // Очищаем записи старше 2 лет
+    // Очищаем записи старше 3 лет
     await db.archivedOrder.deleteMany({
-      where: { receivedAt: { lt: twoYearsAgo } },
+      where: { receivedAt: { lt: threeYearsAgo } },
     });
 
     type WhereInput = {

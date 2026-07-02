@@ -1,26 +1,35 @@
 /*
  * Server actions для аутентификации и управления пользователями.
- * - Вход/выход через JWT в httpOnly cookie
- * - CRUD пользователей (только ADMIN) с множественными ролями
- * - Хэширование паролей (bcrypt, 12 раундов)
+ * Все экспортируемые функции — server actions (запускаются на сервере, клиент их вызывает).
+ *
+ * Куки:
+ *   - "session"       — httpOnly, 24h, JWT access token (sub, name, email, roles)
+ *   - "refresh_token" — httpOnly, 30d, JWT refresh token (те же поля)
+ *
+ * Роли (Role enum в Prisma): ADMIN, HEAD_OF_SUPPLY, SUPPLY_DEPT, WAREHOUSE, REQUESTER
+ *   - ADMIN не получает неявно все роли — нужно явно назначать.
+ *   - Админка (/admin) проверяет session.roles.includes("ADMIN").
+ *
+ * Rate limiting:
+ *   - По IP (x-forwarded-for/x-real-ip).
+ *   - 5 неудачных попыток → блокировка 1 мин, далее экспоненциально до 30 мин.
+ *   - Сбрасывается при успешном входе.
+ *
+ * Хэши: bcrypt, 12 раундов.
  */
 "use server";
 
 import bcrypt from "bcryptjs";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "./db";
 import type { Role } from "../generated/prisma/enums";
-import { verifyToken as verifyJwt, signToken } from "./jwt";
+import { verifyToken, signToken, signRefreshToken, verifyRefreshToken } from "./jwt";
+import type { SessionUser } from "./jwt";
+import { checkRateLimit, recordAttempt } from "./rate-limit";
 
-export interface SessionUser {
-  id: string;
-  name: string;
-  email: string;
-  roles: Role[];
-}
-
-const COOKIE_NAME = "session";
+const SESSION_COOKIE = "session";
+const REFRESH_COOKIE = "refresh_token";
 
 /** Результат server action: успех с сообщением, либо ошибка */
 export type ActionResult =
@@ -29,25 +38,35 @@ export type ActionResult =
   | null
   | undefined;
 
-/** Простейшая валидация email */
+/** Простейшая валидация email — проверяет формат xxx@yyy.zzz */
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-/** Хэширует пароль (bcrypt, 12 раундов) */
+/** Хэширует пароль (bcrypt, 12 раундов). Используется при создании/смене пароля. */
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 12);
 }
 
-/** Читает session cookie и возвращает данные пользователя */
+/** Прочитать session cookie и вернуть данные пользователя (или null, если невалидный/просрочен) */
 export async function getSession(): Promise<SessionUser | null> {
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value;
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  return verifyJwt(token);
+  return verifyToken(token);
 }
 
-/** Server Action: вход в систему */
+/*
+ * Server Action: вход в систему.
+ * - Проверяет rate limit по IP
+ * - Ищет пользователя по email, сверяет bcrypt
+ * - При mustChangePassword — перенаправляет на /change-password
+ * - Устанавливает session + refresh_token cookies
+ * - Редиректит ADMIN → /admin, остальных → /dashboard
+ *
+ * Сообщение об ошибке одинаковое для "нет пользователя" и "неверный пароль"
+ * (чтобы не раскрывать существующие email).
+ */
 export async function loginAction(
   _prev: ActionResult,
   formData: FormData
@@ -57,23 +76,45 @@ export async function loginAction(
 
   if (!email || !password) return { error: "Заполните все поля" };
 
+  // Rate limit по IP: блокируем если слишком много попыток
+  const h = await headers();
+  const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "unknown";
+  const rl = checkRateLimit(`login:${ip}`);
+  if (!rl.allowed) {
+    return { error: `Слишком много попыток. Повторите через ${rl.retryAfter} сек.` };
+  }
+
   const user = await db.user.findUnique({
     where: { email },
     include: { roles: { select: { role: true } } },
   });
-  if (!user) return { error: "Неверный email или пароль" };
+  if (!user) {
+    recordAttempt(`login:${ip}`, false);
+    return { error: "Неверный email или пароль" };
+  }
 
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) {
+    recordAttempt(`login:${ip}`, false);
     if (user.mustChangePassword) {
       return { error: "Ваш пароль был сброшен администратором. Используйте временный пароль для входа." };
     }
     return { error: "Неверный email или пароль" };
   }
 
+  // Успешный вход — сбрасываем счётчик rate limit
+  recordAttempt(`login:${ip}`, true);
+
   const roles = user.roles.map((r) => r.role);
 
+  // Подписываем оба токена с одинаковыми данными
   const token = await signToken({
+    sub: user.id,
+    name: user.name,
+    email: user.email,
+    roles,
+  });
+  const refreshToken = await signRefreshToken({
     sub: user.id,
     name: user.name,
     email: user.email,
@@ -81,12 +122,19 @@ export async function loginAction(
   });
 
   const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, token, {
+  cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24,
+    maxAge: 60 * 60 * 24, // 24h
+  });
+  cookieStore.set(REFRESH_COOKIE, refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30, // 30d
   });
 
   if (user.mustChangePassword) {
@@ -96,14 +144,45 @@ export async function loginAction(
   redirect(roles.includes("ADMIN") ? "/admin" : "/dashboard");
 }
 
-/** Server Action: выход из системы */
+/** Server Action: выход из системы — удаляем обе куки */
 export async function logoutAction() {
   const cookieStore = await cookies();
-  cookieStore.delete(COOKIE_NAME);
+  cookieStore.delete(SESSION_COOKIE);
+  cookieStore.delete(REFRESH_COOKIE);
   redirect("/login");
 }
 
-/** Server Action: создать пользователя (только ADMIN) */
+/** Server Action: продлить сессию по refresh-токену (выпустить новый access token) */
+export async function refreshSessionAction(): Promise<ActionResult> {
+  const cookieStore = await cookies();
+  const refreshToken = cookieStore.get(REFRESH_COOKIE)?.value;
+  if (!refreshToken) return { error: "Сессия истекла" };
+
+  const payload = await verifyRefreshToken(refreshToken);
+  if (!payload) {
+    // Refresh невалиден — чистим всё
+    cookieStore.delete(SESSION_COOKIE);
+    cookieStore.delete(REFRESH_COOKIE);
+    return { error: "Сессия истекла" };
+  }
+
+  const newToken = await signToken(payload);
+  cookieStore.set(SESSION_COOKIE, newToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24,
+  });
+
+  return { success: true, message: "Сессия продлена" };
+}
+
+/* ============================================================
+ * Управление пользователями — все функции только для ADMIN
+ * ============================================================ */
+
+/** Server Action: создать пользователя (только ADMIN). Пароль обязателен, хэшируется bcrypt. */
 export async function createUserAction(
   _prev: ActionResult,
   formData: FormData
@@ -146,7 +225,7 @@ export async function createUserAction(
   return { success: true, message: "Пользователь успешно создан" };
 }
 
-/** Server Action: обновить пользователя (только ADMIN) */
+/** Server Action: обновить пользователя (только ADMIN). Пароль опционален. Роли — чекбоксы. */
 export async function updateUserAction(
   _prev: ActionResult,
   formData: FormData
@@ -177,6 +256,8 @@ export async function updateUserAction(
     updateData.password = await hashPassword(password);
   }
 
+  // Транзакция: удаляем старые роли, создаём новые, обновляем данные
+  // ВАЖНО: если между deleteMany и createMany произойдёт ошибка, пользователь останется без ролей.
   await db.$transaction([
     db.userRole.deleteMany({ where: { userId: id } }),
     db.userRole.createMany({
@@ -188,7 +269,14 @@ export async function updateUserAction(
   return { success: true, message: "Пользователь успешно обновлён" };
 }
 
-/** Server Action: запрос сброса пароля (создаёт PENDING-запрос для админа) */
+/* ============================================================
+ * Сброс пароля — два этапа:
+ *   1. Пользователь отправляет запрос (requestPasswordResetAction)
+ *   2. ADMIN обрабатывает запрос (resetUserPasswordAction)
+ * ============================================================ */
+
+/** Server Action: запрос сброса пароля. Создаёт PENDING-запрос для админа.
+ *  Если пользователь не найден — всё равно возвращаем успех (чтобы не раскрывать email). */
 export async function requestPasswordResetAction(
   _prev: ActionResult,
   formData: FormData
@@ -211,7 +299,8 @@ export async function requestPasswordResetAction(
   return { success: true, message: "Запрос отправлен администратору" };
 }
 
-/** Server Action: сбросить пароль пользователя на reset123 (только ADMIN) */
+/** Server Action: сбросить пароль пользователя на reset123 (только ADMIN).
+ *  После сброса mustChangePassword = true — пользователь сменит пароль при входе. */
 export async function resetUserPasswordAction(
   requestId: string
 ): Promise<{ success: true; message: string } | { error: string }> {
@@ -247,7 +336,11 @@ export async function resetUserPasswordAction(
   };
 }
 
-/** Server Action: сменить пароль (для mustChangePassword или по желанию) */
+/* ============================================================
+ * Смена пароля
+ * ============================================================ */
+
+/** Server Action: сменить пароль. Если mustChangePassword = true — перестаёт быть true. */
 export async function changePasswordAction(
   _prev: ActionResult,
   formData: FormData
@@ -274,7 +367,7 @@ export async function changePasswordAction(
   return { success: true, message: "Пароль успешно изменён" };
 }
 
-/** Server Action: удалить пользователя (только ADMIN, нельзя удалить себя) */
+/** Server Action: удалить пользователя (только ADMIN, нельзя удалить самого себя) */
 export async function deleteUserAction(
   id: string
 ): Promise<{ success: true; message: string } | { error: string }> {

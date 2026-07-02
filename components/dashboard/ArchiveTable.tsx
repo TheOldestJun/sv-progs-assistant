@@ -36,6 +36,8 @@ export function ArchiveTable() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
+  // queryKey включает фильтры: при изменении requester/dateFrom/dateTo
+  // React Query автоматически перезапрашивает данные (refetch)
   const queryKey = ["archive", requester, dateFrom, dateTo];
   const { data, isLoading, isError, error } = useQuery<ArchiveEntry[]>({
     queryKey,

@@ -123,9 +123,9 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
 
   async function handleDeleteOrder(orderId: string) {
     const ok = await confirm({
-      title: "Удаление заявки",
-      message: "Вы уверены, что хотите удалить эту заявку? Все позиции и история изменений будут удалены.",
-      confirmText: "Удалить",
+      title: "Архивирование заявки",
+      message: "Заявка будет перемещена в архив. Вы сможете просмотреть её на вкладке «Архив».",
+      confirmText: "Архивировать",
       variant: "danger",
     });
     if (!ok) return;

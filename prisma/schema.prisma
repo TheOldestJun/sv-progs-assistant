@@ -1,4 +1,6 @@
-// Prisma schema — User model with multiple roles via join table
+// Prisma schema — система управления заявками на снабжение.
+// Хранит пользователей, продукты, единицы, заявки с позициями,
+// историю изменения статусов и архив выполненных/удалённых заявок.
 
 generator client {
   provider = "prisma-client"
@@ -81,9 +83,9 @@ model Order {
   id          String      @id @default(cuid())
   requester   Requester   @relation(fields: [requesterId], references: [id])
   requesterId String
-  created     DateTime    @default(now()) @db.Date
+  created     DateTime    @default(now()) @db.Date  // @db.Date — только дата (без времени), т.к. для заявки важна только дата
   items       OrderItem[]
-  createdBy   User?       @relation(fields: [createdById], references: [id])
+  createdBy   User?       @relation(fields: [createdById], references: [id])  // Кто создал заявку (для REQUESTER — сам заявитель)
   createdById String?
 }
 
@@ -96,8 +98,8 @@ model OrderItem {
   units     Unit                @relation(fields: [unitId], references: [id])
   unitId    String
   quantity  Float
-  comment   String?
-  status    OrderItemStatus     @default(ACCEPTED)
+  comment   String?                         // Комментарий к позиции (необязательный, отображается в таблице)
+  status    OrderItemStatus     @default(ACCEPTED)  // Текущий статус — движется по жизненному циклу ACCEPTED → ... → RECEIVED
   statusLogs OrderItemStatusLog[]
 }
 
@@ -117,10 +119,10 @@ model ArchivedOrder {
   originalId     String
   requesterName  String   @map("requester_name")
   orderDate      DateTime @map("order_date") @db.Date
-  receivedAt     DateTime @map("received_at")
+  receivedAt     DateTime @map("received_at")               // Дата получения последней позиции (макс. из статус-логов RECEIVED)
   archivedAt     DateTime @default(now()) @map("archived_at")
-  items          Json
-  createdById    String?
+  items          Json     // Массив объектов: [{ productTitle, unitTitle, quantity, comment, status }] на момент архивации
+  createdById    String?  // Кто создал заявку (для REQUESTER-фильтра) — хранится как String, без FK
 
   @@map("archived_orders") // snake_case для MariaDB (Prisma по умолчанию использует camelCase)
 }

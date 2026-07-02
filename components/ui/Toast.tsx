@@ -24,6 +24,7 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 let idCounter = 0;
 
 const CheckIcon = () => (
+  // Галочка — для success-уведомлений
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 20 20"
@@ -39,6 +40,7 @@ const CheckIcon = () => (
 );
 
 const InfoIcon = () => (
+  // Круг с i — для info-уведомлений
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 20 20"
@@ -54,6 +56,7 @@ const InfoIcon = () => (
 );
 
 const XIcon = () => (
+  // Круг с крестиком — для error-уведомлений
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 20 20"
@@ -81,7 +84,7 @@ export function ToastProvider({
       setToasts((prev) => [...prev, { id, message, type }]);
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== id));
-      }, 4000);
+      }, 4000); // Авто-скрытие через 4 секунды
     },
     []
   );
