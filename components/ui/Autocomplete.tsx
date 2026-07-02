@@ -11,6 +11,7 @@
 import {
   useState,
   useRef,
+  useMemo,
   useEffect,
   type KeyboardEvent,
   type ChangeEvent,
@@ -44,11 +45,13 @@ export function Autocomplete({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
-  const filtered = query.trim()
-    ? items.filter((it) =>
-        it.title.toLowerCase().includes(query.toLowerCase().trim()),
-      )
-    : items;
+  const filtered = useMemo(() => {
+    return query.trim()
+      ? items.filter((it) =>
+          it.title.toLowerCase().includes(query.toLowerCase().trim()),
+        )
+      : items;
+  }, [items, query]);
 
   const noMatch = query.trim().length > 0 && filtered.length === 0;
 

@@ -21,6 +21,7 @@ export async function Header() {
             alt="SV Progs Assistant"
             width={48}
             height={48}
+            priority
             className="size-12 rounded"
           />
           <span className="text-lg font-semibold tracking-tight text-foreground hidden sm:inline">

@@ -87,6 +87,9 @@ model Order {
   items       OrderItem[]
   createdBy   User?       @relation(fields: [createdById], references: [id])  // Кто создал заявку (для REQUESTER — сам заявитель)
   createdById String?
+
+  @@index([requesterId])
+  @@index([createdById])
 }
 
 model OrderItem {
@@ -101,6 +104,10 @@ model OrderItem {
   comment   String?                         // Комментарий к позиции (необязательный, отображается в таблице)
   status    OrderItemStatus     @default(ACCEPTED)  // Текущий статус — движется по жизненному циклу ACCEPTED → ... → RECEIVED
   statusLogs OrderItemStatusLog[]
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([unitId])
 }
 
 model OrderItemStatusLog {
@@ -112,6 +119,9 @@ model OrderItemStatusLog {
   changedBy   User            @relation(fields: [changedById], references: [id])
   changedById String
   changedAt   DateTime        @default(now())
+
+  @@index([orderItemId])
+  @@index([changedById])
 }
 
 model ArchivedOrder {
@@ -124,5 +134,8 @@ model ArchivedOrder {
   items          Json     // Массив объектов: [{ productTitle, unitTitle, quantity, comment, status }] на момент архивации
   createdById    String?  // Кто создал заявку (для REQUESTER-фильтра) — хранится как String, без FK
 
+  @@index([requesterName])
+  @@index([archivedAt])
+  @@index([createdById])
   @@map("archived_orders") // snake_case для MariaDB (Prisma по умолчанию использует camelCase)
 }

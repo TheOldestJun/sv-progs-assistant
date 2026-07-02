@@ -22,19 +22,15 @@ export async function GET() {
     const orders = await db.order.findMany({
       where,
       orderBy: { created: "desc" },
+      take: 200, // Безопасный лимит — не даёт уйти в OOM при тысячах заявок
       include: {
         requester: { select: { name: true } },
         items: {
           include: {
             product: { select: { title: true } },
             units: { select: { title: true } },
-            statusLogs: {
-              orderBy: { changedAt: "desc" },
-              include: {
-                changedBy: { select: { name: true } },
-              },
-            },
           },
+          // statusLogs не включаем — грузим лениво при раскрытии строки (см. GET /api/orders/:id/items/:itemId/logs)
         },
       },
     });

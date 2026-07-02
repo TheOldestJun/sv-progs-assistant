@@ -48,7 +48,7 @@ export interface OrderItem {
   status: OrderItemStatus;
   product: { title: string };
   units: { title: string };
-  statusLogs: StatusLogEntry[];
+  statusLogs?: StatusLogEntry[];
 }
 
 export interface Order {
@@ -62,6 +62,15 @@ export interface Order {
 async function fetchOrders(): Promise<Order[]> {
   const res = await fetch("/api/orders");
   if (!res.ok) throw new Error("Failed to fetch orders");
+  return res.json();
+}
+
+export async function fetchItemLogs(
+  orderId: string,
+  itemId: string,
+): Promise<StatusLogEntry[]> {
+  const res = await fetch(`/api/orders/${orderId}/items/${itemId}`);
+  if (!res.ok) throw new Error("Failed to fetch item logs");
   return res.json();
 }
 

@@ -88,7 +88,7 @@ export function useReferenceData(
         queryClient.setQueryData([queryKey], context.previous);
       }
     },
-    onSettled: () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [queryKey] });
     },
   });

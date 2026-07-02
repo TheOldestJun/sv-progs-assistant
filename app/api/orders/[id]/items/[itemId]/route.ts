@@ -1,13 +1,40 @@
 /*
- * PATCH /api/orders/:id/items/:itemId
- * Обновление статуса позиции заявки.
- * body: { status: "ACCEPTED" | "INVOICE_RECEIVED" | "INVOICE_PAID" | "SHIPPED" | "RECEIVED" }
- * Создаёт запись в OrderItemStatusLog (кто + когда).
+ * PATCH /api/orders/:id/items/:itemId — обновление статуса позиции
+ * GET  /api/orders/:id/items/:itemId/logs — история статусов позиции (ленивая загрузка)
  */
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";
 import { OrderItemStatus, Role } from "@/app/generated/prisma/enums";
+
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ id: string; itemId: string }> },
+) {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const { itemId } = await params;
+
+    const logs = await db.orderItemStatusLog.findMany({
+      where: { orderItemId: itemId },
+      orderBy: { changedAt: "desc" },
+      include: {
+        changedBy: { select: { name: true } },
+      },
+    });
+
+    return NextResponse.json(logs);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
 
 export async function PATCH(
   _request: Request,

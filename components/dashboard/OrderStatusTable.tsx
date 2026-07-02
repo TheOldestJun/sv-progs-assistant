@@ -9,7 +9,7 @@
 
 import { useMemo, useState } from "react";
 import * as React from "react";
-import { useOrders, useUpdateOrderItemStatus, STATUS_LABELS, STATUS_ORDER, type OrderItemStatus } from "@/hooks/useOrders";
+import { useOrders, useUpdateOrderItemStatus, fetchItemLogs, STATUS_LABELS, STATUS_ORDER, type OrderItemStatus, type StatusLogEntry } from "@/hooks/useOrders";
 import { useDeleteOrder } from "@/hooks/useDeleteOrder";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -81,6 +81,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
   const [openSelect, setOpenSelect] = useState<string | null>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
+  const [logsMap, setLogsMap] = useState<Record<string, StatusLogEntry[]>>({});
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const statusChoices = warehouseMode ? STATUS_CHOICES.warehouse : STATUS_CHOICES.default;
@@ -106,8 +107,21 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
     setMenuPos(null);
   }
 
-  function toggleItem(itemId: string) {
-    setExpandedItem(expandedItem === itemId ? null : itemId);
+  function toggleItem(itemId: string, orderId: string) {
+    if (expandedItem === itemId) {
+      setExpandedItem(null);
+      return;
+    }
+    setExpandedItem(itemId);
+    // Ленивая загрузка логов, если ещё не загружены
+    if (!logsMap[itemId]) {
+      fetchItemLogs(orderId, itemId)
+        .then((logs) => setLogsMap((prev) => ({ ...prev, [itemId]: logs })))
+        .catch(() => {
+          // При ошибке показываем пустой массив
+          setLogsMap((prev) => ({ ...prev, [itemId]: [] }));
+        });
+    }
   }
 
   async function handleStatusChange(itemId: string, orderId: string, status: OrderItemStatus) {
@@ -159,6 +173,18 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages - 1);
+
+  // itemsMap — O(1) lookup for status menu instead of scanning all items each time
+  const itemsMap = useMemo(() => {
+    const map = new Map<string, (typeof orders)[number]["items"][number]>();
+    if (!orders) return map;
+    for (const o of orders) {
+      for (const item of o.items) {
+        map.set(item.id, item);
+      }
+    }
+    return map;
+  }, [orders]);
   const paged = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
   if (isLoading) {
@@ -252,7 +278,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                   <tr className="hover:bg-surface">
                     <td className="px-4 py-2">
                       <button
-                        onClick={() => toggleItem(item.id)}
+                        onClick={() => toggleItem(item.id, order.id)}
                         className="flex items-center gap-1.5 text-left text-foreground transition-colors hover:text-primary"
                       >
                         <svg
@@ -338,13 +364,18 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                           )}
 
                           {/* История изменений */}
-                          {item.statusLogs.length === 0 ? (
-                            <p className="text-xs text-text-secondary">
-                              История изменений пуста
-                            </p>
-                          ) : (
-                            <div className="space-y-2">
-                              {item.statusLogs.map((log) => (
+                          {(() => {
+                            const logs = logsMap[item.id] ?? item.statusLogs ?? [];
+                            if (logs.length === 0) {
+                              return (
+                                <p className="text-xs text-text-secondary">
+                                  История изменений пуста
+                                </p>
+                              );
+                            }
+                            return (
+                              <div className="space-y-2">
+                                {logs.map((log) => (
                                 <div
                                   key={log.id}
                                   className="flex items-center gap-3 text-xs"
@@ -390,9 +421,10 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                                     {new Date(log.changedAt).toLocaleString("ru-RU")}
                                   </span>
                                 </div>
-                              ))}
+                                ))}
                             </div>
-                          )}
+                          );
+                          })()}
                         </div>
                       </td>
                     </tr>
@@ -454,9 +486,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
             style={{ top: menuPos.top, left: menuPos.left }}
           >
             {statusChoices.map((s) => {
-              const item = orders
-                .flatMap((o) => o.items)
-                .find((i) => i.id === openSelect);
+              const item = openSelect ? itemsMap.get(openSelect) : undefined;
               return (
                 <button
                   key={s}

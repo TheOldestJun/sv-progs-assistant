@@ -29,20 +29,22 @@ const REFRESH_COOKIE = "refresh_token";
 /*
  * Попытка аутентификации:
  *   1. Проверяем access-токен.
- *      - Валиден → null (пропускаем дальше).
+ *      - Валиден → { user } (пропускаем дальше).
  *      - Просрочен → пробуем refresh.
  *      - Невалиден → редирект на /login.
  *   2. Если access отсутствует или просрочен — проверяем refresh-токен.
  *      - Валиден → выпускаем новый access, возвращаем response с кукой.
  *      - Невалиден → редирект на /login.
  */
-async function tryAuthenticate(request: NextRequest): Promise<NextResponse | null> {
+async function tryAuthenticate(
+  request: NextRequest,
+): Promise<{ user: { roles: string[] } } | NextResponse> {
   const accessToken = request.cookies.get(SESSION_COOKIE)?.value;
 
   // Пробуем access-токен
   if (accessToken) {
     const { user, expired } = await verifyTokenDetailed(accessToken);
-    if (user) return null; // валиден — пропускаем
+    if (user) return { user }; // валиден — пропускаем
     if (!expired) return NextResponse.redirect(new URL("/login", request.url)); // невалиден — на логин
   }
 
@@ -72,7 +74,7 @@ export async function proxy(request: NextRequest) {
   // /change-password и /dashboard — любой аутентифицированный
   if (pathname === "/change-password" || pathname === "/dashboard") {
     const authResult = await tryAuthenticate(request);
-    if (authResult) return authResult; // редирект на /login или response с новым access
+    if (authResult instanceof NextResponse) return authResult; // редирект на /login или response с новым access
     return NextResponse.next();
   }
 
@@ -80,13 +82,10 @@ export async function proxy(request: NextRequest) {
   if (!pathname.startsWith("/admin")) return NextResponse.next();
 
   const authResult = await tryAuthenticate(request);
-  if (authResult) return authResult;
+  if (authResult instanceof NextResponse) return authResult;
 
-  // После tryAuthenticate access-токен гарантированно валиден (или был бы редирект).
-  // Но перечитываем куку (могла обновиться через refresh) и проверяем роль.
-  const accessToken = request.cookies.get("session")?.value;
-  const { user } = await verifyTokenDetailed(accessToken || "");
-  if (!user || !user.roles.includes("ADMIN")) {
+  // user уже верифицирован в tryAuthenticate — повторная верификация не нужна
+  if (!authResult.user.roles.includes("ADMIN")) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 

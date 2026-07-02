@@ -1,10 +1,13 @@
 /*
- * GET /api/archive — архив удалённых заявок.
- * Автоматически удаляет записи старше 3 лет.
+ * GET /api/archive — архив удалённых заявок с пагинацией.
+ * Фильтр: requester (startsWith — использует индекс), dateFrom, dateTo.
+ * Автоматически удаляет записи старше 3 лет при каждом запросе.
  */
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";
+
+const PAGE_SIZE = 20;
 
 export async function GET(request: Request) {
   const session = await getSession();
@@ -13,35 +16,33 @@ export async function GET(request: Request) {
   }
 
   try {
+    // Автоматическая очистка записей старше 3 лет
+    const threeYearsAgo = new Date();
+    threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
+    await db.archivedOrder.deleteMany({
+      where: { archivedAt: { lt: threeYearsAgo } },
+    });
     const { searchParams } = new URL(request.url);
     const requester = searchParams.get("requester")?.trim();
     const dateFrom = searchParams.get("dateFrom");
     const dateTo = searchParams.get("dateTo");
-
-    const threeYearsAgo = new Date();
-    threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
-
-    // Очищаем записи старше 3 лет
-    await db.archivedOrder.deleteMany({
-      where: { receivedAt: { lt: threeYearsAgo } },
-    });
+    const page = Math.max(0, parseInt(searchParams.get("page") ?? "0", 10));
 
     type WhereInput = {
-      requesterName?: { contains: string };
+      requesterName?: { startsWith: string };
       orderDate?: { gte?: Date; lte?: Date };
       createdById?: string;
     };
 
     const conditions: WhereInput = {};
 
-    // REQUESTER-only видят только свои архивные заявки
     const isRequesterOnly = session.roles.length === 1 && session.roles.includes("REQUESTER");
     if (isRequesterOnly) {
       conditions.createdById = session.id;
     }
 
     if (requester) {
-      conditions.requesterName = { contains: requester };
+      conditions.requesterName = { startsWith: requester };
     }
     if (dateFrom || dateTo) {
       const orderDate: { gte?: Date; lte?: Date } = {};
@@ -56,12 +57,17 @@ export async function GET(request: Request) {
       conditions.orderDate = orderDate;
     }
 
-    const archives = await db.archivedOrder.findMany({
-      where: conditions,
-      orderBy: { archivedAt: "desc" },
-    });
+    const [archives, total] = await Promise.all([
+      db.archivedOrder.findMany({
+        where: conditions,
+        orderBy: { archivedAt: "desc" },
+        take: PAGE_SIZE,
+        skip: page * PAGE_SIZE,
+      }),
+      db.archivedOrder.count({ where: conditions }),
+    ]);
 
-    return NextResponse.json(archives);
+    return NextResponse.json({ data: archives, total });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },

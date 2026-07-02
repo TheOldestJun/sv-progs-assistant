@@ -15,7 +15,7 @@ export function ArchiveDashboard() {
             Архив заявок
           </h2>
           <p className="text-sm text-text-secondary">
-            Завершённые и удалённые заявки (хранятся 2 года)
+            Завершённые и удалённые заявки (хранятся 3 года)
           </p>
         </div>
       </div>
