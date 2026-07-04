@@ -311,9 +311,21 @@ async function main() {
         ],
         createdById: admin.id,
       },
+      {
+        originalId: "arch-004",
+        requesterName: "Тестовый заказчик",
+        orderDate: new Date("2026-01-15"),
+        receivedAt: new Date("2026-02-01"),
+        archivedAt: new Date("2026-02-10"),
+        items: [
+          { product: "Канцелярские скрепки", unit: "уп", quantity: 10, comment: null },
+          { product: "Степлер", unit: "шт", quantity: 3, comment: "Для бухгалтерии" },
+        ],
+        createdById: requesterUser.id,
+      },
     ],
   });
-  console.log(`  Архивных заявок: 3`);
+  console.log(`  Архивных заявок: 4`);
 
   console.log("Готово");
 }

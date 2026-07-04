@@ -94,11 +94,16 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
     }
     const rect = buttonEl.getBoundingClientRect();
     const menuWidth = 224; // w-56 = 224px — если меняешь ширину меню, обнови и тут
+    const menuHeight = 220; // Примерная высота меню с 5 пунктами
     // Если меню вылезает за правый край экрана — сдвигаем влево
     const left = rect.left + menuWidth > window.innerWidth
       ? window.innerWidth - menuWidth - 8
       : rect.left;
-    setMenuPos({ top: rect.bottom + 4, left });
+    // Если меню вылезает за нижний край — показываем сверху
+    const top = rect.bottom + 4 + menuHeight > window.innerHeight
+      ? rect.top - menuHeight
+      : rect.bottom + 4;
+    setMenuPos({ top, left });
     setOpenSelect(itemId);
   }
 
@@ -232,8 +237,8 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
           key={order.id}
           className="overflow-hidden rounded-lg border border-border"
         >
-          <div className="flex items-center justify-between bg-surface-secondary px-4 py-3">
-            <div className="flex items-center gap-4 text-sm">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 bg-surface-secondary px-4 py-3 sm:gap-4">
+            <div className="flex items-center gap-2 text-sm sm:gap-4">
               <span className="font-medium text-foreground">
                 {order.requester.name}
               </span>
@@ -241,7 +246,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                 {new Date(order.created).toLocaleDateString("ru-RU")}
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="ml-auto flex items-center gap-2">
               <span className="text-xs text-text-secondary">
                 {order.items.reduce((s, it) => s + it.quantity, 0)} ед.
               </span>
@@ -249,7 +254,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                 <button
                   onClick={() => handleDeleteOrder(order.id)}
                   disabled={deleteOrder.isPending || !order.items.every((it) => it.status === "RECEIVED")}
-                  className="group flex size-7 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50 dark:hover:bg-red-950 dark:hover:text-red-400"
+                  className="group flex size-7 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50 dark:hover:bg-red-950 dark:hover:text-red-400 max-sm:min-h-11 max-sm:min-w-11"
                   title={
                     order.items.every((it) => it.status === "RECEIVED")
                       ? "Удалить заявку"
@@ -262,24 +267,24 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-sm:border-t max-sm:border-border">
             <table className="w-full text-sm">
-            <thead className="bg-surface">
+            <thead className="bg-surface max-sm:hidden">
               <tr>
-                <th className="px-4 py-2 text-left font-medium text-text-secondary">Продукт</th>
-                <th className="px-4 py-2 text-left font-medium text-text-secondary">Ед.</th>
-                <th className="px-4 py-2 text-right font-medium text-text-secondary">Кол-во</th>
-                <th className="px-4 py-2 text-left font-medium text-text-secondary">Статус</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">Продукт</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">Ед.</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-right font-medium text-text-secondary">Кол-во</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">Статус</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {order.items.map((item) => (
                 <React.Fragment key={item.id}>
-                  <tr className="hover:bg-surface">
-                    <td className="px-4 py-2">
+                  <tr className="hover:bg-surface max-sm:flex max-sm:flex-col max-sm:border-b max-sm:border-border max-sm:px-4 max-sm:py-2.5 max-sm:gap-1 max-sm:last:border-b-0">
+                    <td className="px-2 py-1.5 sm:px-4 sm:py-2 max-sm:flex max-sm:items-center max-sm:justify-between max-sm:gap-2 max-sm:p-0">
                       <button
                         onClick={() => toggleItem(item.id, order.id)}
-                        className="flex items-center gap-1.5 text-left text-foreground transition-colors hover:text-primary"
+                        className="flex max-sm:min-h-11 items-center gap-1.5 text-left text-foreground transition-colors hover:text-primary"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -295,7 +300,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                             clipRule="evenodd"
                           />
                         </svg>
-                        {item.product.title}
+                        <span className="max-w-40 truncate sm:max-w-60">{item.product.title}</span>
                         {item.comment && (
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -311,16 +316,19 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                           </svg>
                         )}
                       </button>
+                      <span className="sm:hidden text-xs text-text-secondary tabular-nums whitespace-nowrap">
+                        {item.quantity} {item.units.title}
+                      </span>
                     </td>
-                    <td className="px-4 py-2 text-text-secondary">
+                    <td className="px-2 py-1.5 sm:px-4 sm:py-2 text-text-secondary max-sm:hidden">
                       {item.units.title}
                     </td>
-                    <td className="px-4 py-2 text-right text-foreground">
+                    <td className="px-2 py-1.5 sm:px-4 sm:py-2 text-right text-foreground max-sm:hidden">
                       {item.quantity}
                     </td>
-                    <td className="px-4 py-2">
+                    <td className="px-2 py-1.5 sm:px-4 sm:py-2 max-sm:border-0 max-sm:p-0 max-sm:pt-1.5">
                       {readOnly ? (
-                        <span className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 ${STATUS_COLORS[item.status]}`}>
+                        <span className="inline-flex max-sm:min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium max-sm:w-full max-sm:justify-center max-sm:px-3 max-sm:py-1.5 max-sm:text-sm ring-1 ring-inset ring-black/5 ${STATUS_COLORS[item.status]}">
                           <StatusIcon status={item.status} />
                           {STATUS_LABELS[item.status]}
                         </span>
@@ -331,7 +339,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                               if (item.status !== "RECEIVED") openMenu(item.id, e.currentTarget);
                             }}
                             disabled={updateStatus.isPending}
-                            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 transition-colors ${STATUS_COLORS[item.status]} disabled:opacity-50 ${item.status === "RECEIVED" ? "cursor-default" : "cursor-pointer"}`}
+                            className={`inline-flex max-sm:min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium max-sm:w-full max-sm:justify-center max-sm:px-3 max-sm:py-1.5 max-sm:text-sm ring-1 ring-inset ring-black/5 transition-colors ${STATUS_COLORS[item.status]} disabled:opacity-50 ${item.status === "RECEIVED" ? "cursor-default" : "cursor-pointer"}`}
                           >
                             <StatusIcon status={item.status} />
                             {STATUS_LABELS[item.status]}
@@ -341,8 +349,8 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                     </td>
                   </tr>
                   {expandedItem === item.id && (
-                    <tr key={`${item.id}-log`}>
-                      <td colSpan={4} className="bg-surface-secondary px-4 py-3">
+                    <tr key={`${item.id}-log`} className="max-sm:flex max-sm:flex-col max-sm:px-4 max-sm:py-2.5">
+                      <td colSpan={4} className="bg-surface-secondary px-3 py-2 sm:px-4 sm:py-3 max-sm:p-0">
                         <div className="space-y-3">
                           {/* Комментарий к позиции */}
                           {item.comment && (
@@ -447,7 +455,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
             <button
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={safePage === 0}
-              className="rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-surface-secondary disabled:opacity-30"
+              className="rounded-md px-3 py-1.5 text-sm max-sm:py-2 transition-colors hover:bg-surface-secondary disabled:opacity-30 max-sm:min-h-11"
             >
               ← Назад
             </button>
@@ -455,7 +463,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
               <button
                 key={i}
                 onClick={() => setPage(i)}
-                className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
+                className={`rounded-md px-3 py-1.5 text-sm max-sm:py-2 transition-colors max-sm:min-h-11 ${
                   i === safePage
                     ? "bg-primary text-primary-foreground"
                     : "hover:bg-surface-secondary"
@@ -467,7 +475,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
             <button
               onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
               disabled={safePage === totalPages - 1}
-              className="rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-surface-secondary disabled:opacity-30"
+              className="rounded-md px-3 py-1.5 text-sm max-sm:py-2 transition-colors hover:bg-surface-secondary disabled:opacity-30 max-sm:min-h-11"
             >
               Вперед →
             </button>

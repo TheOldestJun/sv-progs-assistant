@@ -41,7 +41,7 @@ export default async function DashboardPage() {
   const isAdmin = roles.includes("ADMIN");
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-10 sm:px-6 lg:px-8">
+    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-4 sm:px-6 sm:py-10 lg:px-8">
       <div className="mb-8 flex items-center justify-between border-b border-border pb-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">

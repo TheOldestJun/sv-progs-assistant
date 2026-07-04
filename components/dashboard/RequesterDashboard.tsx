@@ -140,8 +140,8 @@ export function RequesterDashboard() {
   const canAdd = isItemComplete(lastItem);
 
   return (
-    <section className="rounded-xl border border-border bg-surface p-6">
-      <div className="mb-6 flex items-center gap-3">
+    <section className="rounded-xl border border-border bg-surface p-4 sm:p-6">
+      <div className="mb-4 flex items-center gap-3 sm:mb-6">
         <span className="text-2xl">📝</span>
         <div>
           <h2 className="text-lg font-semibold text-foreground">
@@ -199,28 +199,30 @@ export function RequesterDashboard() {
                   onCreate={handleUnitCreate}
                 />
 
-                <input
-                  type="number"
-                  aria-label="Количество"
-                  step="0.1"
-                  min="0"
-                  value={item.quantity}
-                  onChange={(e) => updateItem(item.id, { quantity: e.target.value })}
-                  onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                  placeholder="0"
-                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary"
-                />
+                <div className="flex items-center gap-2 sm:contents">
+                  <input
+                    type="number"
+                    aria-label="Количество"
+                    step="0.1"
+                    min="0"
+                    value={item.quantity}
+                    onChange={(e) => updateItem(item.id, { quantity: e.target.value })}
+                    onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                    placeholder="0"
+                    className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary"
+                  />
 
-                <button
-                  type="button"
-                  onClick={() => removeItem(item.id)}
-                  disabled={items.length === 1}
-                  className="flex h-9 w-8 items-center justify-center rounded-md text-text-secondary transition-colors enabled:hover:bg-red-50 enabled:hover:text-red-500 disabled:opacity-0 dark:enabled:hover:bg-red-950 dark:enabled:hover:text-red-400"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
-                    <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-                  </svg>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => removeItem(item.id)}
+                    disabled={items.length === 1}
+                    className="flex h-9 w-8 shrink-0 items-center justify-center rounded-md text-text-secondary transition-colors enabled:hover:bg-red-50 enabled:hover:text-red-500 disabled:opacity-0 dark:enabled:hover:bg-red-950 dark:enabled:hover:text-red-400"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
+                      <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               <textarea

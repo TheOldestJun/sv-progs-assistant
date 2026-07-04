@@ -32,7 +32,7 @@ export async function Header() {
         <div className="flex items-center gap-4">
           <Link
             href="/help"
-            className="text-sm font-medium text-text-secondary transition-colors hover:text-foreground"
+            className="flex max-sm:min-h-11 items-center rounded-md px-3 text-sm font-medium text-text-secondary transition-colors hover:text-foreground"
           >
             Помощь
           </Link>

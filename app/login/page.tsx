@@ -15,7 +15,7 @@ export default function LoginPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center px-4 py-12">
-      <div className="w-full rounded-xl border border-border bg-surface p-8 shadow-sm">
+      <div className="w-full rounded-xl border border-border bg-surface p-6 sm:p-8 shadow-sm">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             {showResetForm ? "Сброс пароля" : "Вход в систему"}
@@ -79,7 +79,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowResetForm(true)}
-                className="text-sm text-accent transition-colors hover:text-accent-hover"
+                className="flex max-sm:min-h-11 w-full items-center justify-center rounded-md px-4 text-sm text-accent transition-colors hover:text-accent-hover"
               >
                 Забыли пароль?
               </button>
@@ -94,7 +94,7 @@ export default function LoginPage() {
 
       <Link
         href="/"
-        className="mt-6 text-sm text-text-secondary transition-colors hover:text-foreground"
+        className="mt-6 flex max-sm:min-h-11 items-center justify-center rounded-md px-4 text-sm text-text-secondary transition-colors hover:text-foreground"
       >
         &larr; На главную
       </Link>
@@ -145,7 +145,7 @@ function ResetForm({ onBack }: { onBack: () => void }) {
         <button
           type="button"
           onClick={onBack}
-          className="text-sm text-text-secondary transition-colors hover:text-foreground"
+          className="flex max-sm:min-h-11 w-full items-center justify-center rounded-md px-4 text-sm text-text-secondary transition-colors hover:text-foreground"
         >
           &larr; Назад к входу
         </button>

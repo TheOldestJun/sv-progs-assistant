@@ -121,7 +121,7 @@ export function DatePicker({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-colors hover:border-primary focus:border-primary focus:ring-1 focus:ring-primary"
+        className="flex max-sm:min-h-11 w-full items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-colors hover:border-primary focus:border-primary focus:ring-1 focus:ring-primary"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -146,7 +146,7 @@ export function DatePicker({
             <button
               type="button"
               onClick={prevMonth}
-              className="flex size-7 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-surface-secondary hover:text-foreground"
+              className="flex size-7 max-sm:min-h-11 max-sm:min-w-11 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-surface-secondary hover:text-foreground"
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
                 <path fillRule="evenodd" d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z" clipRule="evenodd" />
@@ -158,7 +158,7 @@ export function DatePicker({
             <button
               type="button"
               onClick={nextMonth}
-              className="flex size-7 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-surface-secondary hover:text-foreground"
+              className="flex size-7 max-sm:min-h-11 max-sm:min-w-11 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-surface-secondary hover:text-foreground"
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
                 <path fillRule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
@@ -183,7 +183,7 @@ export function DatePicker({
                   key={day}
                   type="button"
                   onClick={() => selectDay(day)}
-                  className={`rounded-md py-1 text-center text-sm transition-colors hover:bg-surface-secondary ${
+                  className={`flex max-sm:min-h-11 w-full items-center justify-center rounded-md py-1 text-sm transition-colors hover:bg-surface-secondary ${
                     formatDateValue(viewYear, viewMonth, day) === value
                       ? "bg-primary text-primary-foreground hover:bg-primary-hover"
                       : formatDateValue(viewYear, viewMonth, day) === todayStr
@@ -204,7 +204,7 @@ export function DatePicker({
                 onChange("");
                 setOpen(false);
               }}
-              className="mt-2 w-full rounded-md py-1 text-xs text-text-secondary transition-colors hover:bg-surface-secondary hover:text-foreground"
+              className="mt-2 flex max-sm:min-h-11 w-full items-center justify-center rounded-md text-xs text-text-secondary transition-colors hover:bg-surface-secondary hover:text-foreground"
             >
               Очистить
             </button>

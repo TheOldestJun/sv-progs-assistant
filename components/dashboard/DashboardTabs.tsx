@@ -36,7 +36,7 @@ export function DashboardTabs({
               aria-selected={i === active}
               onClick={() => setActive(i)}
               className={
-                "flex items-center gap-2 rounded-t-lg px-4 py-2.5 text-sm font-medium transition-colors " +
+                "flex items-center gap-1 rounded-t-lg px-3 py-2 text-xs font-medium transition-colors sm:gap-2 sm:px-4 sm:py-2.5 sm:text-sm " +
                 (i === active
                   ? "border-b-2 border-accent-blue text-accent-blue"
                   : "border-b-2 border-transparent text-text-secondary hover:border-border hover:text-foreground")

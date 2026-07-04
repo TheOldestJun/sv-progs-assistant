@@ -68,7 +68,7 @@ export function ArchiveTable() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-surface-secondary p-3">
+      <div className="flex flex-wrap items-end gap-2 rounded-lg border border-border bg-surface-secondary p-2 sm:gap-3 sm:p-3">
         <div>
           <label className="mb-1 block text-xs font-medium text-text-secondary">Заказчик</label>
           <input
@@ -78,7 +78,7 @@ export function ArchiveTable() {
               setRequester(e.target.value);
             }}
             placeholder="Введите имя..."
-            className="w-48 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary"
+            className="w-full sm:w-48 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm max-sm:py-2.5 text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary max-sm:min-h-11"
           />
         </div>
         <DatePicker label="Дата с" value={dateFrom} onChange={(v) => { setDateFrom(v); setPage(0); }} />
@@ -103,7 +103,7 @@ export function ArchiveTable() {
             {data.data.map((entry) => (
               <div key={entry.id} className="overflow-hidden rounded-lg border border-border">
                 <div
-                  className="flex cursor-pointer items-center gap-4 bg-surface-secondary px-4 py-3 transition-colors hover:bg-surface"
+                  className="flex cursor-pointer flex-wrap items-center gap-x-4 gap-y-1.5 bg-surface-secondary px-2 py-1.5 sm:px-4 sm:py-2.5 transition-colors hover:bg-surface sm:gap-4 sm:py-3"
                   onClick={() => setExpanded(expanded === entry.id ? null : entry.id)}
                 >
                   <span className={`text-xs text-text-secondary transition-transform ${expanded === entry.id ? "rotate-90" : ""}`}>▶</span>
@@ -123,19 +123,19 @@ export function ArchiveTable() {
                     <table className="w-full text-sm">
                       <thead className="bg-surface">
                         <tr>
-                          <th className="px-4 py-2 text-left font-medium text-text-secondary">Продукт</th>
-                          <th className="px-4 py-2 text-left font-medium text-text-secondary">Ед.</th>
-                          <th className="px-4 py-2 text-right font-medium text-text-secondary">Кол-во</th>
-                          <th className="px-4 py-2 text-left font-medium text-text-secondary">Комментарий</th>
+                          <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">Продукт</th>
+                          <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">Ед.</th>
+                          <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-right font-medium text-text-secondary">Кол-во</th>
+                          <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">Комментарий</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
                         {entry.items.map((item, idx) => (
                           <tr key={idx} className="hover:bg-surface">
-                            <td className="px-4 py-2 text-foreground">{item.product}</td>
-                            <td className="px-4 py-2 text-text-secondary">{item.unit}</td>
-                            <td className="px-4 py-2 text-right text-foreground">{item.quantity}</td>
-                            <td className="px-4 py-2 text-text-secondary">
+                            <td className="px-2 py-1.5 sm:px-4 sm:py-2 text-foreground">{item.product}</td>
+                            <td className="px-2 py-1.5 sm:px-4 sm:py-2 text-text-secondary">{item.unit}</td>
+                            <td className="px-2 py-1.5 sm:px-4 sm:py-2 text-right text-foreground">{item.quantity}</td>
+                            <td className="px-2 py-1.5 sm:px-4 sm:py-2 text-text-secondary">
                               {item.comment || "—"}
                             </td>
                           </tr>
@@ -158,7 +158,7 @@ export function ArchiveTable() {
                 <button
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                   disabled={safePage === 0}
-                  className="rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-surface-secondary disabled:opacity-30"
+                  className="rounded-md px-3 py-1.5 text-sm max-sm:py-2 transition-colors hover:bg-surface-secondary disabled:opacity-30 max-sm:min-h-11"
                 >
                   ← Назад
                 </button>
@@ -166,7 +166,7 @@ export function ArchiveTable() {
                   <button
                     key={i}
                     onClick={() => setPage(i)}
-                    className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
+                    className={`rounded-md px-3 py-1.5 text-sm max-sm:py-2 transition-colors max-sm:min-h-11 ${
                       i === safePage
                         ? "bg-primary text-primary-foreground"
                         : "hover:bg-surface-secondary"
@@ -178,7 +178,7 @@ export function ArchiveTable() {
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                   disabled={safePage === totalPages - 1}
-                  className="rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-surface-secondary disabled:opacity-30"
+                  className="rounded-md px-3 py-1.5 text-sm max-sm:py-2 transition-colors hover:bg-surface-secondary disabled:opacity-30 max-sm:min-h-11"
                 >
                   Вперед →
                 </button>

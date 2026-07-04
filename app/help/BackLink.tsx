@@ -12,7 +12,7 @@ export function BackLink() {
   return (
     <button
       onClick={() => router.back()}
-      className="mb-8 py-2 text-left text-sm text-text-secondary transition-colors hover:text-foreground"
+      className="mb-8 flex max-sm:min-h-11 items-center rounded-md px-3 text-left text-sm text-text-secondary transition-colors hover:text-foreground"
     >
       &larr; Назад
     </button>

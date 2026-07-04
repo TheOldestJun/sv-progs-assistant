@@ -33,7 +33,7 @@ export function ThemeSwitcher() {
           onClick={() => setTheme(t)}
           title={labels[t]}
           className={
-            "flex size-9 items-center justify-center rounded-md text-sm transition-colors " +
+            "flex size-9 max-sm:min-h-11 max-sm:min-w-11 items-center justify-center rounded-md text-sm transition-colors " +
             (theme === t
               ? "bg-primary text-primary-foreground shadow-xs"
               : "text-text-secondary hover:text-foreground hover:bg-surface-secondary")

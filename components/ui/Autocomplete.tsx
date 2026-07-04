@@ -60,7 +60,7 @@ export function Autocomplete({
   }, [query]);
 
   useEffect(() => {
-    function handleClick(e: MouseEvent) {
+    function handleClick(e: MouseEvent | TouchEvent) {
       if (
         inputRef.current &&
         !inputRef.current.contains(e.target as Node) &&
@@ -71,7 +71,11 @@ export function Autocomplete({
       }
     }
     document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    document.addEventListener("touchstart", handleClick, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("touchstart", handleClick);
+    };
   }, []);
 
   function handleInputChange(e: ChangeEvent<HTMLInputElement>) {
@@ -143,7 +147,7 @@ export function Autocomplete({
         onFocus={() => setOpen(true)}
         onKeyDown={handleKeyDown}
         placeholder={value ? value.title : placeholder}
-        className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary"
+        className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm max-sm:py-2.5 text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary max-sm:min-h-11"
       />
       {open && (filtered.length > 0 || noMatch) && (
         <ul
@@ -155,7 +159,7 @@ export function Autocomplete({
               key={item.id}
               onClick={() => selectItem(item)}
               onMouseEnter={() => setFocusedIdx(idx)}
-              className={`flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm ${
+              className={`flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm max-sm:py-2.5 max-sm:min-h-11 ${
                 idx === focusedIdx
                   ? "bg-primary text-primary-foreground"
                   : "text-foreground hover:bg-surface-secondary"
@@ -168,7 +172,7 @@ export function Autocomplete({
             <li
               onClick={handleCreate}
               onMouseEnter={() => setFocusedIdx(filtered.length)}
-              className={`flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm ${
+              className={`flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm max-sm:py-2.5 max-sm:min-h-11 ${
                 focusedIdx === filtered.length
                   ? "bg-accent text-primary-foreground"
                   : "text-accent hover:bg-surface-secondary"

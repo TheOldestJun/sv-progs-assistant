@@ -7,7 +7,9 @@
     "dev:chrome": "start \"Next.js Dev\" cmd /c \"npm run dev\" && ping -n 12 127.0.0.1 >nul && start \"Chrome Debug\" \"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" --user-data-dir=\"%TEMP%\\chrome-debug\" --no-first-run --no-default-browser-check http://localhost:3000",
     "build": "next build",
     "start": "next start",
-    "reseed": "npx tsx prisma/reseed-orders.ts"
+    "reseed": "npx tsx prisma/reseed-orders.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "^7.8.0",
@@ -31,6 +33,7 @@
     "babel-plugin-react-compiler": "1.0.0",
     "prisma": "^7.8.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.9"
   }
 }
