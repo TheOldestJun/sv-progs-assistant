@@ -14,6 +14,15 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 - Never use `db push` in dev mode. Only use `prisma migrate dev` for schema changes.
 - `db push` skips migration history and causes drift; migrations keep history in sync.
+- Uses `prisma-client-js` generator (NOT driver adapter). PrismaClient from `@prisma/client`.
+- `DATABASE_URL` env var for connection (MySQL/MariaDB).
+- `prisma generate` outputs to `node_modules/@prisma/client` (default).
+
+## Vercel
+
+- `vercel-build` script: `prisma generate && prisma migrate deploy && next build`
+- Prisma uses built-in connection pooling — no `attachDatabasePool` (incompatible with PrismaClient)
+- Set `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET` in Vercel Dashboard env vars
 
 ## Debug browser
 
