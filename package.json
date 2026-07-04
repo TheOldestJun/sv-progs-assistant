@@ -9,17 +9,17 @@
     "start": "next start",
     "reseed": "npx tsx prisma/reseed-orders.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "vercel-build": "prisma generate && prisma migrate deploy && next build"
   },
   "dependencies": {
-    "@prisma/adapter-mariadb": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@tanstack/react-query": "^5.101.0",
     "@tanstack/react-query-devtools": "^5.101.2",
+    "@vercel/functions": "^3.7.5",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
     "jose": "^6.2.3",
-    "mariadb": "^3.5.3",
     "next": "16.2.9",
     "react": "19.2.4",
     "react-dom": "19.2.4"

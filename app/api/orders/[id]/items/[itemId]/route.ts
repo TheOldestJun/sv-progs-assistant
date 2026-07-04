@@ -5,7 +5,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";
-import { OrderItemStatus, Role } from "@/app/generated/prisma/enums";
+import { OrderItemStatus, Role } from "@prisma/client";
 
 export async function GET(
   _request: Request,

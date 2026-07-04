@@ -181,7 +181,8 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
 
   // itemsMap — O(1) lookup for status menu instead of scanning all items each time
   const itemsMap = useMemo(() => {
-    const map = new Map<string, (typeof orders)[number]["items"][number]>();
+    type OrderItem = NonNullable<typeof orders>[number]["items"][number];
+    const map = new Map<string, OrderItem>();
     if (!orders) return map;
     for (const o of orders) {
       for (const item of o.items) {

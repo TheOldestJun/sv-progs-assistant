@@ -14,18 +14,9 @@
  * Запуск: npm run reseed
  */
 import "dotenv/config";
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
-import { PrismaClient } from "../app/generated/prisma/client";
+import { PrismaClient } from "@prisma/client";
 
-const adapter = new PrismaMariaDb({
-  host: process.env.DB_HOST || "localhost",
-  port: Number(process.env.DB_PORT) || 3306,
-  user: process.env.DB_USER || "",
-  password: process.env.DB_PASSWORD || "",
-  database: process.env.DB_NAME || "",
-  connectionLimit: 5,
-});
-const db = new PrismaClient({ adapter });
+const db = new PrismaClient();
 
 async function main() {
   console.log("Очистка таблиц (кроме пользователей)...");

@@ -23,7 +23,7 @@ import bcrypt from "bcryptjs";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "./db";
-import type { Role } from "../generated/prisma/enums";
+import type { Role } from "@prisma/client";
 import { verifyToken, signToken, signRefreshToken, verifyRefreshToken } from "./jwt";
 import type { SessionUser } from "./jwt";
 import { checkRateLimit, recordAttempt } from "./rate-limit";
