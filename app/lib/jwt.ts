@@ -9,12 +9,17 @@
  * Хранимые поля: sub (userId), name, email, roles.
  * ADMIN-роль даёт доступ только к admin-функциям — никаких неявных расширений прав.
  *
- * JWT_SECRET берётся из .env, инициализируется при первом импорте (module-level).
+ * JWT_SECRET и JWT_REFRESH_SECRET берутся из .env.
+ * Если JWT_REFRESH_SECRET не задан — используется JWT_SECRET (обратная совместимость).
  */
 import { jwtVerify, SignJWT } from "jose";
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || (() => { throw new Error("JWT_SECRET не задан в .env"); })(),
+);
+
+const JWT_REFRESH_SECRET = new TextEncoder().encode(
+  process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || (() => { throw new Error("JWT_SECRET не задан в .env"); })(),
 );
 
 /** Сериализованный пользователь — то, что лежит в JWT и возвращается из getSession() */
@@ -93,13 +98,13 @@ export async function signRefreshToken(payload: TokenPayload): Promise<string> {
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("30d")
-    .sign(JWT_SECRET);
+    .sign(JWT_REFRESH_SECRET);
 }
 
 /** Проверить refresh-токен — вернуть payload или null (любая ошибка → null). */
 export async function verifyRefreshToken(token: string): Promise<TokenPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, JWT_REFRESH_SECRET);
     return {
       sub: payload.sub as string,
       name: (payload.name as string) || "",

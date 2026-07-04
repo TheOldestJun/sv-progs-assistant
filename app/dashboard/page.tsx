@@ -15,6 +15,8 @@ import { RequesterDashboard } from "@/components/dashboard/RequesterDashboard";
 import { ArchiveDashboard } from "@/components/dashboard/ArchiveDashboard";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 
+export const dynamic = "force-dynamic";
+
 const ARCHIVE_TAB = { role: "__archive__", label: "Архив", icon: "🗃️" };
 
 const roleMeta: Record<string, { label: string; icon: string }> = {

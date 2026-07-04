@@ -1,6 +1,8 @@
 /*
  * Layout админ-панели: навигация (табы с бейджем), кнопка выхода.
  */
+export const dynamic = "force-dynamic";
+
 import { db } from "@/app/lib/db";
 import { logoutAction } from "../lib/auth";
 import { AdminNav } from "./AdminNav";

@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeAll } from "vitest";
 
-// JWT_SECRET должен быть задан до импорта jwt-модуля
+// JWT_SECRET и JWT_REFRESH_SECRET должны быть заданы до импорта jwt-модуля
 process.env.JWT_SECRET = "test-secret-at-least-256-bits-long-for-hs256-algorithm!!";
+process.env.JWT_REFRESH_SECRET = "test-refresh-secret-at-least-256-bits-long-for-hs256!!";
 
 const {
   signToken,
@@ -75,6 +76,17 @@ describe("JWT", () => {
 
     it("returns null for an invalid refresh token", async () => {
       const payload = await verifyRefreshToken("invalid.token.here");
+      expect(payload).toBeNull();
+    });
+
+    it("rejects refresh token signed with JWT_SECRET (different key)", async () => {
+      const { SignJWT } = await import("jose");
+      const token = await new SignJWT({ ...testPayload })
+        .setProtectedHeader({ alg: "HS256" })
+        .setExpirationTime("30d")
+        .sign(new TextEncoder().encode(process.env.JWT_SECRET));
+
+      const payload = await verifyRefreshToken(token);
       expect(payload).toBeNull();
     });
   });
