@@ -14,14 +14,14 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 - Never use `db push` in dev mode. Only use `prisma migrate dev` for schema changes.
 - `db push` skips migration history and causes drift; migrations keep history in sync.
-- Uses `prisma-client-js` generator (NOT driver adapter). PrismaClient from `@prisma/client`.
+- Uses `@prisma/adapter-mariadb` with `prisma-client-js` generator. `PrismaClient` from `@prisma/client` requires `{ adapter }` in Prisma v7.
 - `DATABASE_URL` env var for connection (MySQL/MariaDB).
-- `prisma generate` outputs to `node_modules/@prisma/client` (default).
+- `serverExternalPackages` in `next.config.ts`: `["@prisma/client", "@prisma/adapter-mariadb", "mariadb"]`
 
 ## Vercel
 
 - `vercel-build` script: `prisma generate && prisma migrate deploy || echo 'Migrate skipped (no DB)' && next build` — migrate deploy is non-fatal; build continues if DB is unreachable during build
-- Prisma uses built-in connection pooling — no `attachDatabasePool` (incompatible with PrismaClient)
+- Prisma uses `@prisma/adapter-mariadb` — `new PrismaClient({ adapter })`
 - Set `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET` in Vercel Dashboard env vars (JWT_REFRESH_SECRET опционален — fallback на JWT_SECRET)
 - **Add `export const dynamic = "force-dynamic"`** to any server component page that imports `db` or renders a component that queries the DB — prevents build-time pre-rendering errors when DB is unreachable
 
