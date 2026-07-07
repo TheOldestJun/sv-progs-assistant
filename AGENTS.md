@@ -20,7 +20,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## Vercel
 
-- `vercel-build` script: `prisma generate && prisma migrate deploy || echo 'Migrate skipped (no DB)' && next build` — migrate deploy is non-fatal; build continues if DB is unreachable during build
+- `vercel-build` script: `prisma generate && next build` — migrate deploy не нужен, т.к. dev и prod используют одну БД
 - Prisma uses `@prisma/adapter-mariadb` — `new PrismaClient({ adapter })`
 - Set `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET` in Vercel Dashboard env vars (JWT_REFRESH_SECRET опционален — fallback на JWT_SECRET)
 - **Add `export const dynamic = "force-dynamic"`** to any server component page that imports `db` or renders a component that queries the DB — prevents build-time pre-rendering errors when DB is unreachable
