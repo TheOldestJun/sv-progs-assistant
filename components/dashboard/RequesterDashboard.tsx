@@ -165,16 +165,9 @@ export function RequesterDashboard() {
           <hr className="border-border" />
 
           <div className="space-y-4">
-            <div className="hidden items-center gap-3 px-1 text-xs font-medium uppercase tracking-wider text-text-secondary sm:grid sm:grid-cols-[2fr_1fr_120px_32px]">
-              <span>ТМЦ</span>
-              <span>Единица измерения</span>
-              <span>Количество</span>
-              <span />
-            </div>
-
           {items.map((item, idx) => (
             <div key={item.id} className="space-y-2">
-              <div className="items-end gap-3 sm:grid sm:grid-cols-[2fr_1fr_120px_32px]">
+              <div className="items-end gap-3 sm:grid sm:grid-cols-[3fr_80px_100px_32px]">
                 <Autocomplete
                   placeholder="ТМЦ"
                   items={
@@ -188,7 +181,7 @@ export function RequesterDashboard() {
                 />
 
                 <Autocomplete
-                  placeholder="Единица измерения"
+                  placeholder="ЕИ"
                   items={
                     unitCreation.isPending
                       ? [...units, { id: "pending", title: "Сохранение..." }]
@@ -208,7 +201,7 @@ export function RequesterDashboard() {
                     value={item.quantity}
                     onChange={(e) => updateItem(item.id, { quantity: e.target.value })}
                     onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                    placeholder="Количество"
+                    placeholder="КОЛ-ВО"
                     className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary"
                   />
 
