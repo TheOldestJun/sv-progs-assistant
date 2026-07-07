@@ -147,6 +147,7 @@ export function StatusChangeDialog({
                   label="Дата смены статуса"
                   value={date}
                   onChange={setDate}
+                  portal
                 />
               </div>
             </div>

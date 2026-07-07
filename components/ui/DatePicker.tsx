@@ -36,13 +36,18 @@ export function DatePicker({
   value,
   onChange,
   label,
+  portal,
 }: {
   value: string;
   onChange: (val: string) => void;
   label?: string;
+  /** Рендерить календарь вне потока (fixed позиционирование) — для использования внутри диалогов/модалок */
+  portal?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const [calPos, setCalPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const parsed = value ? new Date(value + "T00:00:00") : new Date();
   const [viewYear, setViewYear] = useState(parsed.getFullYear());
   const [viewMonth, setViewMonth] = useState(parsed.getMonth());
@@ -85,6 +90,22 @@ export function DatePicker({
     return `${d.getDate()} ${MONTHS_GENITIVE[d.getMonth()]} ${d.getFullYear()}`;
   }, [value]);
 
+  function toggleOpen() {
+    if (portal && !open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      const calHeight = 300;
+      const calWidth = 288; // w-72
+      const left = rect.left + calWidth > window.innerWidth
+        ? window.innerWidth - calWidth - 8
+        : rect.left;
+      const top = rect.bottom + 4 + calHeight > window.innerHeight
+        ? rect.top - calHeight
+        : rect.bottom + 4;
+      setCalPos({ top, left });
+    }
+    setOpen((o) => !o);
+  }
+
   const selectDay = useCallback(
     (day: number) => {
       onChange(formatDateValue(viewYear, viewMonth, day));
@@ -119,8 +140,9 @@ export function DatePicker({
         </label>
       )}
       <button
+        ref={btnRef}
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggleOpen}
         className="flex max-sm:min-h-11 w-full items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-colors hover:border-primary focus:border-primary focus:ring-1 focus:ring-primary"
       >
         <svg
@@ -141,7 +163,12 @@ export function DatePicker({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-72 rounded-lg border border-border bg-surface p-3 shadow-lg">
+        <div
+          className={`z-50 mt-1 w-72 rounded-lg border border-border bg-surface p-3 shadow-lg ${
+            portal ? "fixed" : "absolute left-0 top-full"
+          }`}
+          style={portal ? { top: calPos.top, left: calPos.left } : undefined}
+        >
           <div className="mb-2 flex items-center justify-between">
             <button
               type="button"
