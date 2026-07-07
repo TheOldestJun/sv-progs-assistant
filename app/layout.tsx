@@ -12,6 +12,7 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ToastProvider } from "@/components/ui/Toast";
 import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
 import { QueryProvider } from "@/app/providers/QueryProvider";
+import { Analytics } from "@vercel/analytics/next";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 
@@ -73,6 +74,7 @@ export default function RootLayout({
                 {/* flex-1 flex flex-col чтобы main растягивался на всю высоту */}
                 <main className="flex-1 flex flex-col">{children}</main>
                 <Footer />
+                <Analytics />
               </ConfirmProvider>
             </ToastProvider>
           </QueryProvider>
