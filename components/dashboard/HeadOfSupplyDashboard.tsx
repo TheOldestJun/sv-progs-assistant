@@ -208,8 +208,8 @@ export function HeadOfSupplyDashboard() {
 
           <div className="space-y-4">
             <div className="hidden items-center gap-3 px-1 text-xs font-medium uppercase tracking-wider text-text-secondary sm:grid sm:grid-cols-[1fr_1fr_120px_32px]">
-              <span>Продукт</span>
-              <span>Единица</span>
+              <span>ТМЦ</span>
+              <span>Единица измерения</span>
               <span>Количество</span>
               <span />
             </div>
@@ -218,7 +218,7 @@ export function HeadOfSupplyDashboard() {
             <div key={item.id} className="space-y-2">
               <div className="items-end gap-3 sm:grid sm:grid-cols-[1fr_1fr_120px_32px]">
                 <Autocomplete
-                  placeholder="Продукт"
+                  placeholder="ТМЦ"
                   items={
                     productCreation.isPending
                       ? [...products, { id: "pending", title: "Сохранение..." }]
@@ -230,7 +230,7 @@ export function HeadOfSupplyDashboard() {
                 />
 
                 <Autocomplete
-                  placeholder="Единица"
+                  placeholder="Единица измерения"
                   items={
                     unitCreation.isPending
                       ? [...units, { id: "pending", title: "Сохранение..." }]

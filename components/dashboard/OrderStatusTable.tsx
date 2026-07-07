@@ -297,7 +297,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
             <table className="w-full text-sm">
             <thead className="bg-surface max-sm:hidden">
               <tr>
-                <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">Продукт</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">ТМЦ</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">Ед.</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-right font-medium text-text-secondary">Кол-во</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">Статус</th>
@@ -308,7 +308,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                   <React.Fragment key={item.id}>
                   <tr className="hover:bg-surface max-sm:flex max-sm:flex-col max-sm:border-b max-sm:border-border max-sm:px-4 max-sm:py-2.5 max-sm:gap-1 max-sm:last:border-b-0">
                     <td className="px-2 py-1.5 sm:px-4 sm:py-2 max-sm:flex max-sm:items-center max-sm:gap-2 max-sm:p-0">
-                      <span className="text-xs text-text-secondary sm:hidden shrink-0">Продукт:</span>
+                      <span className="text-xs text-text-secondary sm:hidden shrink-0">ТМЦ:</span>
                       <button
                         onClick={() => toggleItem(item.id, order.id)}
                         className="flex max-sm:min-h-11 items-center gap-1.5 text-left text-foreground transition-colors hover:text-primary"
