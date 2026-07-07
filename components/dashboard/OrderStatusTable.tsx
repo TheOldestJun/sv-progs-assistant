@@ -305,9 +305,10 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
             </thead>
             <tbody className="divide-y divide-border">
               {order.items.map((item) => (
-                <React.Fragment key={item.id}>
+                  <React.Fragment key={item.id}>
                   <tr className="hover:bg-surface max-sm:flex max-sm:flex-col max-sm:border-b max-sm:border-border max-sm:px-4 max-sm:py-2.5 max-sm:gap-1 max-sm:last:border-b-0">
-                    <td className="px-2 py-1.5 sm:px-4 sm:py-2 max-sm:flex max-sm:items-center max-sm:justify-between max-sm:gap-2 max-sm:p-0">
+                    <td className="px-2 py-1.5 sm:px-4 sm:py-2 max-sm:flex max-sm:items-center max-sm:gap-2 max-sm:p-0">
+                      <span className="text-xs text-text-secondary sm:hidden shrink-0">Продукт:</span>
                       <button
                         onClick={() => toggleItem(item.id, order.id)}
                         className="flex max-sm:min-h-11 items-center gap-1.5 text-left text-foreground transition-colors hover:text-primary"
@@ -326,7 +327,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                             clipRule="evenodd"
                           />
                         </svg>
-                        <span className="max-w-40 truncate sm:max-w-60">{item.product.title}</span>
+                        <span className="max-w-36 truncate sm:max-w-60">{item.product.title}</span>
                         {item.comment && (
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -342,9 +343,6 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                           </svg>
                         )}
                       </button>
-                      <span className="sm:hidden text-xs text-text-secondary tabular-nums whitespace-nowrap">
-                        {item.quantity} {item.units.title}
-                      </span>
                     </td>
                     <td className="px-2 py-1.5 sm:px-4 sm:py-2 text-text-secondary max-sm:hidden">
                       {item.units.title}
@@ -352,7 +350,39 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                     <td className="px-2 py-1.5 sm:px-4 sm:py-2 text-right text-foreground max-sm:hidden">
                       {item.quantity}
                     </td>
-                    <td className="px-2 py-1.5 sm:px-4 sm:py-2 max-sm:border-0 max-sm:p-0 max-sm:pt-1.5">
+                    <td className="px-2 py-1.5 sm:px-4 sm:py-2 max-sm:flex max-sm:items-center max-sm:gap-2 max-sm:border-0 max-sm:p-0">
+                      <span className="text-xs text-text-secondary sm:hidden shrink-0">Кол-во:</span>
+                      <span className="sm:hidden text-xs text-text-secondary tabular-nums whitespace-nowrap">
+                        {item.quantity} {item.units.title}
+                      </span>
+                      <span className="hidden sm:inline">
+                        {readOnly ? (
+                          <span className="inline-flex max-sm:min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 ${STATUS_COLORS[item.status]}">
+                            <StatusIcon status={item.status} />
+                            {STATUS_LABELS[item.status]}
+                          </span>
+                        ) : (
+                          <div className="relative inline-flex">
+                            <button
+                              onClick={(e) => {
+                                if (item.status !== "RECEIVED") openMenu(item.id, e.currentTarget);
+                              }}
+                              disabled={updateStatus.isPending}
+                              className={`inline-flex max-sm:min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 transition-colors ${STATUS_COLORS[item.status]} disabled:opacity-50 ${item.status === "RECEIVED" ? "cursor-default" : "cursor-pointer"}`}
+                            >
+                              <StatusIcon status={item.status} />
+                              {STATUS_LABELS[item.status]}
+                            </button>
+                          </div>
+                        )}
+                      </span>
+                    </td>
+                  </tr>
+                  {/* Mobile status row — below product+qty */}
+                  <tr className="max-sm:flex max-sm:px-4 max-sm:pb-2.5 sm:hidden">
+                    <td colSpan={4} className="max-sm:p-0">
+                      <span className="text-xs text-text-secondary">Статус:</span>
+                      <div className="mt-1">
                       {readOnly ? (
                         <span className="inline-flex max-sm:min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium max-sm:w-full max-sm:justify-center max-sm:px-3 max-sm:py-1.5 max-sm:text-sm ring-1 ring-inset ring-black/5 ${STATUS_COLORS[item.status]}">
                           <StatusIcon status={item.status} />
@@ -372,6 +402,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                           </button>
                         </div>
                       )}
+                      </div>
                     </td>
                   </tr>
                   {expandedItem === item.id && (
