@@ -165,7 +165,7 @@ export function RequesterDashboard() {
           <hr className="border-border" />
 
           <div className="space-y-4">
-            <div className="hidden items-center gap-3 px-1 text-xs font-medium uppercase tracking-wider text-text-secondary sm:grid sm:grid-cols-[1fr_1fr_120px_32px]">
+            <div className="hidden items-center gap-3 px-1 text-xs font-medium uppercase tracking-wider text-text-secondary sm:grid sm:grid-cols-[2fr_1fr_120px_32px]">
               <span>ТМЦ</span>
               <span>Единица измерения</span>
               <span>Количество</span>
@@ -174,7 +174,7 @@ export function RequesterDashboard() {
 
           {items.map((item, idx) => (
             <div key={item.id} className="space-y-2">
-              <div className="items-end gap-3 sm:grid sm:grid-cols-[1fr_1fr_120px_32px]">
+              <div className="items-end gap-3 sm:grid sm:grid-cols-[2fr_1fr_120px_32px]">
                 <Autocomplete
                   placeholder="ТМЦ"
                   items={
