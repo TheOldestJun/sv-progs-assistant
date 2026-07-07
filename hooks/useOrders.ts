@@ -90,6 +90,7 @@ export function useUpdateOrderItemStatus() {
       itemId,
       status,
       warehouseMode,
+      changedAt,
     }: {
       orderId: string;
       itemId: string;
@@ -97,11 +98,13 @@ export function useUpdateOrderItemStatus() {
       // warehouseMode=true: склад отмечает RECEIVED, сервер проверяет роль WAREHOUSE
       // warehouseMode=false/undefined: другие отделы, RECEIVED запрещён
       warehouseMode?: boolean;
+      /** Дата смены статуса (YYYY-MM-DD) — если не указана, будет now() */
+      changedAt?: string;
     }) => {
       const res = await fetch(`/api/orders/${orderId}/items/${itemId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status, warehouseMode }),
+        body: JSON.stringify({ status, warehouseMode, changedAt }),
       });
       if (!res.ok) {
         const err = await res.json();

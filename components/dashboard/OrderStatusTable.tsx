@@ -14,6 +14,7 @@ import { useDeleteOrder } from "@/hooks/useDeleteOrder";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { IconSearch, IconTrash } from "@/components/ui/Icon";
+import { StatusChangeDialog } from "@/components/dashboard/StatusChangeDialog";
 
 const PAGE_SIZE = 10;
 
@@ -86,6 +87,15 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
   const [page, setPage] = useState(0);
   const statusChoices = warehouseMode ? STATUS_CHOICES.warehouse : STATUS_CHOICES.default;
 
+  // Состояние диалога подтверждения смены статуса
+  const [pendingChange, setPendingChange] = useState<{
+    itemId: string;
+    orderId: string;
+    targetStatus: OrderItemStatus;
+    currentStatus: OrderItemStatus;
+    productTitle: string;
+  } | null>(null);
+
   function openMenu(itemId: string, buttonEl: HTMLButtonElement) {
     if (openSelect === itemId) {
       setOpenSelect(null);
@@ -129,15 +139,30 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
     }
   }
 
-  async function handleStatusChange(itemId: string, orderId: string, status: OrderItemStatus) {
+  function handleStatusClick(itemId: string, orderId: string, currentStatus: OrderItemStatus, targetStatus: OrderItemStatus, productTitle: string) {
     closeMenu();
+    setPendingChange({ itemId, orderId, targetStatus, currentStatus, productTitle });
+  }
+
+  function handleStatusConfirm(changedAt: string) {
+    if (!pendingChange) return;
     updateStatus.mutate(
-      { orderId, itemId, status, warehouseMode },
+      { orderId: pendingChange.orderId, itemId: pendingChange.itemId, status: pendingChange.targetStatus, warehouseMode, changedAt },
       {
-        onSuccess: () => showToast(`Статус изменён на «${STATUS_LABELS[status]}»`, "success"),
-        onError: (err) => showToast(err.message, "error"),
+        onSuccess: () => {
+          showToast(`Статус изменён на «${STATUS_LABELS[pendingChange.targetStatus]}»`, "success");
+          setPendingChange(null);
+        },
+        onError: (err) => {
+          showToast(err.message, "error");
+          setPendingChange(null);
+        },
       },
     );
+  }
+
+  function handleStatusCancel() {
+    setPendingChange(null);
   }
 
   async function handleDeleteOrder(orderId: string) {
@@ -484,6 +509,19 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
         </div>
       )}
 
+      {pendingChange && (
+        <StatusChangeDialog
+          open
+          productTitle={pendingChange.productTitle}
+          currentStatus={pendingChange.currentStatus}
+          targetStatus={pendingChange.targetStatus}
+          orderId={pendingChange.orderId}
+          itemId={pendingChange.itemId}
+          onConfirm={handleStatusConfirm}
+          onCancel={handleStatusCancel}
+        />
+      )}
+
       {openSelect && menuPos && (
         <>
           <div
@@ -500,7 +538,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                 <button
                   key={s}
                   onClick={() =>
-                    item && handleStatusChange(item.id, item.orderId, s)
+                    item && handleStatusClick(item.id, item.orderId, item.status, s, item.product.title)
                   }
                   className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-surface-secondary ${
                     item?.status === s

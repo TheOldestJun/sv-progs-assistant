@@ -49,7 +49,7 @@ export async function PATCH(
     const { id, itemId } = await params;
 
     const body = await _request.json();
-    const { status, warehouseMode } = body;
+    const { status, warehouseMode, changedAt } = body;
 
     if (!status || !Object.values(OrderItemStatus).includes(status)) {
       return NextResponse.json(
@@ -112,6 +112,7 @@ export async function PATCH(
                 oldStatus,
                 newStatus: status,
                 changedById: session.id,
+                ...(changedAt ? { changedAt: new Date(changedAt + "T00:00:00") } : {}),
               },
             }),
           ]
