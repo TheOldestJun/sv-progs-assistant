@@ -167,7 +167,7 @@ export function RequesterDashboard() {
           <div className="space-y-4">
           {items.map((item, idx) => (
             <div key={item.id} className="space-y-2">
-              <div className="items-end gap-3 sm:grid sm:grid-cols-[3fr_80px_100px_32px]">
+              <div className="items-end gap-3 sm:grid sm:grid-cols-[3fr_80px_100px_32px] max-sm:space-y-3">
                 <Autocomplete
                   placeholder="ТМЦ"
                   items={
