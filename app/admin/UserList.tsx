@@ -107,7 +107,7 @@ export function AdminUserList({
         </p>
         <a
           href="/admin/users/new"
-          className="inline-flex h-9 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover"
+          className="inline-flex h-9 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover max-sm:min-h-11"
         >
           + Создать пользователя
         </a>
@@ -118,9 +118,9 @@ export function AdminUserList({
           <p className="text-text-secondary">Нет пользователей</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border">
+        <div className="overflow-x-auto rounded-xl border border-border">
           <table className="w-full text-sm">
-            <thead className="bg-surface-secondary">
+            <thead className="bg-surface-secondary max-sm:hidden">
               <tr>
                 <th className="px-4 py-3 text-left font-medium text-text-secondary">
                   Имя
@@ -141,14 +141,17 @@ export function AdminUserList({
             </thead>
             <tbody className="divide-y divide-border">
               {pagedUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-surface">
-                  <td className="px-4 py-3 font-medium text-foreground">
-                    {user.name}
+                <tr key={user.id} className="hover:bg-surface max-sm:flex max-sm:flex-col max-sm:border-b max-sm:border-border max-sm:px-4 max-sm:py-3 max-sm:gap-2">
+                  <td className="px-4 py-3 max-sm:flex max-sm:items-center max-sm:justify-between max-sm:gap-2 max-sm:p-0">
+                    <span className="sm:hidden text-xs font-medium text-text-secondary">Имя</span>
+                    <span className="font-medium text-foreground">{user.name}</span>
                   </td>
-                  <td className="px-4 py-3 text-text-secondary">
-                    {user.email}
+                  <td className="px-4 py-3 max-sm:flex max-sm:items-center max-sm:justify-between max-sm:gap-2 max-sm:p-0">
+                    <span className="sm:hidden text-xs font-medium text-text-secondary">Email</span>
+                    <span className="text-text-secondary">{user.email}</span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 max-sm:flex max-sm:items-center max-sm:justify-between max-sm:gap-2 max-sm:p-0">
+                    <span className="sm:hidden text-xs font-medium text-text-secondary">Роли</span>
                     <div className="flex flex-wrap gap-1">
                       {user.roles.includes("ADMIN")
                         ? (
@@ -166,14 +169,16 @@ export function AdminUserList({
                         ))}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-text-secondary">
-                    {new Date(user.createdAt).toLocaleDateString("ru-RU")}
+                  <td className="px-4 py-3 max-sm:flex max-sm:items-center max-sm:justify-between max-sm:gap-2 max-sm:p-0">
+                    <span className="sm:hidden text-xs font-medium text-text-secondary">Создан</span>
+                    <span className="text-text-secondary">{new Date(user.createdAt).toLocaleDateString("ru-RU")}</span>
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-right max-sm:flex max-sm:items-center max-sm:justify-between max-sm:gap-2 max-sm:p-0 max-sm:pt-2">
+                    <span className="sm:hidden text-xs font-medium text-text-secondary">Действия</span>
                     <div className="flex items-center justify-end gap-3">
                       <a
                         href={`/admin/users/${user.id}/edit`}
-                        className="text-sm text-accent transition-colors hover:text-accent-hover"
+                        className="inline-flex min-h-11 items-center rounded-md px-3 py-2 text-sm text-accent transition-colors hover:text-accent-hover sm:min-h-0 sm:px-0 sm:py-0"
                       >
                         Редактировать
                       </a>
@@ -181,7 +186,7 @@ export function AdminUserList({
                         <button
                           onClick={() => handleDelete(user.id)}
                           disabled={isPending}
-                          className="text-sm text-red-500 transition-colors hover:text-red-600 disabled:opacity-50"
+                          className="inline-flex min-h-11 items-center rounded-md px-3 py-2 text-sm text-red-500 transition-colors hover:text-red-600 disabled:opacity-50 sm:min-h-0 sm:px-0 sm:py-0"
                         >
                           {isPending ? "Удаление..." : "Удалить"}
                         </button>
@@ -204,7 +209,7 @@ export function AdminUserList({
             <button
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={safePage === 0}
-              className="rounded-md px-3 py-1.5 transition-colors hover:bg-surface-secondary disabled:opacity-30"
+              className="rounded-md px-3 py-1.5 transition-colors hover:bg-surface-secondary disabled:opacity-30 max-sm:min-h-11"
             >
               ← Назад
             </button>
@@ -212,7 +217,7 @@ export function AdminUserList({
               <button
                 key={i}
                 onClick={() => setPage(i)}
-                className={`rounded-md px-3 py-1.5 transition-colors ${
+                className={`rounded-md px-3 py-1.5 transition-colors max-sm:min-h-11 ${
                   i === safePage
                     ? "bg-primary text-primary-foreground"
                     : "hover:bg-surface-secondary"
@@ -224,7 +229,7 @@ export function AdminUserList({
             <button
               onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
               disabled={safePage === totalPages - 1}
-              className="rounded-md px-3 py-1.5 transition-colors hover:bg-surface-secondary disabled:opacity-30"
+              className="rounded-md px-3 py-1.5 transition-colors hover:bg-surface-secondary disabled:opacity-30 max-sm:min-h-11"
             >
               Вперед →
             </button>

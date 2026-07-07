@@ -23,7 +23,7 @@ export function AdminNav({ pendingCount }: { pendingCount: number }) {
           <Link
             key={tab.href}
             href={tab.href}
-            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors max-sm:min-h-11 max-sm:px-4 ${
               isActive
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-text-secondary hover:bg-surface hover:text-foreground"

@@ -258,9 +258,9 @@ export function HeadOfSupplyDashboard() {
                     type="button"
                     onClick={() => removeItem(item.id)}
                     disabled={items.length === 1}
-                    className="flex h-9 w-8 shrink-0 items-center justify-center rounded-md text-text-secondary transition-colors enabled:hover:bg-red-50 enabled:hover:text-red-500 disabled:opacity-0 dark:enabled:hover:bg-red-950 dark:enabled:hover:text-red-400"
+                    className="flex h-9 w-8 shrink-0 items-center justify-center rounded-md text-text-secondary transition-colors enabled:hover:bg-red-50 enabled:hover:text-red-500 disabled:opacity-0 dark:enabled:hover:bg-red-950 dark:enabled:hover:text-red-400 max-sm:h-11 max-sm:w-11"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4 max-sm:size-5">
                       <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
                     </svg>
                   </button>
@@ -281,7 +281,7 @@ export function HeadOfSupplyDashboard() {
               <button
                 type="button"
                 onClick={addItem}
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-dashed border-border px-4 text-sm text-text-secondary transition-colors hover:border-primary hover:text-primary"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-dashed border-border px-4 text-sm text-text-secondary transition-colors hover:border-primary hover:text-primary max-sm:min-h-11"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
                   <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
@@ -295,7 +295,7 @@ export function HeadOfSupplyDashboard() {
             <button
               type="submit"
               disabled={createOrder.isPending}
-              className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-6 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-6 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50 max-sm:min-h-11"
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
                 <path d="M3.5 2.75a.75.75 0 0 0-1.5 0v14.5a.75.75 0 0 0 1.5 0v-4.392l1.657-.348a6.449 6.449 0 0 1 1.271-.105 7.363 7.363 0 0 1 3.186.798 6.415 6.415 0 0 0 2.628.628 7.823 7.823 0 0 0 2.905-.616l-8.147 1.71V2.75Z" />
