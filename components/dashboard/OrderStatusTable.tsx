@@ -452,7 +452,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                                     {log.changedBy.name}
                                   </span>
                                   <span className="text-text-secondary">
-                                    {new Date(log.changedAt).toLocaleString("ru-RU")}
+                                    {new Date(log.changedAt).toLocaleDateString("ru-RU")}
                                   </span>
                                 </div>
                                 ))}
