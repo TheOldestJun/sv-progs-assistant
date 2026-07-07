@@ -218,7 +218,7 @@ export function HeadOfSupplyDashboard() {
             <div key={item.id} className="space-y-2">
               <div className="items-end gap-3 sm:grid sm:grid-cols-[1fr_1fr_120px_32px]">
                 <Autocomplete
-                  placeholder="Начните вводить..."
+                  placeholder="Продукт"
                   items={
                     productCreation.isPending
                       ? [...products, { id: "pending", title: "Сохранение..." }]
@@ -230,7 +230,7 @@ export function HeadOfSupplyDashboard() {
                 />
 
                 <Autocomplete
-                  placeholder="Начните вводить..."
+                  placeholder="Единица"
                   items={
                     unitCreation.isPending
                       ? [...units, { id: "pending", title: "Сохранение..." }]
@@ -250,7 +250,7 @@ export function HeadOfSupplyDashboard() {
                     value={item.quantity}
                     onChange={(e) => updateItem(item.id, { quantity: e.target.value })}
                     onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                    placeholder="0"
+                    placeholder="Количество"
                     className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary"
                   />
 
