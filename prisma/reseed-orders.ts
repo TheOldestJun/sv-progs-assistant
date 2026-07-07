@@ -17,7 +17,9 @@ import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 
-const adapter = new PrismaMariaDb(process.env.DATABASE_URL!);
+const url = new URL(process.env.DATABASE_URL!);
+url.searchParams.set("connectionLimit", "2");
+const adapter = new PrismaMariaDb(url.toString());
 const db = new PrismaClient({ adapter });
 
 async function main() {

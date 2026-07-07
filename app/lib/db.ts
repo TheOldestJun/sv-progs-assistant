@@ -10,7 +10,9 @@ import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
 function createPrismaClient() {
-  const adapter = new PrismaMariaDb(process.env.DATABASE_URL!);
+  const url = new URL(process.env.DATABASE_URL!);
+  url.searchParams.set("connectionLimit", "2");
+  const adapter = new PrismaMariaDb(url.toString());
   return new PrismaClient({ adapter });
 }
 
