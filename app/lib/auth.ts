@@ -337,6 +337,54 @@ export async function resetUserPasswordAction(
 }
 
 /* ============================================================
+ * Первоначальная настройка (создание первого админа)
+ * ============================================================ */
+
+/** Server Action: создать первого администратора (доступно только если в БД нет пользователей). */
+export async function setupAction(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const name = (formData.get("name") as string)?.trim();
+  const email = (formData.get("email") as string)?.trim();
+  const password = formData.get("password") as string;
+
+  if (!name || !email || !password) {
+    return { error: "Заполните все поля" };
+  }
+  if (!isValidEmail(email)) {
+    return { error: "Некорректный формат email" };
+  }
+  if (password.length < 6) {
+    return { error: "Пароль должен быть не менее 6 символов" };
+  }
+
+  const existingUsers = await db.user.count();
+  if (existingUsers > 0) {
+    return { error: "Пользователь уже создан. Войдите в систему." };
+  }
+
+  const hashed = await hashPassword(password);
+  await db.user.create({
+    data: {
+      name,
+      email,
+      password: hashed,
+      roles: {
+        create: [
+          { role: "ADMIN" },
+          { role: "HEAD_OF_SUPPLY" },
+          { role: "SUPPLY_DEPT" },
+          { role: "WAREHOUSE" },
+        ],
+      },
+    },
+  });
+
+  return { success: true, message: "Администратор создан. Войдите в систему." };
+}
+
+/* ============================================================
  * Смена пароля
  * ============================================================ */
 

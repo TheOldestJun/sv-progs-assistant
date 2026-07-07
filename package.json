@@ -7,7 +7,6 @@
     "dev:chrome": "start \"Next.js Dev\" cmd /c \"npm run dev\" && ping -n 12 127.0.0.1 >nul && start \"Chrome Debug\" \"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" --user-data-dir=\"%TEMP%\\chrome-debug\" --no-first-run --no-default-browser-check http://localhost:3000",
     "build": "next build",
     "start": "next start",
-    "reseed": "npx tsx prisma/reseed-orders.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "vercel-build": "prisma generate && next build"

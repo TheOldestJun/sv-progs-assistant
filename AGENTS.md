@@ -18,12 +18,19 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - `DATABASE_URL` env var for connection (MySQL/MariaDB).
 - `serverExternalPackages` in `next.config.ts`: `["@prisma/client", "@prisma/adapter-mariadb", "mariadb"]`
 
-## Vercel
+## Вercel
 
 - `vercel-build` script: `prisma generate && next build` — migrate deploy не нужен, т.к. dev и prod используют одну БД
 - Prisma uses `@prisma/adapter-mariadb` — `new PrismaClient({ adapter })`
 - Set `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET` in Vercel Dashboard env vars (JWT_REFRESH_SECRET опционален — fallback на JWT_SECRET)
 - **Add `export const dynamic = "force-dynamic"`** to any server component page that imports `db` or renders a component that queries the DB — prevents build-time pre-rendering errors when DB is unreachable
+
+## First-run setup
+
+- `/setup` — создание первого администратора, доступен только если `User.count() === 0`
+- `/login` — если пользователей нет, редиректит на `/setup`
+- После создания админа — редирект на `/login`
+- Первый админ получает роли: ADMIN, HEAD_OF_SUPPLY, SUPPLY_DEPT, WAREHOUSE
 
 ## Debug browser
 
