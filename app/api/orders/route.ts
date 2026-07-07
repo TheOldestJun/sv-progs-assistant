@@ -15,9 +15,9 @@ export async function GET() {
   }
 
   try {
-    // REQUESTER-only видят только свои заявки
+    // REQUESTER-only видят только заявки, адресованные им (через requester.userId)
     const isRequesterOnly = session.roles.length === 1 && session.roles.includes("REQUESTER");
-    const where = isRequesterOnly ? { createdById: session.id } : {};
+    const where = isRequesterOnly ? { requester: { userId: session.id } } : {};
 
     const orders = await db.order.findMany({
       where,
