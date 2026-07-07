@@ -211,7 +211,7 @@ export async function createUserAction(
   if (existing) return { error: "Пользователь с таким email уже существует" };
 
   const hashed = await hashPassword(password);
-  await db.user.create({
+  const user = await db.user.create({
     data: {
       name,
       email,
@@ -220,7 +220,14 @@ export async function createUserAction(
         create: selectedRoles.map((role) => ({ role })),
       },
     },
+    include: { roles: true },
   });
+
+  // Если пользователю назначена роль REQUESTER, сразу создаём запись в Requester,
+  // чтобы он отображался в автокомплите заявителей в панели начальника снабжения.
+  if (selectedRoles.includes("REQUESTER")) {
+    await db.requester.create({ data: { name, userId: user.id } });
+  }
 
   return { success: true, message: "Пользователь успешно создан" };
 }
@@ -265,6 +272,14 @@ export async function updateUserAction(
     }),
     db.user.update({ where: { id }, data: updateData }),
   ]);
+
+  // Если пользователю назначена роль REQUESTER, убеждаемся что есть запись в Requester.
+  if (selectedRoles.includes("REQUESTER")) {
+    const existing = await db.requester.findUnique({ where: { userId: id } });
+    if (!existing) {
+      await db.requester.create({ data: { name, userId: id } });
+    }
+  }
 
   return { success: true, message: "Пользователь успешно обновлён" };
 }
