@@ -6,6 +6,8 @@ import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";
 import { AdminUserList } from "./UserList";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Админ-панель — SV Progs Assistant",
 };
