@@ -23,7 +23,8 @@ function createPrismaClient(): PrismaClient {
     throw new Error("DATABASE_URL is not set — add to .env (dev) or Vercel env vars (prod)");
   }
   const url = new URL(raw);
-  url.searchParams.set("connectionLimit", "2");
+  url.searchParams.set("connectionLimit", "1");
+  url.searchParams.set("idleTimeout", "500");
   const adapter = new PrismaMariaDb(url.toString());
   return new PrismaClient({ adapter });
 }
