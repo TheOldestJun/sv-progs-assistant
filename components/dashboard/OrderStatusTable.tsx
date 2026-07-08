@@ -15,6 +15,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { IconSearch, IconTrash } from "@/components/ui/Icon";
 import { StatusChangeDialog } from "@/components/dashboard/StatusChangeDialog";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 const PAGE_SIZE = 10;
 
@@ -327,7 +328,9 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                             clipRule="evenodd"
                           />
                         </svg>
-                        <span className="max-w-36 truncate sm:max-w-60">{item.product.title}</span>
+                        <Tooltip text={item.product.title}>
+                          <span className="break-words">{item.product.title}</span>
+                        </Tooltip>
                         {item.comment && (
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
