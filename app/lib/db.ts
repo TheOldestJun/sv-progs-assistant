@@ -37,7 +37,7 @@ function getDb(): PrismaClient {
      * выбрасывает понятную ошибку. Если страница случайно обращается к БД
      * при сборке, нужно добавить export const dynamic = "force-dynamic".
      */
-    const noop = new Proxy({ __buildNoop: true } as PrismaClient, {
+    const noop = new Proxy({ __buildNoop: true } as unknown as PrismaClient, {
       get(_, prop) {
         if (prop === "then" || prop === "catch") return undefined;
         return new Proxy(() => {}, {
