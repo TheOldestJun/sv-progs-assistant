@@ -13,10 +13,12 @@ interface ToastItem {
   id: number;
   message: string;
   type: ToastType;
+  dismissable?: boolean;
 }
 
 interface ToastContextValue {
-  showToast: (message: string, type?: ToastType) => void;
+  showToast: (message: string, type?: ToastType, dismissable?: boolean) => void;
+  dismissToast: (id: number) => void;
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -79,18 +81,24 @@ export function ToastProvider({
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   const showToast = useCallback(
-    (message: string, type: ToastType = "success") => {
+    (message: string, type: ToastType = "success", dismissable?: boolean) => {
       const id = ++idCounter;
-      setToasts((prev) => [...prev, { id, message, type }]);
-      setTimeout(() => {
-        setToasts((prev) => prev.filter((t) => t.id !== id));
-      }, 4000); // Авто-скрытие через 4 секунды
+      setToasts((prev) => [...prev, { id, message, type, dismissable }]);
+      if (!dismissable) {
+        setTimeout(() => {
+          setToasts((prev) => prev.filter((t) => t.id !== id));
+        }, 4000);
+      }
     },
     []
   );
 
+  const dismissToast = useCallback((id: number) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider value={{ showToast, dismissToast }}>
       {children}
 
       {toasts.length > 0 && (
@@ -107,7 +115,15 @@ export function ToastProvider({
               }`}
             >
               {t.type === "success" ? <CheckIcon /> : t.type === "info" ? <InfoIcon /> : <XIcon />}
-              {t.message}
+              <span className="flex-1">{t.message}</span>
+              {t.dismissable && (
+                <button
+                  onClick={() => dismissToast(t.id)}
+                  className="ml-2 flex size-6 shrink-0 items-center justify-center rounded-full bg-white/20 text-xs transition-colors hover:bg-white/30"
+                >
+                  ✕
+                </button>
+              )}
             </div>
           ))}
         </div>

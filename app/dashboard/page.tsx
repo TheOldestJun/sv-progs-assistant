@@ -8,7 +8,6 @@
 import { getSession, logoutAction } from "@/app/lib/auth";
 import { redirect } from "next/navigation";
 import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
-import { DashboardClient } from "@/components/dashboard/DashboardClient";
 import { HeadOfSupplyDashboard } from "@/components/dashboard/HeadOfSupplyDashboard";
 import { SupplyDeptDashboard } from "@/components/dashboard/SupplyDeptDashboard";
 import { WarehouseDashboard } from "@/components/dashboard/WarehouseDashboard";
@@ -42,11 +41,9 @@ export default async function DashboardPage() {
   const { roles, name, email } = session;
   const dashboards = roles.filter((r) => dashboardComponents[r]);
   const isAdmin = roles.includes("ADMIN");
-  const isWarehouse = roles.includes("WAREHOUSE");
 
   return (
-    <DashboardClient isWarehouse={isWarehouse}>
-      <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-4 sm:px-6 sm:py-10 lg:px-8">
+    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-4 sm:px-6 sm:py-10 lg:px-8">
       <div className="mb-8 flex items-center justify-between border-b border-border pb-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
@@ -114,6 +111,5 @@ export default async function DashboardPage() {
         })()
       )}
     </div>
-    </DashboardClient>
   );
 }

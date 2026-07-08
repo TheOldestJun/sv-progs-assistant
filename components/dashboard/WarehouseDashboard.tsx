@@ -6,76 +6,55 @@
  */
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { OrderStatusTable } from "./OrderStatusTable";
+import { useToast } from "@/components/ui/Toast";
 
 export function WarehouseDashboard() {
   const [tab, setTab] = useState<"reception" | "overview">("reception");
-  const [notifStatus, setNotifStatus] = useState<NotificationPermission | "loading">("loading");
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
-  useEffect(() => {
-    if (typeof window !== "undefined" && "Notification" in window) {
-      setNotifStatus(Notification.permission);
-    }
-  }, []);
-
-  function requestNotif() {
-    if (!("Notification" in window)) return;
-    Notification.requestPermission().then(setNotifStatus);
-  }
-
-  function testNotif() {
-    if ("Notification" in window && Notification.permission === "granted") {
-      new Notification("📦 Тест уведомления", {
-        body: "Если вы это видите — уведомления работают!",
-      });
-    }
-  }
-
-  function forceCheck() {
+  async function forceCheck() {
     queryClient.invalidateQueries({ queryKey: ["orders"] });
+    try {
+      const [meRes, ordersRes] = await Promise.all([
+        fetch("/api/auth/me"),
+        fetch("/api/orders"),
+      ]);
+      if (!meRes.ok || !ordersRes.ok) return;
+      const me = await meRes.json() as { name: string };
+      const orders = await ordersRes.json() as { items: { status: string }[]; requester: { name: string } }[];
+      const groups = new Map<string, number>();
+      for (const order of orders) {
+        let shipped = 0;
+        for (const item of order.items || []) {
+          if (item.status === "SHIPPED") shipped++;
+        }
+        if (shipped > 0) {
+          const name = order.requester.name;
+          groups.set(name, (groups.get(name) || 0) + shipped);
+        }
+      }
+      if (groups.size === 0) return;
+      const list = [...groups.entries()].map(([name, count]) => `${name} (${count})`).join(", ");
+      showToast(`${me.name.split(" ")[0]}, приехало для ${list}?`, "info", true);
+    } catch {
+      showToast("Проверьте поставки 📦", "info", true);
+    }
   }
 
   return (
     <div className="space-y-4">
-      {/* Блок статуса уведомлений */}
-      {"Notification" in window && notifStatus !== "loading" && notifStatus !== "granted" && (
-        <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm dark:border-amber-800 dark:bg-amber-950">
-          <span className="text-amber-800 dark:text-amber-200">
-            🔔 Разрешите уведомления, чтобы получать оповещения о новых поставках
-          </span>
-          <button
-            onClick={requestNotif}
-            className="ml-3 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-amber-700 max-sm:min-h-11"
-          >
-            Разрешить
-          </button>
-        </div>
-      )}
-
-      {notifStatus === "granted" && (
-        <div className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm dark:border-green-800 dark:bg-green-950">
-          <span className="text-green-700 dark:text-green-300">
-            ✅ Уведомления включены
-          </span>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={forceCheck}
-              className="rounded-md bg-surface px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-surface-secondary max-sm:min-h-11"
-            >
-              Проверить поставки
-            </button>
-            <button
-              onClick={testNotif}
-              className="rounded-md bg-surface px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-surface-secondary max-sm:min-h-11"
-            >
-              Тест
-            </button>
-          </div>
-        </div>
-      )}
+      <div className="flex items-center justify-end">
+        <button
+        onClick={forceCheck}
+        className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary-hover max-sm:min-h-11"
+      >
+        🔍 Проверить поставки
+      </button>
+      </div>
 
       <section className="rounded-xl border border-border bg-surface p-4 sm:p-6">
         <div className="mb-4 flex items-center gap-3 sm:mb-6">

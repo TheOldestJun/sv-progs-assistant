@@ -14,6 +14,7 @@ import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
 import { QueryProvider } from "@/app/providers/QueryProvider";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import Script from "next/script";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 
@@ -64,7 +65,7 @@ export default function RootLayout({
     >
       <head>
         {/* Блокирующий скрипт для темы — выполняется до первого paint */}
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <Script id="theme-script" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-background text-foreground">
         <ThemeProvider>
