@@ -1,11 +1,21 @@
 /*
- * PATCH /api/orders/:id/items/:itemId — обновление статуса позиции
- * GET  /api/orders/:id/items/:itemId/logs — история статусов позиции (ленивая загрузка)
+ * GET   /api/orders/:id/items/:itemId — история статусов позиции
+ * PATCH /api/orders/:id/items/:itemId — обновление статуса или замена ТМЦ в позиции
  */
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";
 import { OrderItemStatus, Role } from "@prisma/client";
+
+/*
+ * Роли, которым разрешено менять ТМЦ в позиции
+ */
+const PRODUCT_EDIT_ROLES: Role[] = [
+  Role.ADMIN,
+  Role.HEAD_OF_SUPPLY,
+  Role.SUPPLY_DEPT,
+  Role.WAREHOUSE,
+];
 
 export async function GET(
   _request: Request,
@@ -49,8 +59,45 @@ export async function PATCH(
     const { id, itemId } = await params;
 
     const body = await _request.json();
-    const { status, warehouseMode, changedAt } = body;
+    const { status, warehouseMode, changedAt, productId } = body;
 
+    const item = await db.orderItem.findFirst({
+      where: { id: itemId, orderId: id },
+      include: {
+        product: { select: { id: true, title: true } },
+        units: { select: { title: true } },
+      },
+    });
+
+    if (!item) {
+      return NextResponse.json({ error: "Order item not found" }, { status: 404 });
+    }
+
+    // ——— Замена ТМЦ ———
+    // productId пришёл — меняем продукт в позиции, статус не трогаем
+    if (productId) {
+      if (!session.roles.some((r) => PRODUCT_EDIT_ROLES.includes(r as Role))) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+
+      const product = await db.product.findUnique({ where: { id: productId } });
+      if (!product) {
+        return NextResponse.json({ error: "Product not found" }, { status: 404 });
+      }
+
+      const updated = await db.orderItem.update({
+        where: { id: itemId },
+        data: { productId },
+        include: {
+          product: { select: { title: true } },
+          units: { select: { title: true } },
+        },
+      });
+
+      return NextResponse.json(updated);
+    }
+
+    // ——— Смена статуса ——— (существующая логика)
     if (!status || !Object.values(OrderItemStatus).includes(status)) {
       return NextResponse.json(
         { error: `Invalid status. Allowed: ${Object.values(OrderItemStatus).join(", ")}` },
@@ -76,14 +123,6 @@ export async function PATCH(
         { error: "Только кладовщик может подтвердить получение товара" },
         { status: 403 },
       );
-    }
-
-    const item = await db.orderItem.findFirst({
-      where: { id: itemId, orderId: id },
-    });
-
-    if (!item) {
-      return NextResponse.json({ error: "Order item not found" }, { status: 404 });
     }
 
     if (item.status === OrderItemStatus.RECEIVED) {

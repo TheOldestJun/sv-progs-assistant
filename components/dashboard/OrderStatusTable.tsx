@@ -15,6 +15,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { IconSearch, IconTrash } from "@/components/ui/Icon";
 import { StatusChangeDialog } from "@/components/dashboard/StatusChangeDialog";
+import { EditProductDialog } from "@/components/dashboard/EditProductDialog";
 import { Tooltip } from "@/components/ui/Tooltip";
 
 const PAGE_SIZE = 10;
@@ -97,6 +98,14 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
     productTitle: string;
   } | null>(null);
 
+  // Состояние диалога редактирования ТМЦ
+  const [editingProduct, setEditingProduct] = useState<{
+    itemId: string;
+    orderId: string;
+    productId: string;
+    productTitle: string;
+  } | null>(null);
+
   function openMenu(itemId: string, buttonEl: HTMLButtonElement) {
     if (openSelect === itemId) {
       setOpenSelect(null);
@@ -105,7 +114,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
     }
     const rect = buttonEl.getBoundingClientRect();
     const menuWidth = 224; // w-56 = 224px — если меняешь ширину меню, обнови и тут
-    const menuHeight = 220; // Примерная высота меню с 5 пунктами
+    const menuHeight = statusChoices.length * 36 + 16; // ~36px на пункт + отступы
     // Если меню вылезает за правый край экрана — сдвигаем влево
     const left = rect.left + menuWidth > window.innerWidth
       ? window.innerWidth - menuWidth - 8
@@ -346,6 +355,25 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                           </svg>
                         )}
                       </button>
+                      {!readOnly && (
+                        <button
+                          onClick={() =>
+                            setEditingProduct({
+                              itemId: item.id,
+                              orderId: order.id,
+                              productId: item.productId,
+                              productTitle: item.product.title,
+                            })
+                          }
+                          className="flex size-7 shrink-0 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-surface-secondary hover:text-primary max-sm:min-h-11 max-sm:min-w-11"
+                          title="Редактировать ТМЦ"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-3.5">
+                            <path d="M5.433 13.917l1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65z" />
+                            <path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0 0 10 3H4.75A2.75 2.75 0 0 0 2 5.75v9.5A2.75 2.75 0 0 0 4.75 18h9.5A2.75 2.75 0 0 0 17 15.25V10a.75.75 0 0 0-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5z" />
+                          </svg>
+                        </button>
+                      )}
                     </td>
                     <td className="px-2 py-1.5 sm:px-4 sm:py-2 text-text-secondary max-sm:hidden">
                       {item.units.title}
@@ -553,6 +581,17 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
           itemId={pendingChange.itemId}
           onConfirm={handleStatusConfirm}
           onCancel={handleStatusCancel}
+        />
+      )}
+
+      {editingProduct && (
+        <EditProductDialog
+          open
+          productId={editingProduct.productId}
+          productTitle={editingProduct.productTitle}
+          orderId={editingProduct.orderId}
+          itemId={editingProduct.itemId}
+          onClose={() => setEditingProduct(null)}
         />
       )}
 
