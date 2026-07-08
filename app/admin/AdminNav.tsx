@@ -10,6 +10,7 @@ import { usePathname } from "next/navigation";
 const tabs = [
   { href: "/admin", label: "Пользователи" },
   { href: "/admin/reset-requests", label: "Запросы сброса" },
+  { href: "/admin/orders", label: "Заявки" },
 ];
 
 export function AdminNav({ pendingCount }: { pendingCount: number }) {

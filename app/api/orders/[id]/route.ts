@@ -9,6 +9,39 @@ import { OrderItemStatus } from "@prisma/client";
 
 const RECEIVED = OrderItemStatus.RECEIVED;
 
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const session = await getSession();
+  if (!session || !session.roles.includes("ADMIN")) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const { created } = body;
+
+    if (!created || typeof created !== "string") {
+      return NextResponse.json({ error: "created (date string) is required" }, { status: 400 });
+    }
+
+    const updated = await db.order.update({
+      where: { id },
+      data: { created: new Date(created + "T12:00:00") },
+      select: { id: true, created: true },
+    });
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
+
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
