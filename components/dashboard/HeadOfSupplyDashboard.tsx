@@ -144,6 +144,7 @@ export function HeadOfSupplyDashboard() {
 
     const payload = {
       requesterId: requester.id,
+      created: date,
       items: validItems.map((it) => ({
         productId: it.product!.id,
         unitId: it.unit!.id,

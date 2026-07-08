@@ -51,7 +51,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { requesterId, items } = body;
+  const { requesterId, created, items } = body;
 
   if (!items || !Array.isArray(items) || items.length === 0) {
     return NextResponse.json(
@@ -86,6 +86,7 @@ export async function POST(request: Request) {
       data: {
         requesterId: resolvedRequesterId,
         createdById: session.id,
+        ...(created ? { created: new Date(created + "T12:00:00") } : {}),
         items: {
           create: items.map((item: { productId: string; unitId: string; quantity: number; comment?: string }) => ({
             productId: item.productId,

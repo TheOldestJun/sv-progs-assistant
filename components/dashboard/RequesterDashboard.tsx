@@ -117,6 +117,7 @@ export function RequesterDashboard() {
 
     // requesterId не передаём — API сам найдёт/создаст Requester по userId из сессии
     const payload = {
+      created: date,
       items: validItems.map((it) => ({
         productId: it.product!.id,
         unitId: it.unit!.id,
