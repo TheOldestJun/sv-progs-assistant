@@ -38,9 +38,12 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Chrome data dir: `%TEMP%\chrome-debug` (auto-created, disposable).
 - The server starts in a separate window; Chrome opens after ~11s once the server is ready.
 
-## Git
+## Git (PRODUCTION — CRITICAL)
 
-- Push to GitHub **only after the user explicitly requests it**. Never push on your own initiative.
+- **⚠️ НИКОГДА не пушить в GitHub без явного разрешения пользователя.** Пуш моментально деплоит на Vercel в продакшен.
+- Все изменения сначала тестировать на `localhost` через `npm run dev:chrome`.
+- Даже если пользователь сказал «пуш» — убедиться что билд (`next build`) проходит без ошибок.
+- Коммитить можно (локально), но пушить — только по команде.
 
 ## Code comments
 

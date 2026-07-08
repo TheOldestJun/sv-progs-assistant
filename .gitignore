@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# old Prisma client output (Prisma v7 uses node_modules/@prisma/client)
+/app/generated/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
