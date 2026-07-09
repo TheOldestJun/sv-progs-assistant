@@ -43,7 +43,7 @@ export default async function DashboardPage() {
   const isAdmin = roles.includes("ADMIN");
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-4 sm:px-6 sm:py-10 lg:px-8">
+    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-4 sm:px-6 sm:py-10 lg:px-8">
       <div className="mb-8 flex items-center justify-between border-b border-border pb-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
@@ -89,8 +89,8 @@ export default async function DashboardPage() {
             );
           });
 
-          // Архив для всех не-админов
-          if (!isAdmin) {
+          // Архив для не-админов (кроме заявителей)
+          if (!isAdmin && !roles.includes("REQUESTER")) {
             tabs.push(ARCHIVE_TAB);
             components.push(
               <ErrorBoundary key="archive">

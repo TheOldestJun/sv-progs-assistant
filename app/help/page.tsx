@@ -17,7 +17,7 @@ const STATUSES = [
 
 export default function HelpPage() {
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-12 sm:px-6 lg:px-8">
+    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-12 sm:px-6 lg:px-8">
       <BackLink />
 
       <h1 className="text-3xl font-bold tracking-tight text-foreground">

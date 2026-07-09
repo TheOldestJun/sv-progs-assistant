@@ -304,13 +304,13 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
           </div>
 
           <div className="overflow-x-auto max-sm:border-t max-sm:border-border">
-            <table className="w-full text-sm">
+            <table className="w-full table-fixed text-sm">
             <thead className="bg-surface max-sm:hidden">
               <tr>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">ТМЦ</th>
-                <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">Ед.</th>
-                <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-right font-medium text-text-secondary">Кол-во</th>
-                <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">Статус</th>
+                <th className="w-16 px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">Ед.</th>
+                <th className="w-20 px-2 py-1.5 sm:px-4 sm:py-2 text-right font-medium text-text-secondary">Кол-во</th>
+                <th className="w-44 px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">Статус</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -340,12 +340,32 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                         <Tooltip text={item.product.title}>
                           <span className="break-words">{item.product.title}</span>
                         </Tooltip>
+                        {!readOnly && (
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingProduct({
+                                itemId: item.id,
+                                orderId: order.id,
+                                productId: item.productId,
+                                productTitle: item.product.title,
+                              });
+                            }}
+                            className="inline-flex cursor-pointer items-center justify-center rounded-md p-0.5 text-text-secondary transition-colors hover:text-primary"
+                            title="Редактировать ТМЦ"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-3.5">
+                              <path d="M5.433 13.917l1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65z" />
+                              <path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0 0 10 3H4.75A2.75 2.75 0 0 0 2 5.75v9.5A2.75 2.75 0 0 0 4.75 18h9.5A2.75 2.75 0 0 0 17 15.25V10a.75.75 0 0 0-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5z" />
+                            </svg>
+                          </span>
+                        )}
                         {item.comment && (
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 20 20"
                             fill="currentColor"
-                            className="size-3.5 text-accent-blue"
+                            className="size-3.5 text-accent-blue shrink-0"
                           >
                             <path
                               fillRule="evenodd"
@@ -355,40 +375,21 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                           </svg>
                         )}
                       </button>
-                      {!readOnly && (
-                        <button
-                          onClick={() =>
-                            setEditingProduct({
-                              itemId: item.id,
-                              orderId: order.id,
-                              productId: item.productId,
-                              productTitle: item.product.title,
-                            })
-                          }
-                          className="flex size-7 shrink-0 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-surface-secondary hover:text-primary max-sm:min-h-11 max-sm:min-w-11"
-                          title="Редактировать ТМЦ"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-3.5">
-                            <path d="M5.433 13.917l1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65z" />
-                            <path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0 0 10 3H4.75A2.75 2.75 0 0 0 2 5.75v9.5A2.75 2.75 0 0 0 4.75 18h9.5A2.75 2.75 0 0 0 17 15.25V10a.75.75 0 0 0-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5z" />
-                          </svg>
-                        </button>
-                      )}
                     </td>
-                    <td className="px-2 py-1.5 sm:px-4 sm:py-2 text-text-secondary max-sm:hidden">
+                    <td className="w-16 px-2 py-1.5 sm:px-4 sm:py-2 text-text-secondary max-sm:hidden">
                       {item.units.title}
                     </td>
-                    <td className="px-2 py-1.5 sm:px-4 sm:py-2 text-right text-foreground max-sm:hidden">
+                    <td className="w-20 px-2 py-1.5 sm:px-4 sm:py-2 text-right text-foreground max-sm:hidden">
                       {item.quantity}
                     </td>
-                    <td className="px-2 py-1.5 sm:px-4 sm:py-2 max-sm:flex max-sm:items-center max-sm:gap-2 max-sm:border-0 max-sm:p-0">
+                    <td className="sm:w-44 px-2 py-1.5 sm:px-4 sm:py-2 max-sm:flex max-sm:items-center max-sm:gap-2 max-sm:border-0 max-sm:p-0">
                       <span className="text-xs text-text-secondary sm:hidden shrink-0">Кол-во:</span>
                       <span className="sm:hidden text-xs text-text-secondary tabular-nums whitespace-nowrap">
                         {item.quantity} {item.units.title}
                       </span>
                       <span className="hidden sm:inline">
                         {readOnly ? (
-                          <span className="inline-flex max-sm:min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 ${STATUS_COLORS[item.status]}">
+                          <span className="inline-flex max-sm:min-h-11 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 ${STATUS_COLORS[item.status]}">
                             <StatusIcon status={item.status} />
                             {STATUS_LABELS[item.status]}
                           </span>
@@ -399,7 +400,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                                 if (item.status !== "RECEIVED") openMenu(item.id, e.currentTarget);
                               }}
                               disabled={updateStatus.isPending}
-                              className={`inline-flex max-sm:min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 transition-colors ${STATUS_COLORS[item.status]} disabled:opacity-50 ${item.status === "RECEIVED" ? "cursor-default" : "cursor-pointer"}`}
+                              className={`inline-flex max-sm:min-h-11 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 transition-colors ${STATUS_COLORS[item.status]} disabled:opacity-50 ${item.status === "RECEIVED" ? "cursor-default" : "cursor-pointer"}`}
                             >
                               <StatusIcon status={item.status} />
                               {STATUS_LABELS[item.status]}

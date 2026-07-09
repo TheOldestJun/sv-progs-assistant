@@ -7,55 +7,13 @@
 "use client";
 
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { OrderStatusTable } from "./OrderStatusTable";
-import { useToast } from "@/components/ui/Toast";
 
 export function WarehouseDashboard() {
   const [tab, setTab] = useState<"reception" | "overview">("reception");
-  const queryClient = useQueryClient();
-  const { showToast } = useToast();
-
-  async function forceCheck() {
-    queryClient.invalidateQueries({ queryKey: ["orders"] });
-    try {
-      const [meRes, ordersRes] = await Promise.all([
-        fetch("/api/auth/me"),
-        fetch("/api/orders"),
-      ]);
-      if (!meRes.ok || !ordersRes.ok) return;
-      const me = await meRes.json() as { name: string };
-      const orders = await ordersRes.json() as { items: { status: string }[]; requester: { name: string } }[];
-      const groups = new Map<string, number>();
-      for (const order of orders) {
-        let shipped = 0;
-        for (const item of order.items || []) {
-          if (item.status === "SHIPPED") shipped++;
-        }
-        if (shipped > 0) {
-          const name = order.requester.name;
-          groups.set(name, (groups.get(name) || 0) + shipped);
-        }
-      }
-      if (groups.size === 0) return;
-      const list = [...groups.entries()].map(([name, count]) => `${name} (${count})`).join(", ");
-      showToast(`${me.name.split(" ")[0]}, приехало для ${list}?`, "info", true);
-    } catch {
-      showToast("Проверьте поставки 📦", "info", true);
-    }
-  }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-end">
-        <button
-        onClick={forceCheck}
-        className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary-hover max-sm:min-h-11"
-      >
-        🔍 Проверить поставки
-      </button>
-      </div>
-
       <section className="rounded-xl border border-border bg-surface p-4 sm:p-6">
         <div className="mb-4 flex items-center gap-3 sm:mb-6">
           <span className="text-2xl">🏭</span>

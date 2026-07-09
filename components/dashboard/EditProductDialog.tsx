@@ -11,6 +11,7 @@ import { Autocomplete, type AutocompleteItem } from "@/components/ui/Autocomplet
 import { useReferenceData } from "@/hooks/useReferenceData";
 import { useUpdateOrderItemProduct, useRenameProduct } from "@/hooks/useUpdateOrderItemProduct";
 import { useToast } from "@/components/ui/Toast";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 interface EditProductDialogProps {
   open: boolean;
@@ -43,6 +44,7 @@ export function EditProductDialog({
   const replaceProduct = useUpdateOrderItemProduct();
   const renameProduct = useRenameProduct();
   const { showToast } = useToast();
+  const { confirm } = useConfirmDialog();
 
   // Сбрасываем состояние при открытии
   useEffect(() => {
@@ -94,6 +96,13 @@ export function EditProductDialog({
   async function handleCreateAndReplace() {
     const trimmed = createQuery.trim();
     if (!trimmed) return;
+    const ok = await confirm({
+      title: "Создать и заменить?",
+      message: `Будет создан ТМЦ «${trimmed}» и заменён в этой позиции вместо «${productTitle}».`,
+      confirmText: "Создать и заменить",
+      variant: "default",
+    });
+    if (!ok) return;
     setMode("creating");
     try {
       const created = await productCreation.mutateAsync(trimmed);
@@ -192,25 +201,30 @@ export function EditProductDialog({
             <Autocomplete
               items={filteredProducts}
               value={selected}
-              onSelect={(item) => {
-                if (item.id) {
-                  // Выбрали существующий ТМЦ — сразу заменяем
-                  setSelected(item);
-                  setMode("replacing");
-                  replaceProduct.mutate(
-                    { orderId, itemId, productId: item.id },
-                    {
-                      onSuccess: () => {
-                        showToast(`ТМЦ заменён на «${item.title}»`, "success");
-                        onClose();
-                      },
-                      onError: (err) => {
-                        showToast(err.message, "error");
-                        setMode("idle");
-                      },
+              onSelect={async (item) => {
+                if (!item.id) return;
+                const ok = await confirm({
+                  title: "Заменить ТМЦ?",
+                  message: `«${productTitle}» будет заменён на «${item.title}» в этой позиции.`,
+                  confirmText: "Заменить",
+                  variant: "default",
+                });
+                if (!ok) return;
+                setSelected(item);
+                setMode("replacing");
+                replaceProduct.mutate(
+                  { orderId, itemId, productId: item.id },
+                  {
+                    onSuccess: () => {
+                      showToast(`ТМЦ заменён на «${item.title}»`, "success");
+                      onClose();
                     },
-                  );
-                }
+                    onError: (err) => {
+                      showToast(err.message, "error");
+                      setMode("idle");
+                    },
+                  },
+                );
               }}
               label="Заменить другим ТМЦ"
               placeholder="Поиск ТМЦ..."
@@ -240,7 +254,7 @@ export function EditProductDialog({
           </div>
         </div>
 
-        <div className="flex justify-end border-t border-border bg-surface-secondary px-6 py-4">
+        <div className="flex justify-end rounded-b-2xl border-t border-border bg-surface-secondary px-6 py-4">
           <button
             onClick={onClose}
             disabled={mode !== "idle"}
