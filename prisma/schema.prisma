@@ -37,6 +37,8 @@ model User {
   statusChanges      OrderItemStatusLog[]
   requesterProfile   Requester?              // Профиль заказчика, если роль REQUESTER
   createdOrders      Order[]                 // Заявки, созданные этим пользователем
+  sentMessages       Message[]               @relation("SentMessages")
+  receivedMessages   Message[]               @relation("ReceivedMessages")
   createdAt          DateTime                @default(now())
   updatedAt          DateTime                @updatedAt
 }
@@ -121,6 +123,21 @@ model OrderItemStatusLog {
 
   @@index([orderItemId])
   @@index([changedById])
+}
+
+model Message {
+  id         String    @id @default(cuid())
+  senderId   String
+  sender     User      @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver   User      @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  text       String
+  createdAt  DateTime  @default(now())
+  readAt     DateTime?
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([receiverId, readAt])
 }
 
 model ArchivedOrder {

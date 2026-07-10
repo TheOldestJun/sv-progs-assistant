@@ -303,8 +303,8 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
             </div>
           </div>
 
-          <div className="overflow-x-auto max-sm:border-t max-sm:border-border">
-            <table className="w-full table-fixed text-sm">
+          <div className="max-sm:border-t max-sm:border-border">
+            <table className="w-full min-w-0 text-sm">
             <thead className="bg-surface max-sm:hidden">
               <tr>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">ТМЦ</th>
@@ -321,13 +321,13 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                       <span className="text-xs text-text-secondary sm:hidden shrink-0">ТМЦ:</span>
                       <button
                         onClick={() => toggleItem(item.id, order.id)}
-                        className="flex max-sm:min-h-11 items-center gap-1.5 text-left text-foreground transition-colors hover:text-primary"
+                        className="flex max-sm:min-h-11 items-start gap-1.5 text-left text-foreground transition-colors hover:text-primary"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           viewBox="0 0 20 20"
                           fill="currentColor"
-                          className={`size-3.5 shrink-0 transition-transform ${
+                          className={`mt-0.5 size-3.5 shrink-0 transition-transform ${
                             expandedItem === item.id ? "rotate-90" : ""
                           }`}
                         >
@@ -337,43 +337,45 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                             clipRule="evenodd"
                           />
                         </svg>
-                        <Tooltip text={item.product.title}>
-                          <span className="break-words">{item.product.title}</span>
-                        </Tooltip>
-                        {!readOnly && (
-                          <span
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingProduct({
-                                itemId: item.id,
-                                orderId: order.id,
-                                productId: item.productId,
-                                productTitle: item.product.title,
-                              });
-                            }}
-                            className="inline-flex cursor-pointer items-center justify-center rounded-md p-0.5 text-text-secondary transition-colors hover:text-primary"
-                            title="Редактировать ТМЦ"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-3.5">
-                              <path d="M5.433 13.917l1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65z" />
-                              <path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0 0 10 3H4.75A2.75 2.75 0 0 0 2 5.75v9.5A2.75 2.75 0 0 0 4.75 18h9.5A2.75 2.75 0 0 0 17 15.25V10a.75.75 0 0 0-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5z" />
+                        <span className="min-w-0 flex-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                          <Tooltip text={item.product.title}>
+                            <span className="break-words">{item.product.title}</span>
+                          </Tooltip>
+                          {!readOnly && (
+                            <span
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingProduct({
+                                  itemId: item.id,
+                                  orderId: order.id,
+                                  productId: item.productId,
+                                  productTitle: item.product.title,
+                                });
+                              }}
+                              className="inline-flex cursor-pointer items-center justify-center rounded-md p-0.5 text-text-secondary transition-colors hover:text-primary"
+                              title="Редактировать ТМЦ"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-3.5">
+                                <path d="M5.433 13.917l1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65z" />
+                                <path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0 0 10 3H4.75A2.75 2.75 0 0 0 2 5.75v9.5A2.75 2.75 0 0 0 4.75 18h9.5A2.75 2.75 0 0 0 17 15.25V10a.75.75 0 0 0-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5z" />
+                              </svg>
+                            </span>
+                          )}
+                          {item.comment && (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                              className="size-3.5 text-accent-blue shrink-0"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 0 1-4.083-.98L2 17l1.338-2.566A6.973 6.973 0 0 1 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7ZM7 9H5v2h2V9Zm8 0h-2v2h2V9Zm-4 0H9v2h2V9Z"
+                                clipRule="evenodd"
+                              />
                             </svg>
-                          </span>
-                        )}
-                        {item.comment && (
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                            className="size-3.5 text-accent-blue shrink-0"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 0 1-4.083-.98L2 17l1.338-2.566A6.973 6.973 0 0 1 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7ZM7 9H5v2h2V9Zm8 0h-2v2h2V9Zm-4 0H9v2h2V9Z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        )}
+                          )}
+                        </span>
                       </button>
                     </td>
                     <td className="w-16 px-2 py-1.5 sm:px-4 sm:py-2 text-text-secondary max-sm:hidden">

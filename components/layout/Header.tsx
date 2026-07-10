@@ -7,6 +7,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ThemeSwitcher } from "../theme/ThemeSwitcher";
+import { MessageButton } from "../messages/MessageButton";
 import { getSession } from "@/app/lib/auth";
 export async function Header() {
   const session = await getSession();
@@ -30,6 +31,7 @@ export async function Header() {
         </Link>
 
         <div className="flex items-center gap-4">
+          {session && <MessageButton />}
           <Link
             href="/help"
             className="flex max-sm:min-h-11 items-center rounded-md px-3 text-sm font-medium text-text-secondary transition-colors hover:text-foreground"

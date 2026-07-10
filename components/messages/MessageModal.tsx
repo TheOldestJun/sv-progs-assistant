@@ -1,0 +1,486 @@
+/*
+ * MessageModal — модальное окно с двухпанельным макетом диалогов
+ * Закрывается по клику вне области модала или Escape
+ */
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+
+interface UserBrief {
+  id: string;
+  name: string;
+}
+
+interface LastMessage {
+  id: string;
+  text: string;
+  createdAt: string;
+  senderId: string;
+}
+
+interface Conversation {
+  user: UserBrief;
+  lastMessage: LastMessage;
+  unreadCount: number;
+}
+
+interface Message {
+  id: string;
+  text: string;
+  createdAt: string;
+  senderId: string;
+  sender: UserBrief;
+  receiver: UserBrief;
+  readAt: string | null;
+}
+
+function RecipientPicker({
+  users,
+  selectedId,
+  onSelect,
+  onClose,
+}: {
+  users: UserBrief[];
+  selectedId: string;
+  onSelect: (id: string) => void;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const filtered = users.filter(
+    (u) => u.name.toLowerCase().includes(query.toLowerCase()),
+  );
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-sm animate-fade-in overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-800 dark:text-gray-100">
+        <div className="border-b border-border p-4">
+          <h3 className="text-sm font-semibold text-foreground">Выберите получателя</h3>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Поиск…"
+            autoFocus
+            className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+          />
+        </div>
+        <div className="max-h-60 overflow-y-auto">
+          {filtered.length === 0 ? (
+            <p className="p-4 text-center text-sm text-text-secondary">Ничего не найдено</p>
+          ) : (
+            filtered.map((u) => (
+              <button
+                key={u.id}
+                onClick={() => { onSelect(u.id); onClose(); }}
+                className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface ${
+                  u.id === selectedId ? "bg-primary/5" : ""
+                }`}
+              >
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                  {u.name.charAt(0).toUpperCase()}
+                </div>
+                <span className="text-sm font-medium text-foreground">{u.name}</span>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function MessageModal({ onClose }: { onClose: () => void }) {
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loadingConv, setLoadingConv] = useState(true);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loadingMsgs, setLoadingMsgs] = useState(false);
+  const [myId, setMyId] = useState<string | null>(null);
+  const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [showNewMessage, setShowNewMessage] = useState(false);
+  const [users, setUsers] = useState<UserBrief[]>([]);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  const fetchConversations = useCallback(async () => {
+    try {
+      const res = await fetch("/api/messages");
+      if (res.ok) {
+        const data = await res.json();
+        setConversations(data);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoadingConv(false);
+    }
+  }, []);
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      const res = await fetch("/api/users");
+      if (res.ok) {
+        const data = await res.json();
+        setUsers(data);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchConversations();
+    fetchUsers();
+  }, [fetchConversations, fetchUsers]);
+
+  const openConversation = useCallback(async (userId: string) => {
+    setSelectedUserId(userId);
+    setLoadingMsgs(true);
+    try {
+      const res = await fetch(`/api/messages/${userId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setMessages(data);
+        if (data.length > 0) {
+          setMyId(
+            data[0].senderId === userId ? data[0].receiver.id : data[0].sender.id,
+          );
+        }
+        await fetch("/api/messages/read", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ senderId: userId }),
+        });
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoadingMsgs(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!selectedUserId) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/messages/${selectedUserId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setMessages(data);
+          if (data.length > 0) {
+            setMyId(
+              data[0].senderId === selectedUserId ? data[0].receiver.id : data[0].sender.id,
+            );
+          }
+        }
+        await fetch("/api/messages/read", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ senderId: selectedUserId }),
+        });
+      } catch {
+        // ignore
+      }
+    }, 10_000);
+    return () => clearInterval(interval);
+  }, [selectedUserId]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  useEffect(() => {
+    if (selectedUserId) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [selectedUserId]);
+
+  useEffect(() => {
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [onClose]);
+
+  async function handleSend(e: React.FormEvent) {
+    e.preventDefault();
+    if (!text.trim() || sending || !selectedUserId) return;
+    setSending(true);
+    try {
+      const res = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ receiverId: selectedUserId, text: text.trim() }),
+      });
+      if (res.ok) {
+        const msg = await res.json();
+        setMessages((prev) => [...prev, msg]);
+        setText("");
+        fetchConversations();
+      }
+    } catch {
+      // ignore
+    } finally {
+      setSending(false);
+    }
+  }
+
+  const selectedUser = selectedUserId
+    ? (conversations.find((c) => c.user.id === selectedUserId)?.user ??
+      (messages.length > 0
+        ? (messages[0].senderId === selectedUserId
+          ? messages[0].sender
+          : messages[0].receiver)
+        : null))
+    : null;
+
+  const chatUserName = selectedUserId
+    ? (selectedUser?.name ??
+       users.find((u) => u.id === selectedUserId)?.name ??
+       "Загрузка…")
+    : null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop — click to close */}
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Modal body */}
+      <div
+        ref={modalRef}
+        className="relative z-10 flex h-[80vh] max-h-[calc(100vh-2rem)] w-full max-w-4xl animate-fade-in flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-800 dark:text-gray-100"
+      >
+        {/* Modal header */}
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <h2 className="text-base font-semibold text-foreground">Сообщения</h2>
+          <button
+            onClick={onClose}
+            className="flex size-8 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-surface hover:text-foreground"
+            aria-label="Закрыть"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-5">
+              <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Two-panel content */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left panel — conversations list */}
+          <div className="flex w-64 shrink-0 flex-col border-r border-border max-sm:hidden">
+            <div className="flex items-center justify-between px-4 py-3">
+              <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">Диалоги</span>
+              <button
+                onClick={() => setShowNewMessage(true)}
+                className="flex size-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground transition-colors hover:bg-primary-hover"
+                aria-label="Новое сообщение"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
+                  <path d="M10 3a.75.75 0 0 1 .75.75v5.5h5.5a.75.75 0 0 1 0 1.5h-5.5v5.5a.75.75 0 0 1-1.5 0v-5.5h-5.5a.75.75 0 0 1 0-1.5h5.5v-5.5A.75.75 0 0 1 10 3Z" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {loadingConv ? (
+                <p className="p-4 text-center text-xs text-text-secondary">Загрузка…</p>
+              ) : conversations.length === 0 ? (
+                <p className="p-4 text-center text-xs text-text-secondary">Нет диалогов</p>
+              ) : (
+                conversations.map((c) => (
+                  <button
+                    key={c.user.id}
+                    onClick={() => openConversation(c.user.id)}
+                    className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface ${
+                      selectedUserId === c.user.id ? "bg-surface" : ""
+                    }`}
+                  >
+                    <div className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                      {c.user.name.charAt(0).toUpperCase()}
+                      {c.unreadCount > 0 && (
+                        <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white">
+                          {c.unreadCount > 9 ? "9+" : c.unreadCount}
+                        </span>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium text-foreground">
+                        {c.user.name}
+                      </div>
+                      <div className="truncate text-xs text-text-secondary">
+                        {c.lastMessage.senderId === c.user.id && "→ "}
+                        {c.lastMessage.text}
+                      </div>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Right panel — conversation or empty state */}
+          <div className="flex flex-1 flex-col overflow-hidden">
+            {selectedUserId ? (
+              <>
+                {/* Chat header */}
+                <div className="flex items-center gap-3 border-b border-border px-5 py-3">
+                  <button
+                    onClick={() => setSelectedUserId(null)}
+                    className="flex size-8 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-surface hover:text-foreground sm:hidden"
+                    aria-label="Назад к списку"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-5">
+                      <path fillRule="evenodd" d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 1 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                  <div className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                    {chatUserName?.charAt(0).toUpperCase() ?? "?"}
+                  </div>
+                  <span className="text-sm font-semibold text-foreground">
+                    {chatUserName}
+                  </span>
+                </div>
+
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto p-4">
+                  {loadingMsgs ? (
+                    <p className="py-12 text-center text-sm text-text-secondary">Загрузка…</p>
+                  ) : messages.length === 0 ? (
+                    <p className="py-12 text-center text-sm text-text-secondary">
+                      Напишите первое сообщение
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {messages.map((msg) => {
+                        const isMine = myId ? msg.senderId === myId : msg.senderId !== selectedUserId;
+                        return (
+                          <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
+                            <div
+                              className={`max-w-[75%] rounded-lg px-3 py-2 text-sm ${
+                                isMine
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-surface text-foreground"
+                              }`}
+                            >
+                              <p>{msg.text}</p>
+                              <p className={`mt-0.5 text-[10px] ${isMine ? "text-primary-foreground/60" : "text-text-secondary"}`}>
+                                {new Date(msg.createdAt).toLocaleTimeString("ru-RU", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                                {isMine && msg.readAt && " ✓"}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div ref={bottomRef} />
+                    </div>
+                  )}
+                </div>
+
+                {/* Reply form */}
+                <form onSubmit={handleSend} className="flex items-center gap-2 border-t border-border p-3">
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder="Ответить…"
+                    disabled={sending}
+                    className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary disabled:opacity-50"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!text.trim() || sending}
+                    className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
+                  >
+                    {sending ? "…" : "Отправить"}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div className="flex flex-1 flex-col items-center justify-center gap-4 p-4">
+                <div className="sm:hidden">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">Диалоги</span>
+                    <button
+                      onClick={() => setShowNewMessage(true)}
+                      className="flex size-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground transition-colors hover:bg-primary-hover"
+                      aria-label="Новое сообщение"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
+                        <path d="M10 3a.75.75 0 0 1 .75.75v5.5h5.5a.75.75 0 0 1 0 1.5h-5.5v5.5a.75.75 0 0 1-1.5 0v-5.5h-5.5a.75.75 0 0 1 0-1.5h5.5v-5.5A.75.75 0 0 1 10 3Z" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="mt-3 space-y-1">
+                    {loadingConv ? (
+                      <p className="text-center text-xs text-text-secondary">Загрузка…</p>
+                    ) : conversations.length === 0 ? (
+                      <p className="text-center text-xs text-text-secondary">Нет диалогов</p>
+                    ) : (
+                      conversations.map((c) => (
+                        <button
+                          key={c.user.id}
+                          onClick={() => openConversation(c.user.id)}
+                          className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors hover:bg-surface"
+                        >
+                          <div className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                            {c.user.name.charAt(0).toUpperCase()}
+                            {c.unreadCount > 0 && (
+                              <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white">
+                                {c.unreadCount > 9 ? "9+" : c.unreadCount}
+                              </span>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-sm font-medium text-foreground">{c.user.name}</div>
+                            <div className="truncate text-xs text-text-secondary">
+                              {c.lastMessage.senderId === c.user.id && "→ "}
+                              {c.lastMessage.text}
+                            </div>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+                <div className="hidden sm:flex sm:flex-col sm:items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-12 text-text-secondary/40">
+                    <path d="M2 3.5A1.5 1.5 0 0 1 3.5 2h13A1.5 1.5 0 0 1 18 3.5v9a1.5 1.5 0 0 1-1.5 1.5h-6.75l-3.97 3.17A.5.5 0 0 1 5 16.69V14H3.5A1.5 1.5 0 0 1 2 12.5v-9Z" />
+                  </svg>
+                  <p className="mt-3 text-sm text-text-secondary">
+                    Выберите диалог или создайте новый
+                  </p>
+                  <button
+                    onClick={() => setShowNewMessage(true)}
+                    className="mt-3 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover"
+                  >
+                    Новое сообщение
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Recipient picker (nested modal) */}
+      {showNewMessage && (
+        <RecipientPicker
+          users={users.filter((u) => u.id !== myId)}
+          selectedId=""
+          onSelect={(id) => {
+            openConversation(id);
+            setShowNewMessage(false);
+          }}
+          onClose={() => setShowNewMessage(false)}
+        />
+      )}
+    </div>
+  );
+}
