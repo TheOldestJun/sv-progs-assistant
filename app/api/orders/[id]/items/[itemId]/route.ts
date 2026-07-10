@@ -59,7 +59,7 @@ export async function PATCH(
     const { id, itemId } = await params;
 
     const body = await _request.json();
-    const { status, warehouseMode, changedAt, productId } = body;
+    const { status, quantity, warehouseMode, changedAt, productId } = body;
 
     const item = await db.orderItem.findFirst({
       where: { id: itemId, orderId: id },
@@ -71,6 +71,24 @@ export async function PATCH(
 
     if (!item) {
       return NextResponse.json({ error: "Order item not found" }, { status: 404 });
+    }
+
+    // ——— Обновление количества ———
+    if (quantity !== undefined) {
+      if (typeof quantity !== "number" || quantity <= 0) {
+        return NextResponse.json({ error: "Quantity must be a positive number" }, { status: 400 });
+      }
+
+      const updated = await db.orderItem.update({
+        where: { id: itemId },
+        data: { quantity },
+        include: {
+          product: { select: { title: true } },
+          units: { select: { title: true } },
+        },
+      });
+
+      return NextResponse.json(updated);
     }
 
     // ——— Замена ТМЦ ———
@@ -118,14 +136,14 @@ export async function PATCH(
           { status: 403 },
         );
       }
-    } else if (status === OrderItemStatus.RECEIVED) {
+    } else if (status === OrderItemStatus.RECEIVED && !session.roles.includes(Role.ADMIN)) {
       return NextResponse.json(
         { error: "Только кладовщик может подтвердить получение товара" },
         { status: 403 },
       );
     }
 
-    if (item.status === OrderItemStatus.RECEIVED) {
+    if (item.status === OrderItemStatus.RECEIVED && !session.roles.includes(Role.ADMIN)) {
       return NextResponse.json(
         { error: "Нельзя изменить статус после получения товара на склад" },
         { status: 400 },
