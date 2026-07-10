@@ -1,10 +1,12 @@
 /*
  * MessageModal — модальное окно с двухпанельным макетом диалогов
  * Закрывается по клику вне области модала или Escape
+ * Использует TanStack Query (polling 10s)
  */
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface UserBrief {
   id: string;
@@ -34,6 +36,7 @@ interface Message {
   readAt: string | null;
 }
 
+// ——— Recipient Picker ———
 function RecipientPicker({
   users,
   selectedId,
@@ -46,16 +49,21 @@ function RecipientPicker({
   onClose: () => void;
 }) {
   const [query, setQuery] = useState("");
-  const filtered = users.filter(
-    (u) => u.name.toLowerCase().includes(query.toLowerCase()),
+  const filtered = users.filter((u) =>
+    u.name.toLowerCase().includes(query.toLowerCase()),
   );
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
       <div className="relative z-10 w-full max-w-sm animate-fade-in overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-800 dark:text-gray-100">
         <div className="border-b border-border p-4">
-          <h3 className="text-sm font-semibold text-foreground">Выберите получателя</h3>
+          <h3 className="text-sm font-semibold text-foreground">
+            Выберите получателя
+          </h3>
           <input
             type="text"
             value={query}
@@ -67,7 +75,9 @@ function RecipientPicker({
         </div>
         <div className="max-h-60 overflow-y-auto">
           {filtered.length === 0 ? (
-            <p className="p-4 text-center text-sm text-text-secondary">Ничего не найдено</p>
+            <p className="p-4 text-center text-sm text-text-secondary">
+              Ничего не найдено
+            </p>
           ) : (
             filtered.map((u) => (
               <button
@@ -80,7 +90,9 @@ function RecipientPicker({
                 <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
                   {u.name.charAt(0).toUpperCase()}
                 </div>
-                <span className="text-sm font-medium text-foreground">{u.name}</span>
+                <span className="text-sm font-medium text-foreground">
+                  {u.name}
+                </span>
               </button>
             ))
           )}
@@ -90,114 +102,112 @@ function RecipientPicker({
   );
 }
 
+// ——— Main Modal ———
 export function MessageModal({ onClose }: { onClose: () => void }) {
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [loadingConv, setLoadingConv] = useState(true);
+  const queryClient = useQueryClient();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loadingMsgs, setLoadingMsgs] = useState(false);
-  const [myId, setMyId] = useState<string | null>(null);
   const [text, setText] = useState("");
-  const [sending, setSending] = useState(false);
   const [showNewMessage, setShowNewMessage] = useState(false);
-  const [users, setUsers] = useState<UserBrief[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
-  const fetchConversations = useCallback(async () => {
-    try {
+  // Conversations list (polling 10s)
+  const { data: conversations = [], isLoading: loadingConv } = useQuery<Conversation[]>({
+    queryKey: ["conversations"],
+    queryFn: async () => {
       const res = await fetch("/api/messages");
-      if (res.ok) {
-        const data = await res.json();
-        setConversations(data);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLoadingConv(false);
-    }
-  }, []);
+      if (!res.ok) throw new Error("Failed to fetch conversations");
+      return res.json();
+    },
+    refetchInterval: 10_000,
+  });
 
-  const fetchUsers = useCallback(async () => {
-    try {
+  // Current user
+  const { data: currentUser } = useQuery<UserBrief | null>({
+    queryKey: ["currentUser"],
+    queryFn: async () => {
+      const res = await fetch("/api/auth/me");
+      if (!res.ok) return null;
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Users list (long-lived cache)
+  const { data: users = [] } = useQuery<UserBrief[]>({
+    queryKey: ["users"],
+    queryFn: async () => {
       const res = await fetch("/api/users");
-      if (res.ok) {
-        const data = await res.json();
-        setUsers(data);
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
+      if (!res.ok) throw new Error("Failed to fetch users");
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
+  // Messages for selected conversation (polling 10s)
+  const {
+    data: messages = [],
+    isLoading: loadingMsgs,
+  } = useQuery<Message[]>({
+    queryKey: ["messages", selectedUserId],
+    queryFn: async () => {
+      const res = await fetch(`/api/messages/${selectedUserId}`);
+      if (!res.ok) throw new Error("Failed to fetch messages");
+      return res.json();
+    },
+    enabled: !!selectedUserId,
+    refetchInterval: 10_000,
+  });
+
+  // Send message mutation
+  const sendMutation = useMutation({
+    mutationFn: async (messageText: string) => {
+      const res = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ receiverId: selectedUserId, text: messageText }),
+      });
+      if (!res.ok) throw new Error("Failed to send message");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["messages", selectedUserId] });
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    },
+  });
+
+  // Mark as read mutation
+  const readMutation = useMutation({
+    mutationFn: async (senderId: string) => {
+      await fetch("/api/messages/read", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ senderId }),
+      });
+    },
+  });
+
+  // Mark messages as read when conversation opens
   useEffect(() => {
-    fetchConversations();
-    fetchUsers();
-  }, [fetchConversations, fetchUsers]);
-
-  const openConversation = useCallback(async (userId: string) => {
-    setSelectedUserId(userId);
-    setLoadingMsgs(true);
-    try {
-      const res = await fetch(`/api/messages/${userId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setMessages(data);
-        if (data.length > 0) {
-          setMyId(
-            data[0].senderId === userId ? data[0].receiver.id : data[0].sender.id,
-          );
-        }
-        await fetch("/api/messages/read", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ senderId: userId }),
-        });
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLoadingMsgs(false);
+    if (selectedUserId) {
+      readMutation.mutate(selectedUserId);
     }
-  }, []);
-
-  useEffect(() => {
-    if (!selectedUserId) return;
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/messages/${selectedUserId}`);
-        if (res.ok) {
-          const data = await res.json();
-          setMessages(data);
-          if (data.length > 0) {
-            setMyId(
-              data[0].senderId === selectedUserId ? data[0].receiver.id : data[0].sender.id,
-            );
-          }
-        }
-        await fetch("/api/messages/read", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ senderId: selectedUserId }),
-        });
-      } catch {
-        // ignore
-      }
-    }, 10_000);
-    return () => clearInterval(interval);
   }, [selectedUserId]);
 
+  // Scroll to bottom on new messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Focus input on conversation open
   useEffect(() => {
     if (selectedUserId) {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [selectedUserId]);
 
+  // Escape closes modal
   useEffect(() => {
     function handleEscape(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -206,57 +216,45 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
     return () => document.removeEventListener("keydown", handleEscape);
   }, [onClose]);
 
+  // Send message handler
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
-    if (!text.trim() || sending || !selectedUserId) return;
-    setSending(true);
-    try {
-      const res = await fetch("/api/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ receiverId: selectedUserId, text: text.trim() }),
-      });
-      if (res.ok) {
-        const msg = await res.json();
-        setMessages((prev) => [...prev, msg]);
-        setText("");
-        fetchConversations();
-      }
-    } catch {
-      // ignore
-    } finally {
-      setSending(false);
-    }
+    if (!text.trim() || sendMutation.isPending || !selectedUserId) return;
+    sendMutation.mutate(text.trim(), {
+      onSuccess: () => setText(""),
+    });
   }
 
-  const selectedUser = selectedUserId
-    ? (conversations.find((c) => c.user.id === selectedUserId)?.user ??
-      (messages.length > 0
-        ? (messages[0].senderId === selectedUserId
-          ? messages[0].sender
-          : messages[0].receiver)
-        : null))
-    : null;
+  // Open conversation
+  const openConversation = useCallback((userId: string) => {
+    setSelectedUserId(userId);
+  }, []);
 
+  // Derive selected user name
   const chatUserName = selectedUserId
-    ? (selectedUser?.name ??
+    ? (conversations.find((c) => c.user.id === selectedUserId)?.user.name ??
        users.find((u) => u.id === selectedUserId)?.name ??
        "Загрузка…")
     : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop — click to close */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
 
       {/* Modal body */}
       <div
         ref={modalRef}
         className="relative z-10 flex h-[80vh] max-h-[calc(100vh-2rem)] w-full max-w-4xl animate-fade-in flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-800 dark:text-gray-100"
       >
-        {/* Modal header */}
+        {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h2 className="text-base font-semibold text-foreground">Сообщения</h2>
+          <h2 className="text-base font-semibold text-foreground">
+            Сообщения
+          </h2>
           <button
             onClick={onClose}
             className="flex size-8 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-surface hover:text-foreground"
@@ -270,10 +268,12 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
 
         {/* Two-panel content */}
         <div className="flex flex-1 overflow-hidden">
-          {/* Left panel — conversations list */}
+          {/* Left panel — conversations */}
           <div className="flex w-64 shrink-0 flex-col border-r border-border max-sm:hidden">
             <div className="flex items-center justify-between px-4 py-3">
-              <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">Диалоги</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                Диалоги
+              </span>
               <button
                 onClick={() => setShowNewMessage(true)}
                 className="flex size-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground transition-colors hover:bg-primary-hover"
@@ -321,7 +321,7 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
             </div>
           </div>
 
-          {/* Right panel — conversation or empty state */}
+          {/* Right panel — conversation or empty */}
           <div className="flex flex-1 flex-col overflow-hidden">
             {selectedUserId ? (
               <>
@@ -355,7 +355,7 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
                   ) : (
                     <div className="space-y-3">
                       {messages.map((msg) => {
-                        const isMine = myId ? msg.senderId === myId : msg.senderId !== selectedUserId;
+                        const isMine = msg.senderId !== selectedUserId;
                         return (
                           <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
                             <div
@@ -382,7 +382,7 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
                   )}
                 </div>
 
-                {/* Reply form */}
+                {/* Reply */}
                 <form onSubmit={handleSend} className="flex items-center gap-2 border-t border-border p-3">
                   <input
                     ref={inputRef}
@@ -390,15 +390,15 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     placeholder="Ответить…"
-                    disabled={sending}
+                    disabled={sendMutation.isPending}
                     className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary disabled:opacity-50"
                   />
                   <button
                     type="submit"
-                    disabled={!text.trim() || sending}
+                    disabled={!text.trim() || sendMutation.isPending}
                     className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
                   >
-                    {sending ? "…" : "Отправить"}
+                    {sendMutation.isPending ? "…" : "Отправить"}
                   </button>
                 </form>
               </>
@@ -406,7 +406,9 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
               <div className="flex flex-1 flex-col items-center justify-center gap-4 p-4">
                 <div className="sm:hidden">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">Диалоги</span>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                      Диалоги
+                    </span>
                     <button
                       onClick={() => setShowNewMessage(true)}
                       className="flex size-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground transition-colors hover:bg-primary-hover"
@@ -438,7 +440,9 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
                             )}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <div className="truncate text-sm font-medium text-foreground">{c.user.name}</div>
+                            <div className="truncate text-sm font-medium text-foreground">
+                              {c.user.name}
+                            </div>
                             <div className="truncate text-xs text-text-secondary">
                               {c.lastMessage.senderId === c.user.id && "→ "}
                               {c.lastMessage.text}
@@ -469,10 +473,10 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
         </div>
       </div>
 
-      {/* Recipient picker (nested modal) */}
+      {/* Recipient picker */}
       {showNewMessage && (
         <RecipientPicker
-          users={users.filter((u) => u.id !== myId)}
+          users={users.filter((u) => u.id !== currentUser?.id)}
           selectedId=""
           onSelect={(id) => {
             openConversation(id);

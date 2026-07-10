@@ -1,40 +1,31 @@
 /*
  * MessageButton — иконка сообщений в хедере с бейджем непрочитанных
- * Опрашивает /api/messages/unread-count каждые 10 секунд
+ * Опрашивает /api/messages/unread-count через TanStack Query (10s polling)
  * Открывает MessageModal по клику
  */
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
+import { useQuery } from "@tanstack/react-query";
 import { MessageModal } from "./MessageModal";
 
 export function MessageButton() {
-  const [unread, setUnread] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
 
-  const fetchUnread = useCallback(async () => {
-    try {
+  const { data, isLoading } = useQuery<{ count: number }>({
+    queryKey: ["unread-count"],
+    queryFn: async () => {
       const res = await fetch("/api/messages/unread-count");
-      if (res.ok) {
-        const data = await res.json();
-        setUnread(data.count);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      if (!res.ok) return { count: 0 };
+      return res.json();
+    },
+    refetchInterval: 10_000,
+  });
 
-  useEffect(() => {
-    fetchUnread();
-    const interval = setInterval(fetchUnread, 10_000);
-    return () => clearInterval(interval);
-  }, [fetchUnread]);
+  if (isLoading) return null;
 
-  if (loading) return null;
+  const unread = data?.count ?? 0;
 
   return (
     <>
