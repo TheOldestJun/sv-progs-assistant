@@ -1,6 +1,8 @@
 /*
- * GET   /api/orders/:id/items/:itemId — история статусов позиции
- * PATCH /api/orders/:id/items/:itemId — обновление статуса или замена ТМЦ в позиции
+ * GET    /api/orders/:id/items/:itemId — история статусов позиции
+ * PATCH  /api/orders/:id/items/:itemId — обновление статуса или замена ТМЦ в позиции
+ * DELETE /api/orders/:id/items/:itemId — админ: удаляет пункт из заявки и создаёт новую
+ *                                        с тем же заявителем/датой + пометка "непредвиденные проблемы"
  */
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
@@ -177,6 +179,80 @@ export async function PATCH(
     ]);
 
     return NextResponse.json(updated);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string; itemId: string }> },
+) {
+  const session = await getSession();
+  if (!session || !session.roles.includes(Role.ADMIN)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  try {
+    const { id, itemId } = await params;
+
+    // Читаем причину из тела запроса
+    let reason = "непредвиденные проблемы";
+    try {
+      const body = await _request.json();
+      if (body.reason && typeof body.reason === "string" && body.reason.trim()) {
+        reason = body.reason.trim();
+      }
+    } catch {
+      // тела нет — используем значение по умолчанию
+    }
+
+    // Читаем позицию с данными заявки
+    const item = await db.orderItem.findFirst({
+      where: { id: itemId, orderId: id },
+      include: {
+        order: { select: { requesterId: true, created: true, createdById: true } },
+      },
+    });
+
+    if (!item) {
+      return NextResponse.json({ error: "Order item not found" }, { status: 404 });
+    }
+
+    // Создаём новую заявку с этой позицией и пометкой "непредвиденные проблемы"
+    const [newOrder] = await db.$transaction([
+      db.order.create({
+        data: {
+          requesterId: item.order.requesterId,
+          created: item.order.created,
+          createdById: item.order.createdById,
+          items: {
+            create: {
+              productId: item.productId,
+              unitId: item.unitId,
+              quantity: item.quantity,
+              comment: reason,
+            },
+          },
+        },
+        include: {
+          requester: { select: { name: true } },
+          items: {
+            include: {
+              product: { select: { title: true } },
+              units: { select: { title: true } },
+            },
+          },
+        },
+      }),
+      // Удаляем позицию из старой заявки
+      db.orderItem.delete({ where: { id: itemId } }),
+    ]);
+
+    return NextResponse.json({ success: true, newOrder });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },

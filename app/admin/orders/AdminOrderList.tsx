@@ -101,6 +101,8 @@ export function AdminOrderList({ orders: initial }: { orders: Order[] }) {
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const { showToast } = useToast();
+  const [bumpItem, setBumpItem] = useState<{ orderId: string; itemId: string; productName: string } | null>(null);
+  const [bumpReason, setBumpReason] = useState("");
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -180,6 +182,41 @@ export function AdminOrderList({ orders: initial }: { orders: Order[] }) {
     setMenuPos(null);
   }
 
+  function handleBumpClick(orderId: string, itemId: string, productName: string) {
+    setBumpItem({ orderId, itemId, productName });
+    setBumpReason("");
+  }
+
+  async function handleBumpConfirm() {
+    if (!bumpItem) return;
+    const { orderId, itemId } = bumpItem;
+    const reason = bumpReason.trim();
+    if (!reason) {
+      showToast("Укажите причину", "error");
+      return;
+    }
+
+    const res = await fetch(`/api/orders/${orderId}/items/${itemId}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason }),
+    });
+    if (res.ok) {
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderId
+            ? { ...o, items: o.items.filter((it) => it.id !== itemId) }
+            : o,
+        ),
+      );
+      setBumpItem(null);
+      showToast("Пункт перенесён в новую заявку", "success");
+    } else {
+      const err = await res.json();
+      showToast(err.error || "Ошибка", "error");
+    }
+  }
+
   async function handleQuantityChange(
     orderId: string,
     itemId: string,
@@ -220,6 +257,7 @@ export function AdminOrderList({ orders: initial }: { orders: Order[] }) {
   }
 
   return (
+    <>
     <div className="overflow-x-auto">
       {openMenu && menuPos && (
         <>
@@ -329,7 +367,7 @@ export function AdminOrderList({ orders: initial }: { orders: Order[] }) {
                 </tr>
                 {isExpanded && (
                   <tr>
-                    <td colSpan={5} className="bg-surface-secondary px-3 py-3">
+                    <td colSpan={6} className="bg-surface-secondary px-3 py-3">
                       <table className="w-full text-xs">
                         <thead>
                           <tr className="text-text-secondary">
@@ -338,6 +376,7 @@ export function AdminOrderList({ orders: initial }: { orders: Order[] }) {
                             <th className="px-2 py-1 text-right font-medium">Кол-во</th>
                             <th className="px-2 py-1 text-left font-medium">Статус</th>
                             <th className="px-2 py-1 text-left font-medium">Комментарий</th>
+                            <th className="px-2 py-1" />
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
@@ -391,6 +430,16 @@ export function AdminOrderList({ orders: initial }: { orders: Order[] }) {
                                 <td className="px-2 py-1 text-text-secondary">
                                   {item.comment || "—"}
                                 </td>
+                                <td className="px-2 py-1 text-right">
+                                  <button
+                                    onClick={() => handleBumpClick(order.id, item.id, item.product.title)}
+                                    disabled={isItemLoading}
+                                    className="rounded-md px-2 py-0.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-950"
+                                    title="Перенести в новую заявку"
+                                  >
+                                    🗑️
+                                  </button>
+                                </td>
                               </tr>
                             );
                           })}
@@ -405,5 +454,49 @@ export function AdminOrderList({ orders: initial }: { orders: Order[] }) {
         </tbody>
       </table>
     </div>
+
+      {/* Диалог переноса позиции */}
+      {bumpItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setBumpItem(null)} />
+          <div className="relative z-10 w-full max-w-md animate-fade-in overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-800 dark:text-gray-100">
+            <div className="p-6">
+              <h2 className="text-base font-semibold text-foreground">
+                Перенести позицию
+              </h2>
+              <p className="mt-2 text-sm text-text-secondary">
+                Позиция «{bumpItem.productName}» будет перенесена в новую заявку.
+              </p>
+              <label className="mt-4 block text-sm font-medium text-foreground">
+                Причина переноса
+              </label>
+              <input
+                type="text"
+                value={bumpReason}
+                onChange={(e) => setBumpReason(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleBumpConfirm(); }}
+                placeholder="непредвиденные проблемы"
+                className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary"
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end gap-3 border-t border-border bg-surface-secondary px-6 py-4">
+              <button
+                onClick={() => setBumpItem(null)}
+                className="inline-flex h-10 items-center rounded-lg border border-border bg-surface px-4 text-sm font-medium text-foreground transition-colors hover:bg-surface-secondary"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleBumpConfirm}
+                className="inline-flex h-10 items-center rounded-lg bg-red-600 px-4 text-sm font-medium text-white transition-colors hover:bg-red-700"
+              >
+                Перенести
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

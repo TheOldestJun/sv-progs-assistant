@@ -1,10 +1,14 @@
 /*
  * SupplyDeptDashboard — вкладка отдела снабжения.
- * Показывает таблицу всех заявок с управлением статусами.
+ * Три вкладки:
+ * - «Выполнение заявок» — таблица с управлением статусами
+ * - «Пропуска» — создание пропусков
  */
 "use client";
 
 import { OrderStatusTable } from "./OrderStatusTable";
+import { DashboardTabs } from "./DashboardTabs";
+import { PassForm } from "@/components/passes/PassForm";
 
 export function SupplyDeptDashboard() {
   return (
@@ -21,7 +25,16 @@ export function SupplyDeptDashboard() {
         </div>
       </div>
 
-      <OrderStatusTable />
+      <DashboardTabs
+        tabs={[
+          { role: "orders", label: "Выполнение заявок", icon: "📋" },
+          { role: "passes", label: "Создать пропуски", icon: "🪪" },
+        ]}
+      >
+        <OrderStatusTable />
+
+        <PassForm />
+      </DashboardTabs>
     </section>
   );
 }

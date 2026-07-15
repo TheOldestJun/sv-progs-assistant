@@ -15,6 +15,7 @@ import { useToast } from "@/components/ui/Toast";
 import { OrderStatusTable } from "./OrderStatusTable";
 import { DashboardTabs } from "./DashboardTabs";
 import { DatePicker } from "@/components/ui/DatePicker";
+import { PassForm } from "@/components/passes/PassForm";
 
 interface OrderItem {
   id: string;
@@ -186,6 +187,7 @@ export function HeadOfSupplyDashboard() {
         tabs={[
           { role: "create", label: "Новая заявка", icon: "✏️" },
           { role: "orders", label: "Выполнение заявок", icon: "📋" },
+          { role: "passes", label: "Создать пропуски", icon: "🪪" },
         ]}
       >
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -303,6 +305,8 @@ export function HeadOfSupplyDashboard() {
         <div>
           <OrderStatusTable />
         </div>
+
+        <PassForm />
       </DashboardTabs>
     </section>
   );
