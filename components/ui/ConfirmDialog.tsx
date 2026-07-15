@@ -18,6 +18,7 @@ import {
   useRef,
   useEffect,
 } from "react";
+import { useTranslations } from "next-intl";
 
 type ConfirmVariant = "danger" | "default";
 
@@ -57,12 +58,13 @@ export function ConfirmProvider({
 }: {
   children: React.ReactNode;
 }) {
+  const t = useTranslations("common");
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<Required<ConfirmOptions>>({
     title: "",
     message: "",
-    confirmText: "Подтвердить",
-    cancelText: "Отмена",
+    confirmText: t("confirm"),
+    cancelText: t("cancel"),
     variant: "default",
   });
   const resolveRef = useRef<((value: boolean) => void) | null>(null);
@@ -72,15 +74,15 @@ export function ConfirmProvider({
     setOptions({
       title: opts.title,
       message: opts.message,
-      confirmText: opts.confirmText || "Подтвердить",
-      cancelText: opts.cancelText || "Отмена",
+      confirmText: opts.confirmText || t("confirm"),
+      cancelText: opts.cancelText || t("cancel"),
       variant: opts.variant || "default",
     });
     setOpen(true);
     return new Promise((resolve) => {
       resolveRef.current = resolve;
     });
-  }, []);
+  }, [t]);
 
   const handleConfirm = useCallback(() => {
     setOpen(false);

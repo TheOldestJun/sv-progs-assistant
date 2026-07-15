@@ -15,6 +15,7 @@ interface State {
   error: Error | null;
 }
 
+// TODO: Class component — cannot use hooks. Keep Russian string until migrated to a function component or error.tsx boundary.
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { hasError: false, error: null };
 

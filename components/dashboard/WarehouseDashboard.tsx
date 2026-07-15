@@ -7,11 +7,15 @@
  */
 "use client";
 
+import { useTranslations } from "next-intl";
 import { OrderStatusTable } from "./OrderStatusTable";
 import { DashboardTabs } from "./DashboardTabs";
 import { PassForm } from "@/components/passes/PassForm";
 
 export function WarehouseDashboard() {
+  const tPage = useTranslations("dashboard.warehouse");
+  const tTabs = useTranslations("dashboard.tabs");
+
   return (
     <div className="space-y-4">
       <section className="rounded-xl border border-border bg-surface p-4 sm:p-6">
@@ -19,19 +23,19 @@ export function WarehouseDashboard() {
           <span className="text-2xl">🏭</span>
           <div>
             <h2 className="text-lg font-semibold text-foreground">
-              Приёмка товаров
+              {tPage("title")}
             </h2>
             <p className="text-sm text-text-secondary">
-              Подтвердите получение товаров на склад
+              {tPage("subtitle")}
             </p>
           </div>
         </div>
 
         <DashboardTabs
           tabs={[
-            { role: "reception", label: "Приёмка", icon: "📥" },
-            { role: "overview", label: "Выполнение заявок", icon: "📋" },
-            { role: "passes", label: "Создать пропуски", icon: "🪪" },
+            { role: "reception", label: tTabs("receiving"), icon: "📥" },
+            { role: "overview", label: tTabs("fulfillment"), icon: "📋" },
+            { role: "passes", label: tTabs("passes"), icon: "🪪" },
           ]}
         >
           <OrderStatusTable warehouseMode />

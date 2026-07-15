@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslations, useLocale } from "next-intl";
 
 interface UserBrief {
   id: string;
@@ -42,11 +43,13 @@ function RecipientPicker({
   selectedId,
   onSelect,
   onClose,
+  t_messages,
 }: {
   users: UserBrief[];
   selectedId: string;
   onSelect: (id: string) => void;
   onClose: () => void;
+  t_messages: (key: string) => string;
 }) {
   const [query, setQuery] = useState("");
   const filtered = users.filter((u) =>
@@ -62,13 +65,13 @@ function RecipientPicker({
       <div className="relative z-10 w-full max-w-sm animate-fade-in overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-800 dark:text-gray-100">
         <div className="border-b border-border p-4">
           <h3 className="text-sm font-semibold text-foreground">
-            Выберите получателя
+            {t_messages("selectRecipient")}
           </h3>
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Поиск…"
+            placeholder={t_messages("search")}
             autoFocus
             className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
           />
@@ -76,7 +79,7 @@ function RecipientPicker({
         <div className="max-h-60 overflow-y-auto">
           {filtered.length === 0 ? (
             <p className="p-4 text-center text-sm text-text-secondary">
-              Ничего не найдено
+              {t_messages("empty")}
             </p>
           ) : (
             filtered.map((u) => (
@@ -104,6 +107,10 @@ function RecipientPicker({
 
 // ——— Main Modal ———
 export function MessageModal({ onClose }: { onClose: () => void }) {
+  const t = useTranslations("messages");
+  const t_common = useTranslations("common");
+  const locale = useLocale();
+
   const queryClient = useQueryClient();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [text, setText] = useState("");
@@ -234,7 +241,7 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
   const chatUserName = selectedUserId
     ? (conversations.find((c) => c.user.id === selectedUserId)?.user.name ??
        users.find((u) => u.id === selectedUserId)?.name ??
-       "Загрузка…")
+       t_common("loading"))
     : null;
 
   return (
@@ -253,12 +260,12 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <h2 className="text-base font-semibold text-foreground">
-            Сообщения
+            {t("title")}
           </h2>
           <button
             onClick={onClose}
             className="flex size-8 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-surface hover:text-foreground"
-            aria-label="Закрыть"
+            aria-label={t("close")}
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-5">
               <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
@@ -272,12 +279,12 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
           <div className="flex w-64 shrink-0 flex-col border-r border-border max-sm:hidden">
             <div className="flex items-center justify-between px-4 py-3">
               <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
-                Диалоги
+                {t("dialogs")}
               </span>
               <button
                 onClick={() => setShowNewMessage(true)}
                 className="flex size-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground transition-colors hover:bg-primary-hover"
-                aria-label="Новое сообщение"
+                aria-label={t("newMessage")}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
                   <path d="M10 3a.75.75 0 0 1 .75.75v5.5h5.5a.75.75 0 0 1 0 1.5h-5.5v5.5a.75.75 0 0 1-1.5 0v-5.5h-5.5a.75.75 0 0 1 0-1.5h5.5v-5.5A.75.75 0 0 1 10 3Z" />
@@ -286,9 +293,9 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
             </div>
             <div className="flex-1 overflow-y-auto">
               {loadingConv ? (
-                <p className="p-4 text-center text-xs text-text-secondary">Загрузка…</p>
+                <p className="p-4 text-center text-xs text-text-secondary">{t_common("loading")}</p>
               ) : conversations.length === 0 ? (
-                <p className="p-4 text-center text-xs text-text-secondary">Нет диалогов</p>
+                <p className="p-4 text-center text-xs text-text-secondary">{t("empty")}</p>
               ) : (
                 conversations.map((c) => (
                   <button
@@ -330,7 +337,7 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
                   <button
                     onClick={() => setSelectedUserId(null)}
                     className="flex size-8 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-surface hover:text-foreground sm:hidden"
-                    aria-label="Назад к списку"
+                    aria-label={t("backToList")}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-5">
                       <path fillRule="evenodd" d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 1 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z" clipRule="evenodd" />
@@ -347,10 +354,10 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4">
                   {loadingMsgs ? (
-                    <p className="py-12 text-center text-sm text-text-secondary">Загрузка…</p>
+                    <p className="py-12 text-center text-sm text-text-secondary">{t_common("loading")}</p>
                   ) : messages.length === 0 ? (
                     <p className="py-12 text-center text-sm text-text-secondary">
-                      Напишите первое сообщение
+                      {t("writeFirst")}
                     </p>
                   ) : (
                     <div className="space-y-3">
@@ -367,7 +374,7 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
                             >
                               <p>{msg.text}</p>
                               <p className={`mt-0.5 text-[10px] ${isMine ? "text-primary-foreground/60" : "text-text-secondary"}`}>
-                                {new Date(msg.createdAt).toLocaleTimeString("ru-RU", {
+                                {new Date(msg.createdAt).toLocaleTimeString(locale, {
                                   hour: "2-digit",
                                   minute: "2-digit",
                                 })}
@@ -389,7 +396,7 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
                     type="text"
                     value={text}
                     onChange={(e) => setText(e.target.value)}
-                    placeholder="Ответить…"
+                    placeholder={t("reply")}
                     disabled={sendMutation.isPending}
                     className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary disabled:opacity-50"
                   />
@@ -398,7 +405,7 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
                     disabled={!text.trim() || sendMutation.isPending}
                     className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
                   >
-                    {sendMutation.isPending ? "…" : "Отправить"}
+                    {sendMutation.isPending ? "…" : t("send")}
                   </button>
                 </form>
               </>
@@ -407,12 +414,12 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
                 <div className="sm:hidden">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
-                      Диалоги
+                      {t("dialogs")}
                     </span>
                     <button
                       onClick={() => setShowNewMessage(true)}
                       className="flex size-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground transition-colors hover:bg-primary-hover"
-                      aria-label="Новое сообщение"
+                      aria-label={t("newMessage")}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
                         <path d="M10 3a.75.75 0 0 1 .75.75v5.5h5.5a.75.75 0 0 1 0 1.5h-5.5v5.5a.75.75 0 0 1-1.5 0v-5.5h-5.5a.75.75 0 0 1 0-1.5h5.5v-5.5A.75.75 0 0 1 10 3Z" />
@@ -421,9 +428,9 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
                   </div>
                   <div className="mt-3 space-y-1">
                     {loadingConv ? (
-                      <p className="text-center text-xs text-text-secondary">Загрузка…</p>
+                      <p className="text-center text-xs text-text-secondary">{t_common("loading")}</p>
                     ) : conversations.length === 0 ? (
-                      <p className="text-center text-xs text-text-secondary">Нет диалогов</p>
+                      <p className="text-center text-xs text-text-secondary">{t("empty")}</p>
                     ) : (
                       conversations.map((c) => (
                         <button
@@ -458,13 +465,13 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
                     <path d="M2 3.5A1.5 1.5 0 0 1 3.5 2h13A1.5 1.5 0 0 1 18 3.5v9a1.5 1.5 0 0 1-1.5 1.5h-6.75l-3.97 3.17A.5.5 0 0 1 5 16.69V14H3.5A1.5 1.5 0 0 1 2 12.5v-9Z" />
                   </svg>
                   <p className="mt-3 text-sm text-text-secondary">
-                    Выберите диалог или создайте новый
+                    {t("selectDialog")}
                   </p>
                   <button
                     onClick={() => setShowNewMessage(true)}
                     className="mt-3 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover"
                   >
-                    Новое сообщение
+                    {t("newMessage")}
                   </button>
                 </div>
               </div>
@@ -483,6 +490,7 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
             setShowNewMessage(false);
           }}
           onClose={() => setShowNewMessage(false)}
+          t_messages={t}
         />
       )}
     </div>

@@ -16,6 +16,7 @@ import {
   type KeyboardEvent,
   type ChangeEvent,
 } from "react";
+import { useTranslations } from "next-intl";
 
 export interface AutocompleteItem {
   id: string;
@@ -37,8 +38,9 @@ export function Autocomplete({
   onSelect,
   onCreate,
   label,
-  placeholder = "Поиск...",
+  placeholder,
 }: AutocompleteProps) {
+  const t = useTranslations("autocomplete");
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [focusedIdx, setFocusedIdx] = useState(-1);
@@ -146,7 +148,7 @@ export function Autocomplete({
         onChange={handleInputChange}
         onFocus={() => setOpen(true)}
         onKeyDown={handleKeyDown}
-        placeholder={value ? value.title : placeholder}
+        placeholder={value ? value.title : (placeholder ?? t("search"))}
         className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm max-sm:py-2.5 text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary max-sm:min-h-11"
       />
       {open && (filtered.length > 0 || noMatch) && (
@@ -187,7 +189,7 @@ export function Autocomplete({
                 <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
               </svg>
               <span>
-                Добавить «<strong>{query.trim()}</strong>»
+                {t("add", { query: query.trim() })}
               </span>
             </li>
           )}

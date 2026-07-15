@@ -10,13 +10,10 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ToastProvider } from "@/components/ui/Toast";
-import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
 import { QueryProvider } from "@/app/providers/QueryProvider";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Script from "next/script";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 
 // Подключение шрифтов Geist через CSS-переменные (Tailwind v4 @theme)
 const geistSans = Geist({
@@ -71,14 +68,9 @@ export default function RootLayout({
         <ThemeProvider>
           <QueryProvider>
             <ToastProvider>
-              <ConfirmProvider>
-                <Header />
-                {/* flex-1 flex flex-col чтобы main растягивался на всю высоту */}
-                <main className="flex-1 flex flex-col">{children}</main>
-                <Footer />
-                <Analytics />
-                <SpeedInsights />
-              </ConfirmProvider>
+              <main className="flex-1 flex flex-col">{children}</main>
+              <Analytics />
+              <SpeedInsights />
             </ToastProvider>
           </QueryProvider>
         </ThemeProvider>

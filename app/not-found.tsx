@@ -1,5 +1,6 @@
 /*
- * 404 — страница не найдена
+ * 404 — страница не найдена (root level, outside [lang] layout).
+ * Cannot use next-intl here since it's outside the locale provider.
  */
 import Link from "next/link";
 

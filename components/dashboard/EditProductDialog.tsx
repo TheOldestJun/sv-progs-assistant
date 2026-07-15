@@ -7,6 +7,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { Autocomplete, type AutocompleteItem } from "@/components/ui/Autocomplete";
 import { useReferenceData } from "@/hooks/useReferenceData";
 import { useUpdateOrderItemProduct, useRenameProduct } from "@/hooks/useUpdateOrderItemProduct";
@@ -45,6 +46,11 @@ export function EditProductDialog({
   const renameProduct = useRenameProduct();
   const { showToast } = useToast();
   const { confirm } = useConfirmDialog();
+  const tEdit = useTranslations("editProduct");
+  const tCreateConfirm = useTranslations("editProduct.createConfirm");
+  const tReplaceConfirm = useTranslations("editProduct.replaceConfirm");
+  const tToasts = useTranslations("toasts");
+  const tCommon = useTranslations("common");
 
   // Сбрасываем состояние при открытии
   useEffect(() => {
@@ -82,7 +88,7 @@ export function EditProductDialog({
       { productId, title: trimmed },
       {
         onSuccess: () => {
-          showToast(`ТМЦ переименован в «${trimmed.toUpperCase()}»`, "success");
+          showToast(tToasts("productRenamed", { title: trimmed.toUpperCase() }), "success");
           onClose();
         },
         onError: (err) => {
@@ -97,9 +103,9 @@ export function EditProductDialog({
     const trimmed = createQuery.trim();
     if (!trimmed) return;
     const ok = await confirm({
-      title: "Создать и заменить?",
-      message: `Будет создан ТМЦ «${trimmed}» и заменён в этой позиции вместо «${productTitle}».`,
-      confirmText: "Создать и заменить",
+      title: tCreateConfirm("title"),
+      message: tCreateConfirm("message", { title: trimmed, current: productTitle }),
+      confirmText: tCreateConfirm("confirmText"),
       variant: "default",
     });
     if (!ok) return;
@@ -112,7 +118,7 @@ export function EditProductDialog({
         { orderId, itemId, productId: created.id },
         {
           onSuccess: () => {
-            showToast(`ТМЦ заменён на «${created.title}»`, "success");
+            showToast(tToasts("productReplaced", { title: created.title }), "success");
             onClose();
           },
           onError: (err) => {
@@ -122,7 +128,7 @@ export function EditProductDialog({
         },
       );
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Ошибка создания ТМЦ", "error");
+      showToast(err instanceof Error ? err.message : tToasts("productCreateError"), "error");
       setMode("idle");
     }
   }
@@ -164,13 +170,13 @@ export function EditProductDialog({
             id="edit-product-title"
             className="text-base font-semibold text-foreground"
           >
-            Редактировать ТМЦ
+            {tEdit("title")}
           </h2>
 
           {/* Переименование */}
           <div className="mt-5">
             <label className="mb-1.5 block text-sm font-medium text-foreground">
-              Название
+              {tEdit("name")}
             </label>
             <div className="flex gap-2">
               <input
@@ -184,7 +190,7 @@ export function EditProductDialog({
                 disabled={!canRename}
                 className="inline-flex shrink-0 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 max-sm:min-h-11"
               >
-                {isRenaming ? "..." : "Переименовать"}
+                {isRenaming ? "..." : tEdit("rename")}
               </button>
             </div>
           </div>
@@ -192,7 +198,7 @@ export function EditProductDialog({
           {/* Разделитель */}
           <div className="my-5 flex items-center gap-3">
             <div className="flex-1 border-t border-border" />
-            <span className="text-xs text-text-secondary">или</span>
+            <span className="text-xs text-text-secondary">{tCommon("or")}</span>
             <div className="flex-1 border-t border-border" />
           </div>
 
@@ -204,9 +210,9 @@ export function EditProductDialog({
               onSelect={async (item) => {
                 if (!item.id) return;
                 const ok = await confirm({
-                  title: "Заменить ТМЦ?",
-                  message: `«${productTitle}» будет заменён на «${item.title}» в этой позиции.`,
-                  confirmText: "Заменить",
+                  title: tReplaceConfirm("title"),
+                  message: tReplaceConfirm("message", { current: productTitle, replacement: item.title }),
+                  confirmText: tReplaceConfirm("confirmText"),
                   variant: "default",
                 });
                 if (!ok) return;
@@ -216,7 +222,7 @@ export function EditProductDialog({
                   { orderId, itemId, productId: item.id },
                   {
                     onSuccess: () => {
-                      showToast(`ТМЦ заменён на «${item.title}»`, "success");
+                      showToast(tToasts("productReplaced", { title: item.title }), "success");
                       onClose();
                     },
                     onError: (err) => {
@@ -226,8 +232,8 @@ export function EditProductDialog({
                   },
                 );
               }}
-              label="Заменить другим ТМЦ"
-              placeholder="Поиск ТМЦ..."
+              label={tEdit("replace")}
+              placeholder={tEdit("replacePlaceholder")}
               onCreate={(title) => {
                 setCreateQuery(title);
                 return { id: "", title };
@@ -240,13 +246,13 @@ export function EditProductDialog({
                 className="inline-flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-accent py-2.5 text-sm font-medium text-accent transition-colors hover:bg-accent/5 disabled:opacity-50 max-sm:min-h-11"
               >
                 {isCreating ? (
-                  "Создание..."
+                  tCommon("creating")
                 ) : (
                   <>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
                       <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
                     </svg>
-                    Создать «{createQuery.trim()}» и заменить
+                    {tEdit("createAndReplace", { title: createQuery.trim() })}
                   </>
                 )}
               </button>
@@ -260,7 +266,7 @@ export function EditProductDialog({
             disabled={mode !== "idle"}
             className="inline-flex h-10 items-center rounded-lg border border-border bg-surface px-4 text-sm font-medium text-foreground transition-colors hover:bg-surface-secondary disabled:opacity-50 max-sm:min-h-11"
           >
-            Отмена
+            {tCommon("cancel")}
           </button>
         </div>
       </div>

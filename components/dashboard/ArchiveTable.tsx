@@ -7,6 +7,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import { useTranslations, useLocale } from "next-intl";
 import { DatePicker } from "@/components/ui/DatePicker";
 
 interface ArchiveItem {
@@ -35,6 +36,11 @@ export function ArchiveTable() {
   const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(0);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const locale = useLocale();
+  const tArchive = useTranslations("admin.archive");
+  const tTable = useTranslations("dashboard.table");
+  const tCommon = useTranslations("common");
+  const tErrors = useTranslations("errors");
 
   useEffect(() => {
     clearTimeout(debounceTimer.current);
@@ -70,19 +76,19 @@ export function ArchiveTable() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-2 rounded-lg border border-border bg-surface-secondary p-2 sm:gap-3 sm:p-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-text-secondary">Заказчик</label>
+          <label className="mb-1 block text-xs font-medium text-text-secondary">{tArchive("requesterFilter")}</label>
           <input
             type="text"
             value={requester}
             onChange={(e) => {
               setRequester(e.target.value);
             }}
-            placeholder="Введите имя..."
+            placeholder={tArchive("requesterPlaceholder")}
             className="w-full sm:w-48 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm max-sm:py-2.5 text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary max-sm:min-h-11"
           />
         </div>
-        <DatePicker label="Дата с" value={dateFrom} onChange={(v) => { setDateFrom(v); setPage(0); }} />
-        <DatePicker label="Дата по" value={dateTo} onChange={(v) => { setDateTo(v); setPage(0); }} />
+        <DatePicker label={tArchive("dateFrom")} value={dateFrom} onChange={(v) => { setDateFrom(v); setPage(0); }} />
+        <DatePicker label={tArchive("dateTo")} value={dateTo} onChange={(v) => { setDateTo(v); setPage(0); }} />
       </div>
 
       {isLoading ? (
@@ -91,11 +97,11 @@ export function ArchiveTable() {
         </div>
       ) : isError ? (
         <div className="rounded-lg border border-dashed border-red-300 bg-red-50 p-6 text-center text-sm text-red-600 dark:border-red-800 dark:bg-red-950 dark:text-red-400">
-          Ошибка загрузки: {error instanceof Error ? error.message : "Неизвестная ошибка"}
+          {tErrors("loadingError", { error: error instanceof Error ? error.message : "" })}
         </div>
       ) : !data || data.data.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border bg-surface-secondary p-6 text-center">
-          <p className="text-sm text-text-secondary">Архив пуст</p>
+          <p className="text-sm text-text-secondary">{tArchive("empty")}</p>
         </div>
       ) : (
         <>
@@ -111,10 +117,10 @@ export function ArchiveTable() {
                     {entry.requesterName}
                   </span>
                   <span className="text-text-secondary">
-                    Заявлено: {new Date(entry.orderDate).toLocaleDateString("ru-RU")}
+                    {tArchive("requested", { date: new Date(entry.orderDate).toLocaleDateString(locale) })}
                   </span>
                   <span className="text-text-secondary">
-                    Получено: {new Date(entry.receivedAt).toLocaleDateString("ru-RU")}
+                    {tArchive("received", { date: new Date(entry.receivedAt).toLocaleDateString(locale) })}
                   </span>
                 </div>
 
@@ -123,10 +129,10 @@ export function ArchiveTable() {
                     <table className="w-full text-sm">
                       <thead className="bg-surface">
                         <tr>
-                          <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">ТМЦ</th>
-                          <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">Ед.</th>
-                          <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-right font-medium text-text-secondary">Кол-во</th>
-                          <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">Комментарий</th>
+                          <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">{tTable("product")}</th>
+                          <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">{tTable("unit")}</th>
+                          <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-right font-medium text-text-secondary">{tTable("quantity")}</th>
+                          <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">{tTable("comment")}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
@@ -152,7 +158,7 @@ export function ArchiveTable() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-1 text-sm text-text-secondary">
               <span>
-                {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, data.total)} из {data.total}
+                {tCommon("pagination", { from: safePage * PAGE_SIZE + 1, to: Math.min((safePage + 1) * PAGE_SIZE, data.total), total: data.total })}
               </span>
               <div className="flex items-center gap-1">
                 <button
@@ -160,7 +166,7 @@ export function ArchiveTable() {
                   disabled={safePage === 0}
                   className="rounded-md px-3 py-1.5 text-sm max-sm:py-2 transition-colors hover:bg-surface-secondary disabled:opacity-30 max-sm:min-h-11"
                 >
-                  ← Назад
+                  {tCommon("back")}
                 </button>
                 {Array.from({ length: totalPages }, (_, i) => (
                   <button
@@ -180,7 +186,7 @@ export function ArchiveTable() {
                   disabled={safePage === totalPages - 1}
                   className="rounded-md px-3 py-1.5 text-sm max-sm:py-2 transition-colors hover:bg-surface-secondary disabled:opacity-30 max-sm:min-h-11"
                 >
-                  Вперед →
+                  {tCommon("forward")}
                 </button>
               </div>
             </div>

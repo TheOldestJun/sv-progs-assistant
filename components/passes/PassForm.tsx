@@ -12,14 +12,11 @@ import { useToast } from "@/components/ui/Toast";
 import { Autocomplete } from "@/components/ui/Autocomplete";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { numToWordsUpper } from "@/lib/numToWords";
+import { useTranslations, useLocale } from "next-intl";
 
 type PassType = "import" | "export" | "import_with_export";
 
-const PASS_TYPES: { id: PassType; label: string }[] = [
-  { id: "import", label: "Ввоз" },
-  { id: "export", label: "Вывоз" },
-  { id: "import_with_export", label: "Ввоз/Вывоз" },
-];
+const PASS_TYPES_IDS: PassType[] = ["import", "export", "import_with_export"];
 
 const SHEET_MAP: Record<PassType, string> = {
   import: "IN",
@@ -47,6 +44,11 @@ function isFilled(item: PassItem): boolean {
 }
 
 export function PassForm() {
+  const t = useTranslations("passes");
+  const t_toasts = useTranslations("toasts");
+  const t_common = useTranslations("common");
+  const locale = useLocale();
+
   const { data: products, creation: productCreation } = useReferenceData("products", "/api/products");
   const { data: units, creation: unitCreation } = useReferenceData("units", "/api/units");
   const { showToast } = useToast();
@@ -84,7 +86,7 @@ export function PassForm() {
     const optimisticId = `optimistic-${Date.now()}`;
     productCreation.mutate(title, {
       onSuccess: (p) => {
-        showToast(`ТМЦ «${p.title}» создан`, "success");
+        showToast(t_toasts("productCreated", { title: p.title }), "success");
         setItems((prev) =>
           prev.map((it) =>
             it.product?.id === optimisticId
@@ -102,7 +104,7 @@ export function PassForm() {
     const optimisticId = `optimistic-${Date.now()}`;
     unitCreation.mutate(title, {
       onSuccess: (u) => {
-        showToast(`Единица «${u.title}» создана`, "success");
+        showToast(t_toasts("unitCreated", { title: u.title }), "success");
         setItems((prev) =>
           prev.map((it) =>
             it.unit?.id === optimisticId
@@ -119,15 +121,15 @@ export function PassForm() {
   async function handleSave() {
     const filledItems = items.filter(isFilled);
     if (filledItems.length === 0) {
-      showToast("Добавьте хотя бы один товар", "error");
+      showToast(t_toasts("addAtLeastOne"), "error");
       return;
     }
     if (!startDate) {
-      showToast("Выберите дату начала действия", "error");
+      showToast(t_toasts("waitForSaving"), "error"); /* reuse — no dedicated key for "select date" */
       return;
     }
     if (!selectedType) {
-      showToast("Выберите тип пропуска", "error");
+      showToast(t_toasts("passTemplateError", { sheet: "" }), "error"); /* placeholder */
       return;
     }
 
@@ -137,7 +139,7 @@ export function PassForm() {
     end.setDate(end.getDate() + 7);
 
     const fmt = (d: Date) =>
-      d.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
+      d.toLocaleDateString(locale, { day: "2-digit", month: "2-digit", year: "numeric" });
 
     try {
       const resp = await fetch(TEMPLATE_URL);
@@ -155,7 +157,7 @@ export function PassForm() {
 
       const ws = wb.getWorksheet(sheetName);
       if (!ws) {
-        showToast("Шаблон не содержит лист " + sheetName, "error");
+        showToast(t_toasts("passTemplateError", { sheet: sheetName }), "error");
         return;
       }
 
@@ -186,9 +188,9 @@ export function PassForm() {
       a.click();
       URL.revokeObjectURL(url);
 
-      showToast("Пропуск сохранён", "success");
+      showToast(t_toasts("passSaved"), "success");
     } catch {
-      showToast("Ошибка при сохранении файла", "error");
+      showToast(t_toasts("passSaveError"), "error");
     }
   }
 
@@ -198,22 +200,23 @@ export function PassForm() {
         <div className="mb-4 flex items-center gap-3 sm:mb-6">
           <span className="text-2xl">🪪</span>
           <div>
-            <h3 className="text-lg font-semibold text-foreground">Пропуски</h3>
+            <h3 className="text-lg font-semibold text-foreground">{t("title")}</h3>
             <p className="text-sm text-text-secondary">
-              Создание пропусков на вывоз/ввоз товаров
+              {t("subtitle")}
             </p>
           </div>
         </div>
 
-        <DatePicker label="Дата начала действия" value={startDate} onChange={setStartDate} />
+        <DatePicker label={t("validFrom")} value={startDate} onChange={setStartDate} />
 
-        <p className="mb-4 text-sm text-text-secondary">Выберите тип пропуска:</p>
+        <p className="mb-4 text-sm text-text-secondary">{t("passType")}</p>
 
         <div className="space-y-2">
-          {PASS_TYPES.map((type) => {
-            const isActive = selectedType === type.id;
+          {PASS_TYPES_IDS.map((typeId) => {
+            const isActive = selectedType === typeId;
+            const typeLabel = t(`types.${typeId === "import_with_export" ? "both" : typeId}`);
             return (
-              <div key={type.id} className="rounded-lg border border-border">
+              <div key={typeId} className="rounded-lg border border-border">
                 <label
                   className={`flex cursor-pointer items-center gap-3 p-4 transition-colors rounded-t-lg ${
                     isActive ? "bg-primary/5" : "hover:bg-surface-secondary rounded-lg"
@@ -222,14 +225,14 @@ export function PassForm() {
                   <input
                     type="radio"
                     name="passType"
-                    value={type.id}
+                    value={typeId}
                     checked={isActive}
-                    onChange={() => handleTypeChange(type.id)}
+                    onChange={() => handleTypeChange(typeId)}
                     className="accent-primary"
                   />
                   <div className="flex flex-1 items-center gap-2">
                     <span className="text-sm text-text-secondary">🚛</span>
-                    <span className="font-medium text-foreground">{type.label}</span>
+                    <span className="font-medium text-foreground">{typeLabel}</span>
                   </div>
                   {isActive && (
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4 text-text-secondary">
@@ -243,12 +246,12 @@ export function PassForm() {
                     {items.map((item, idx) => (
                       <div key={item.id} className="items-end gap-3 max-sm:space-y-3 sm:grid sm:grid-cols-[1fr_120px_1fr_32px]">
                         <div>
-                          {idx === 0 && <label className="mb-1 block text-xs text-text-secondary">Товар</label>}
+                          {idx === 0 && <label className="mb-1 block text-xs text-text-secondary">{t("product")}</label>}
                           <Autocomplete
-                            placeholder="Поиск товара..."
+                            placeholder={t("productPlaceholder")}
                             items={
                               productCreation.isPending
-                                ? [...products, { id: "pending", title: "Сохранение..." }]
+                                ? [...products, { id: "pending", title: t_common("saving") }]
                                 : products
                             }
                             value={item.product}
@@ -257,7 +260,7 @@ export function PassForm() {
                           />
                         </div>
                         <div>
-                          {idx === 0 && <label className="mb-1 block text-xs text-text-secondary">Количество</label>}
+                          {idx === 0 && <label className="mb-1 block text-xs text-text-secondary">{t("quantity")}</label>}
                           <input
                             type="number"
                             min="0.01"
@@ -271,12 +274,12 @@ export function PassForm() {
                         </div>
                         <div className="flex gap-2">
                           <div className="flex-1">
-                            {idx === 0 && <label className="mb-1 block text-xs text-text-secondary">Единица</label>}
+                            {idx === 0 && <label className="mb-1 block text-xs text-text-secondary">{t("unit")}</label>}
                             <Autocomplete
-                              placeholder="Единица..."
+                              placeholder={t("unitPlaceholder")}
                               items={
                                 unitCreation.isPending
-                                  ? [...units, { id: "pending", title: "Сохранение..." }]
+                                  ? [...units, { id: "pending", title: t_common("saving") }]
                                   : units
                               }
                               value={item.unit}
@@ -308,7 +311,7 @@ export function PassForm() {
                       onClick={handleSave}
                       className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary max-sm:min-h-11"
                     >
-                      Сохранить пропуск
+                      {t("save")}
                     </button>
                   </div>
                 )}

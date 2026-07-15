@@ -9,7 +9,8 @@
 
 import { useMemo, useState } from "react";
 import * as React from "react";
-import { useOrders, useUpdateOrderItemStatus, fetchItemLogs, STATUS_LABELS, STATUS_ORDER, type OrderItemStatus, type StatusLogEntry } from "@/hooks/useOrders";
+import { useTranslations, useLocale } from "next-intl";
+import { useOrders, useUpdateOrderItemStatus, fetchItemLogs, STATUS_ORDER, type OrderItemStatus, type StatusLogEntry } from "@/hooks/useOrders";
 import { useDeleteOrder } from "@/hooks/useDeleteOrder";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -55,7 +56,7 @@ function StatusIcon({ status, className }: { status: OrderItemStatus; className?
     case "SHIPPED":
       return (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={cls}>
-          <path d="M6.5 3c-1.051 0-2.093.04-3.125.117A1.49 1.49 0 0 0 2 4.607V10.5h4.75a.75.75 0 0 1 .75.75v3.25h1.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1-.75-.75V12H3.5v1.25a.75.75 0 0 1-1.5 0V4.726c0-.72.514-1.34 1.223-1.463C4.286 3.07 5.436 3 6.5 3ZM17.5 4.607c0-.72-.514-1.34-1.223-1.463A24.7 24.7 0 0 0 12.5 3c-1.064 0-2.116.033-3.152.115C8.173 3.206 7.5 3.976 7.5 4.726V10.5h3.75a.75.75 0 0 1 .75.75v3.25h.625a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1-.75-.75V12H10v1.25a.75.75 0 0 1-1.5 0V4.726c0-.72.514-1.34 1.223-1.463A24.7 24.7 0 0 1 12.5 3c1.064 0 2.116.033 3.152.115.709.123 1.223.743 1.223 1.463V12h-3.5v1.25a.75.75 0 0 1-1.5 0V12h-2.25v2.25a.75.75 0 0 1-.75.75h-1.5a.75.75 0 0 1 0-1.5H9V12H2.5v2.25a.75.75 0 0 1-1.5 0V4.607c0-.72.514-1.34 1.223-1.463C3.286 3.07 4.436 3 5.5 3c1.064 0 2.116.033 3.152.115.709.123 1.223.743 1.223 1.463V10.5h3.75a.75.75 0 0 1 .75.75v3.25h.625a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1-.75-.75V12H10v1.25a.75.75 0 0 1-1.5 0V4.726c0-.72.514-1.34 1.223-1.463A24.7 24.7 0 0 1 12.5 3c1.064 0 2.116.033 3.152.115.709.123 1.223.743 1.223 1.463V12h-3.5v1.25a.75.75 0 0 1-1.5 0V12h-2.25v2.25a.75.75 0 0 1-.75.75h-1.5a.75.75 0 0 1 0-1.5H9V12H2.5v2.25a.75.75 0 0 1-1.5 0V4.607c0-.72.514-1.34 1.223-1.463C3.286 3.07 4.436 3 5.5 3Z" />
+          <path d="M6.5 3c-1.051 0-2.093.04-3.125.117A1.49 1.49 0 0 0 2 4.607V10.5h4.75a.75.75 0 0 1 .75.75v3.25h1.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1-.75-.75V12H3.5v1.25a.75.75 0 0 1-1.5 0V4.726c0-.72.514-1.34 1.223-1.463C4.286 3.07 5.436 3 6.5 3ZM17.5 4.607c0-.72-.514-1.34-1.223-1.463A24.7 24.7 0 0 0 12.5 3c-1.064 0-2.116.033-3.152.115C8.173 3.206 7.5 3.976 7.5 4.726V10.5h3.75a.75.75 0 0 1 .75.75v3.25h.625a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1-.75-.75V12H10v1.25a.75.75 0 0 1-1.5 0V4.726c0-.72.514-1.34 1.223-1.463A24.7 24.7 0 0 1 12.5 3c1.064 0 2.116.033 3.152.115.709.123 1.223.743 1.223 1.463V12h-3.5v1.25a.75.75 0 0 1-1.5 0V12h-2.25v2.25a.75.75 0 0 1-.75.75h-1.5a.75.75 0 0 1 0-1.5H9V12H2.5v2.25a.75.75 0 0 1-1.5 0V4.607c0-.72.514-1.34 1.223-1.463C3.286 3.07 4.436 3 5.5 3c1.064 0 2.116.033 3.152.115.709.123 1.223.743 1.223 1.463V10.5h3.75a.75.75 0 0 1 .75.75v3.25h.625a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1-.75-.75V12H10v1.25a.75.75 0 0 1-1.5 0V4.726c0-.72.514-1.34 1.223-1.463A24.7 24.7 0 0 1 12.5 3c1.064 0 2.116.033 3.152.115.709.123 1.223.743 1.223 1.463V12h-3.5v1.25a.75.75 0 0 1-1.5 0V12h-2.25v2.25a.75.75 0 0 1-.75.75h-1.5a.75.75 0 0 1 0-1.5H9V12H2.5v2.25a.75.75 0 0 1-1.5 0V4.607c0-.72.514-1.34 1.223-1.463C3.286 3.07 4.436 3 5.5 3c1.064 0 2.116.033 3.152.115.709.123 1.223.743 1.223 1.463V12h-3.5v1.25a.75.75 0 0 1-1.5 0V12h-2.25v2.25a.75.75 0 0 1-.75.75h-1.5a.75.75 0 0 1 0-1.5H9V12H2.5v2.25a.75.75 0 0 1-1.5 0V4.607c0-.72.514-1.34 1.223-1.463C3.286 3.07 4.436 3 5.5 3Z" />
         </svg>
       );
     case "RECEIVED":
@@ -81,6 +82,13 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
   const deleteOrder = useDeleteOrder();
   const { showToast } = useToast();
   const { confirm } = useConfirmDialog();
+  const locale = useLocale();
+  const tToasts = useTranslations("toasts");
+  const tTable = useTranslations("dashboard.table");
+  const tArchiveConfirm = useTranslations("dashboard.archiveConfirm");
+  const tStatuses = useTranslations("statuses");
+  const tCommon = useTranslations("common");
+  const tErrors = useTranslations("errors");
   const [openSelect, setOpenSelect] = useState<string | null>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
@@ -160,7 +168,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
       { orderId: pendingChange.orderId, itemId: pendingChange.itemId, status: pendingChange.targetStatus, warehouseMode, changedAt },
       {
         onSuccess: () => {
-          showToast(`Статус изменён на «${STATUS_LABELS[pendingChange.targetStatus]}»`, "success");
+          showToast(tToasts("statusChanged", { status: tStatuses(pendingChange.targetStatus) }), "success");
           setPendingChange(null);
         },
         onError: (err) => {
@@ -177,14 +185,14 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
 
   async function handleDeleteOrder(orderId: string) {
     const ok = await confirm({
-      title: "Архивирование заявки",
-      message: "Заявка будет перемещена в архив. Вы сможете просмотреть её на вкладке «Архив».",
-      confirmText: "Архивировать",
+      title: tArchiveConfirm("title"),
+      message: tArchiveConfirm("message"),
+      confirmText: tArchiveConfirm("confirmText"),
       variant: "danger",
     });
     if (!ok) return;
     deleteOrder.mutate(orderId, {
-      onSuccess: () => showToast("Заявка удалена", "success"),
+      onSuccess: () => showToast(tToasts("orderDeleted"), "success"),
       onError: (err) => showToast(err.message, "error"),
     });
   }
@@ -239,7 +247,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
   if (isError) {
     return (
       <div className="rounded-lg border border-dashed border-red-300 bg-red-50 p-6 text-center text-sm text-red-600 dark:border-red-800 dark:bg-red-950 dark:text-red-400">
-        Ошибка загрузки: {error instanceof Error ? error.message : "Неизвестная ошибка"}
+        {tErrors("loadingError", { error: error instanceof Error ? error.message : "" })}
       </div>
     );
   }
@@ -248,7 +256,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
     return (
       <div className="rounded-lg border border-dashed border-border bg-surface-secondary p-6 text-center">
         <p className="text-sm text-text-secondary">
-          Пока нет ни одной заявки
+          {tTable("empty")}
         </p>
       </div>
     );
@@ -263,7 +271,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
           type="text"
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-          placeholder="Поиск по заявителю или продукту..."
+          placeholder={tTable("search")}
           className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-sm text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary"
         />
       </div>
@@ -279,12 +287,12 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                 {order.requester.name}
               </span>
               <span className="text-text-secondary">
-                {new Date(order.created).toLocaleDateString("ru-RU")}
+                {new Date(order.created).toLocaleDateString(locale)}
               </span>
             </div>
             <div className="ml-auto flex items-center gap-2">
               <span className="text-xs text-text-secondary">
-                {order.items.reduce((s, it) => s + it.quantity, 0)} ед.
+                {order.items.reduce((s, it) => s + it.quantity, 0)} {tCommon("items")}
               </span>
               {!readOnly && (
                 <button
@@ -293,8 +301,8 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                   className="group flex size-7 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50 dark:hover:bg-red-950 dark:hover:text-red-400 max-sm:min-h-11 max-sm:min-w-11"
                   title={
                     order.items.every((it) => it.status === "RECEIVED")
-                      ? "Удалить заявку"
-                      : "Удаление доступно после получения всех позиций на склад"
+                      ? tTable("deleteOrder")
+                      : tTable("deleteDisabled")
                   }
                 >
                   <IconTrash className="size-3.5" />
@@ -307,10 +315,10 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
             <table className="w-full min-w-0 text-sm">
             <thead className="bg-surface max-sm:hidden">
               <tr>
-                <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">ТМЦ</th>
-                <th className="w-16 px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">Ед.</th>
-                <th className="w-20 px-2 py-1.5 sm:px-4 sm:py-2 text-right font-medium text-text-secondary">Кол-во</th>
-                <th className="w-44 px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">Статус</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">{tTable("product")}</th>
+                <th className="w-16 px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">{tTable("unit")}</th>
+                <th className="w-20 px-2 py-1.5 sm:px-4 sm:py-2 text-right font-medium text-text-secondary">{tTable("quantity")}</th>
+                <th className="w-44 px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">{tTable("status")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -318,7 +326,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                   <React.Fragment key={item.id}>
                   <tr className="hover:bg-surface max-sm:flex max-sm:flex-col max-sm:border-b max-sm:border-border max-sm:px-4 max-sm:py-2.5 max-sm:gap-1 max-sm:last:border-b-0">
                     <td className="px-2 py-1.5 sm:px-4 sm:py-2 max-sm:flex max-sm:items-center max-sm:gap-2 max-sm:p-0">
-                      <span className="text-xs text-text-secondary sm:hidden shrink-0">ТМЦ:</span>
+                      <span className="text-xs text-text-secondary sm:hidden shrink-0">{tTable("product")}:</span>
                       <button
                         onClick={() => toggleItem(item.id, order.id)}
                         className="flex max-sm:min-h-11 items-start gap-1.5 text-left text-foreground transition-colors hover:text-primary"
@@ -353,7 +361,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                                 });
                               }}
                               className="inline-flex cursor-pointer items-center justify-center rounded-md p-0.5 text-text-secondary transition-colors hover:text-primary"
-                              title="Редактировать ТМЦ"
+                              title={tTable("editProduct")}
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-3.5">
                                 <path d="M5.433 13.917l1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65z" />
@@ -385,7 +393,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                       {item.quantity}
                     </td>
                     <td className="sm:w-44 px-2 py-1.5 sm:px-4 sm:py-2 max-sm:flex max-sm:items-center max-sm:gap-2 max-sm:border-0 max-sm:p-0">
-                      <span className="text-xs text-text-secondary sm:hidden shrink-0">Кол-во:</span>
+                      <span className="text-xs text-text-secondary sm:hidden shrink-0">{tTable("quantity")}:</span>
                       <span className="sm:hidden text-xs text-text-secondary tabular-nums whitespace-nowrap">
                         {item.quantity} {item.units.title}
                       </span>
@@ -393,7 +401,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                         {readOnly ? (
                           <span className="inline-flex max-sm:min-h-11 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 ${STATUS_COLORS[item.status]}">
                             <StatusIcon status={item.status} />
-                            {STATUS_LABELS[item.status]}
+                            {tStatuses(item.status)}
                           </span>
                         ) : (
                           <div className="relative inline-flex">
@@ -405,7 +413,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                               className={`inline-flex max-sm:min-h-11 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 transition-colors ${STATUS_COLORS[item.status]} disabled:opacity-50 ${item.status === "RECEIVED" ? "cursor-default" : "cursor-pointer"}`}
                             >
                               <StatusIcon status={item.status} />
-                              {STATUS_LABELS[item.status]}
+                              {tStatuses(item.status)}
                             </button>
                           </div>
                         )}
@@ -415,12 +423,12 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                   {/* Mobile status row — below product+qty */}
                   <tr className="max-sm:flex max-sm:px-4 max-sm:pb-2.5 sm:hidden">
                     <td colSpan={4} className="max-sm:p-0">
-                      <span className="text-xs text-text-secondary">Статус:</span>
+                      <span className="text-xs text-text-secondary">{tTable("status")}:</span>
                       <div className="mt-1">
                       {readOnly ? (
                         <span className="inline-flex max-sm:min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium max-sm:w-full max-sm:justify-center max-sm:px-3 max-sm:py-1.5 max-sm:text-sm ring-1 ring-inset ring-black/5 ${STATUS_COLORS[item.status]}">
                           <StatusIcon status={item.status} />
-                          {STATUS_LABELS[item.status]}
+                          {tStatuses(item.status)}
                         </span>
                       ) : (
                         <div className="relative">
@@ -432,7 +440,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                             className={`inline-flex max-sm:min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium max-sm:w-full max-sm:justify-center max-sm:px-3 max-sm:py-1.5 max-sm:text-sm ring-1 ring-inset ring-black/5 transition-colors ${STATUS_COLORS[item.status]} disabled:opacity-50 ${item.status === "RECEIVED" ? "cursor-default" : "cursor-pointer"}`}
                           >
                             <StatusIcon status={item.status} />
-                            {STATUS_LABELS[item.status]}
+                            {tStatuses(item.status)}
                           </button>
                         </div>
                       )}
@@ -468,7 +476,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                             if (logs.length === 0) {
                               return (
                                 <p className="text-xs text-text-secondary">
-                                  История изменений пуста
+                                  {tTable("historyEmpty")}
                                 </p>
                               );
                             }
@@ -491,7 +499,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                                         <StatusIcon status={log.oldStatus} />
                                       )}
                                       {log.oldStatus
-                                        ? STATUS_LABELS[log.oldStatus]
+                                        ? tStatuses(log.oldStatus)
                                         : "—"}
                                     </span>
                                     <svg
@@ -510,14 +518,14 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                                       className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-medium ${STATUS_COLORS[log.newStatus]}`}
                                     >
                                       <StatusIcon status={log.newStatus} />
-                                      {STATUS_LABELS[log.newStatus]}
+                                      {tStatuses(log.newStatus)}
                                     </span>
                                   </div>
                                   <span className="text-text-secondary">
                                     {log.changedBy.name}
                                   </span>
                                   <span className="text-text-secondary">
-                                    {new Date(log.changedAt).toLocaleDateString("ru-RU")}
+                                    {new Date(log.changedAt).toLocaleDateString(locale)}
                                   </span>
                                 </div>
                                 ))}
@@ -540,7 +548,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-1 text-sm text-text-secondary">
           <span>
-            {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, filtered.length)} из {filtered.length}
+            {tCommon("pagination", { from: safePage * PAGE_SIZE + 1, to: Math.min((safePage + 1) * PAGE_SIZE, filtered.length), total: filtered.length })}
           </span>
           <div className="flex items-center gap-1">
             <button
@@ -548,7 +556,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
               disabled={safePage === 0}
               className="rounded-md px-3 py-1.5 text-sm max-sm:py-2 transition-colors hover:bg-surface-secondary disabled:opacity-30 max-sm:min-h-11"
             >
-              ← Назад
+              {tCommon("back")}
             </button>
             {Array.from({ length: totalPages }, (_, i) => (
               <button
@@ -568,7 +576,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
               disabled={safePage === totalPages - 1}
               className="rounded-md px-3 py-1.5 text-sm max-sm:py-2 transition-colors hover:bg-surface-secondary disabled:opacity-30 max-sm:min-h-11"
             >
-              Вперед →
+              {tCommon("forward")}
             </button>
           </div>
         </div>
@@ -623,7 +631,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                   }`}
                 >
                   <StatusIcon status={s} />
-                  {STATUS_LABELS[s]}
+                  {tStatuses(s)}
                 </button>
               );
             })}

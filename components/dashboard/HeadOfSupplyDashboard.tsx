@@ -8,6 +8,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Autocomplete, type AutocompleteItem } from "@/components/ui/Autocomplete";
 import { useReferenceData } from "@/hooks/useReferenceData";
 import { useCreateOrder } from "@/hooks/useCreateOrder";
@@ -44,6 +45,11 @@ export function HeadOfSupplyDashboard() {
   );
   const { showToast } = useToast();
   const createOrder = useCreateOrder();
+  const tToasts = useTranslations("toasts");
+  const tTabs = useTranslations("dashboard.tabs");
+  const tPage = useTranslations("dashboard.headOfSupply");
+  const tForm = useTranslations("dashboard.orderForm");
+  const tCommon = useTranslations("common");
 
   const [items, setItems] = useState<OrderItem[]>([createEmptyItem()]);
   const [requester, setRequester] = useState<AutocompleteItem | null>(null);
@@ -71,7 +77,7 @@ export function HeadOfSupplyDashboard() {
     const optimisticId = `optimistic-${Date.now()}`;
     productCreation.mutate(title, {
       onSuccess: (p) => {
-        showToast(`Продукт «${p.title}» создан`, "success");
+        showToast(tToasts("productCreated", { title: p.title }), "success");
         setItems((prev) =>
           prev.map((it) =>
             it.product?.id === optimisticId
@@ -89,7 +95,7 @@ export function HeadOfSupplyDashboard() {
     const optimisticId = `optimistic-${Date.now()}`;
     unitCreation.mutate(title, {
       onSuccess: (u) => {
-        showToast(`Единица «${u.title}» создана`, "success");
+        showToast(tToasts("unitCreated", { title: u.title }), "success");
         setItems((prev) =>
           prev.map((it) =>
             it.unit?.id === optimisticId
@@ -107,7 +113,7 @@ export function HeadOfSupplyDashboard() {
     const optimisticId = `optimistic-${Date.now()}`;
     requesterCreation.mutate(name, {
       onSuccess: (r) => {
-        showToast(`Заявитель «${r.title}» создан`, "success");
+        showToast(tToasts("requesterCreated", { title: r.title }), "success");
         setRequester({ id: r.id, title: r.title });
       },
       onError: (err) => showToast(err.message, "error"),
@@ -124,21 +130,21 @@ export function HeadOfSupplyDashboard() {
 
     const validItems = items.filter(isItemComplete);
     if (validItems.length === 0) {
-      showToast("Добавьте хотя бы одну заполненную позицию", "error");
+      showToast(tToasts("addAtLeastOne"), "error");
       return;
     }
     if (!requester) {
-      showToast("Выберите заявителя", "error");
+      showToast(tToasts("selectRequester"), "error");
       return;
     }
 
     if (isOptimistic(requester.id)) {
-      showToast("Подождите сохранения заявителя", "error");
+      showToast(tToasts("waitForRequester"), "error");
       return;
     }
     for (const item of validItems) {
       if (isOptimistic(item.product!.id) || isOptimistic(item.unit!.id)) {
-        showToast("Подождите сохранения новых продуктов/единиц", "error");
+        showToast(tToasts("waitForSaving"), "error");
         return;
       }
     }
@@ -156,12 +162,12 @@ export function HeadOfSupplyDashboard() {
 
     createOrder.mutate(payload, {
       onSuccess: () => {
-        showToast("Заявка успешно создана", "success");
+        showToast(tToasts("orderCreated"), "success");
         setItems([createEmptyItem()]);
         setRequester(null);
       },
       onError: (err) => {
-        showToast(err.message || "Ошибка при создании заявки", "error");
+        showToast(err.message || tToasts("orderCreateError"), "error");
       },
     });
   }
@@ -175,36 +181,36 @@ export function HeadOfSupplyDashboard() {
         <span className="text-2xl">📋</span>
         <div>
           <h2 className="text-lg font-semibold text-foreground">
-            Панель начальника снабжения
+            {tPage("title")}
           </h2>
           <p className="text-sm text-text-secondary">
-            Создание и выполнение заявок на снабжение
+            {tPage("subtitle")}
           </p>
         </div>
       </div>
 
       <DashboardTabs
         tabs={[
-          { role: "create", label: "Новая заявка", icon: "✏️" },
-          { role: "orders", label: "Выполнение заявок", icon: "📋" },
-          { role: "passes", label: "Создать пропуски", icon: "🪪" },
+          { role: "create", label: tTabs("newOrder"), icon: "✏️" },
+          { role: "orders", label: tTabs("fulfillment"), icon: "📋" },
+          { role: "passes", label: tTabs("passes"), icon: "🪪" },
         ]}
       >
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid gap-5 sm:grid-cols-2">
             <Autocomplete
-              label="Заявитель"
-              placeholder="Начните вводить ФИО..."
+              label={tForm("requester")}
+              placeholder={tForm("requesterPlaceholder")}
               items={
                 requesterCreation.isPending
-                  ? [...requesters, { id: "pending", title: "Сохранение..." }]
+                  ? [...requesters, { id: "pending", title: tCommon("saving") }]
                   : requesters
               }
               value={requester}
               onSelect={setRequester}
               onCreate={handleRequesterCreate}
             />
-            <DatePicker label="Дата" value={date} onChange={setDate} />
+            <DatePicker label={tForm("date")} value={date} onChange={setDate} />
           </div>
 
           <hr className="border-border" />
@@ -214,10 +220,10 @@ export function HeadOfSupplyDashboard() {
             <div key={item.id} className="space-y-2">
               <div className="items-end gap-3 sm:grid sm:grid-cols-[3fr_80px_100px_32px] max-sm:space-y-3">
                 <Autocomplete
-                  placeholder="ТМЦ"
+                  placeholder={tForm("productPlaceholder")}
                   items={
                     productCreation.isPending
-                      ? [...products, { id: "pending", title: "Сохранение..." }]
+                      ? [...products, { id: "pending", title: tCommon("saving") }]
                       : products
                   }
                   value={item.product}
@@ -226,10 +232,10 @@ export function HeadOfSupplyDashboard() {
                 />
 
                 <Autocomplete
-                  placeholder="ЕИ"
+                  placeholder={tForm("unitPlaceholder")}
                   items={
                     unitCreation.isPending
-                      ? [...units, { id: "pending", title: "Сохранение..." }]
+                      ? [...units, { id: "pending", title: tCommon("saving") }]
                       : units
                   }
                   value={item.unit}
@@ -240,13 +246,13 @@ export function HeadOfSupplyDashboard() {
                 <div className="flex items-center gap-2 sm:contents">
                   <input
                     type="number"
-                    aria-label="Количество"
+                    aria-label={tForm("quantity")}
                     step="0.1"
                     min="0"
                     value={item.quantity}
                     onChange={(e) => updateItem(item.id, { quantity: e.target.value })}
                     onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                    placeholder="КОЛ-ВО"
+                    placeholder={tForm("quantityPlaceholder")}
                     className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary"
                   />
 
@@ -267,7 +273,7 @@ export function HeadOfSupplyDashboard() {
                 rows={2}
                 value={item.comment}
                 onChange={(e) => updateItem(item.id, { comment: e.target.value })}
-                placeholder="Комментарий к позиции (необязательно)"
+                placeholder={tForm("comment")}
                 className="w-full resize-none rounded-lg border border-border bg-surface px-3 py-2 text-xs text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </div>
@@ -282,7 +288,7 @@ export function HeadOfSupplyDashboard() {
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
                   <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
                 </svg>
-                Добавить позицию
+                {tForm("addPosition")}
               </button>
             )}
           </div>
@@ -297,7 +303,7 @@ export function HeadOfSupplyDashboard() {
                 <path d="M3.5 2.75a.75.75 0 0 0-1.5 0v14.5a.75.75 0 0 0 1.5 0v-4.392l1.657-.348a6.449 6.449 0 0 1 1.271-.105 7.363 7.363 0 0 1 3.186.798 6.415 6.415 0 0 0 2.628.628 7.823 7.823 0 0 0 2.905-.616l-8.147 1.71V2.75Z" />
                 <path d="M15.084 12.692a5.443 5.443 0 0 1 .66.048c.477.064 1.034.174 1.256.367.31.27.5.659.5 1.143 0 .598-.31 1.024-.863 1.352-.55.326-1.345.568-2.304.568-1.433 0-2.614-.44-3.46-1.03l.66-1.352c.774.508 1.694.882 2.8.882.518 0 .9-.12 1.112-.295.2-.164.255-.363.255-.525 0-.305-.24-.493-.58-.611-.231-.08-.52-.134-.855-.183-.688-.1-1.55-.224-2.382-.472-1.252-.372-2.296-1.226-2.296-2.873 0-1.27.756-2.353 2.062-2.951.618-.282 1.34-.432 2.111-.432 1.08 0 2.118.207 3.132.816l-.719 1.367c-.727-.48-1.543-.683-2.413-.683-.51 0-.913.114-1.18.31-.284.21-.395.49-.395.76 0 .382.243.578.593.704.297.107.659.17 1.028.226.665.1 1.424.214 2.156.478 1.2.434 2.064 1.335 2.064 2.823 0 .77-.278 1.604-1.038 2.197-.49.383-1.16.641-2.035.641-.893 0-2.028-.238-3.071-.87Z" />
               </svg>
-              Отправить заявку
+              {tForm("submit")}
             </button>
           </div>
         </form>

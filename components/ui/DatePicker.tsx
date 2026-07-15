@@ -5,18 +5,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
-
-const MONTHS = [
-  "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
-  "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
-];
-
-const MONTHS_GENITIVE = [
-  "января", "февраля", "марта", "апреля", "мая", "июня",
-  "июля", "августа", "сентября", "октября", "ноября", "декабря",
-];
-
-const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+import { useTranslations } from "next-intl";
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
@@ -48,6 +37,10 @@ export function DatePicker({
   const ref = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const [calPos, setCalPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const t = useTranslations("datepicker");
+  const MONTHS = t.raw("months.nominative") as string[];
+  const MONTHS_GENITIVE = t.raw("months.genitive") as string[];
+  const WEEKDAYS = t.raw("weekdays") as string[];
   const parsed = value ? new Date(value + "T00:00:00") : new Date();
   const [viewYear, setViewYear] = useState(parsed.getFullYear());
   const [viewMonth, setViewMonth] = useState(parsed.getMonth());
@@ -158,7 +151,7 @@ export function DatePicker({
           />
         </svg>
         <span className={value ? "" : "text-text-secondary"}>
-          {value ? displayText : "Выберите дату"}
+          {value ? displayText : t("select")}
         </span>
       </button>
 
@@ -233,7 +226,7 @@ export function DatePicker({
               }}
               className="mt-2 flex max-sm:min-h-11 w-full items-center justify-center rounded-md text-xs text-text-secondary transition-colors hover:bg-surface-secondary hover:text-foreground"
             >
-              Очистить
+              {t("clear")}
             </button>
           )}
         </div>

@@ -8,10 +8,12 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { MessageModal } from "./MessageModal";
 
 export function MessageButton() {
   const [open, setOpen] = useState(false);
+  const t = useTranslations("messages");
 
   const { data, isLoading } = useQuery<{ count: number }>({
     queryKey: ["unread-count"],
@@ -32,7 +34,7 @@ export function MessageButton() {
       <button
         onClick={() => setOpen(true)}
         className="relative flex max-sm:min-h-11 items-center rounded-md px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:text-foreground"
-        aria-label="Сообщения"
+        aria-label={t("title")}
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-6">
           <path d="M2 3.5A1.5 1.5 0 0 1 3.5 2h13A1.5 1.5 0 0 1 18 3.5v9a1.5 1.5 0 0 1-1.5 1.5h-6.75l-3.97 3.17A.5.5 0 0 1 5 16.69V14H3.5A1.5 1.5 0 0 1 2 12.5v-9Z" />
