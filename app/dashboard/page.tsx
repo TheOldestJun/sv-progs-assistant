@@ -7,13 +7,40 @@
  */
 import { getSession, logoutAction } from "@/app/lib/auth";
 import { redirect } from "next/navigation";
+import dynamicImport from "next/dynamic";
 import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
-import { HeadOfSupplyDashboard } from "@/components/dashboard/HeadOfSupplyDashboard";
-import { SupplyDeptDashboard } from "@/components/dashboard/SupplyDeptDashboard";
-import { WarehouseDashboard } from "@/components/dashboard/WarehouseDashboard";
-import { RequesterDashboard } from "@/components/dashboard/RequesterDashboard";
-import { ArchiveDashboard } from "@/components/dashboard/ArchiveDashboard";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+
+const DynamicHeadOfSupplyDashboard = dynamicImport(
+  () =>
+    import("@/components/dashboard/HeadOfSupplyDashboard").then(
+      (m) => m.HeadOfSupplyDashboard,
+    ),
+);
+const DynamicSupplyDeptDashboard = dynamicImport(
+  () =>
+    import("@/components/dashboard/SupplyDeptDashboard").then(
+      (m) => m.SupplyDeptDashboard,
+    ),
+);
+const DynamicWarehouseDashboard = dynamicImport(
+  () =>
+    import("@/components/dashboard/WarehouseDashboard").then(
+      (m) => m.WarehouseDashboard,
+    ),
+);
+const DynamicRequesterDashboard = dynamicImport(
+  () =>
+    import("@/components/dashboard/RequesterDashboard").then(
+      (m) => m.RequesterDashboard,
+    ),
+);
+const DynamicArchiveDashboard = dynamicImport(
+  () =>
+    import("@/components/dashboard/ArchiveDashboard").then(
+      (m) => m.ArchiveDashboard,
+    ),
+);
 
 export const dynamic = "force-dynamic";
 
@@ -28,10 +55,10 @@ const roleMeta: Record<string, { label: string; icon: string }> = {
 };
 
 const dashboardComponents: Record<string, React.ElementType> = {
-  HEAD_OF_SUPPLY: HeadOfSupplyDashboard,
-  SUPPLY_DEPT: SupplyDeptDashboard,
-  WAREHOUSE: WarehouseDashboard,
-  REQUESTER: RequesterDashboard,
+  HEAD_OF_SUPPLY: DynamicHeadOfSupplyDashboard,
+  SUPPLY_DEPT: DynamicSupplyDeptDashboard,
+  WAREHOUSE: DynamicWarehouseDashboard,
+  REQUESTER: DynamicRequesterDashboard,
 };
 
 export default async function DashboardPage() {
@@ -94,7 +121,7 @@ export default async function DashboardPage() {
             tabs.push(ARCHIVE_TAB);
             components.push(
               <ErrorBoundary key="archive">
-                <ArchiveDashboard />
+                <DynamicArchiveDashboard />
               </ErrorBoundary>,
             );
           }
