@@ -255,7 +255,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 sm:space-y-1">
       {/* Поиск */}
       <div className="relative">
         <IconSearch className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-text-secondary" />
@@ -273,7 +273,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
           key={order.id}
           className="overflow-hidden rounded-lg border border-border"
         >
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 bg-surface-secondary px-4 py-3 sm:gap-4">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 bg-surface-secondary px-4 py-3 sm:gap-4 sm:py-1">
             <div className="flex items-center gap-2 text-sm sm:gap-4">
               <span className="font-medium text-foreground">
                 {order.requester.name}
@@ -307,17 +307,17 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
             <table className="w-full min-w-0 text-sm">
             <thead className="bg-surface max-sm:hidden">
               <tr>
-                <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">ТМЦ</th>
-                <th className="w-16 px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">Ед.</th>
-                <th className="w-20 px-2 py-1.5 sm:px-4 sm:py-2 text-right font-medium text-text-secondary">Кол-во</th>
-                <th className="w-44 px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">Статус</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-0.5 text-left font-medium text-text-secondary">ТМЦ</th>
+                <th className="w-16 px-2 py-1.5 sm:px-4 sm:py-0.5 text-left font-medium text-text-secondary">Ед.</th>
+                <th className="w-20 px-2 py-1.5 sm:px-4 sm:py-0.5 text-right font-medium text-text-secondary">Кол-во</th>
+                <th className="w-44 px-2 py-1.5 sm:px-4 sm:py-0.5 text-left font-medium text-text-secondary">Статус</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {order.items.map((item) => (
                   <React.Fragment key={item.id}>
                   <tr className="hover:bg-surface max-sm:flex max-sm:flex-col max-sm:border-b max-sm:border-border max-sm:px-4 max-sm:py-2.5 max-sm:gap-1 max-sm:last:border-b-0">
-                    <td className="px-2 py-1.5 sm:px-4 sm:py-2 max-sm:flex max-sm:items-center max-sm:gap-2 max-sm:p-0">
+                    <td className="px-2 py-1.5 sm:px-4 sm:py-0.5 max-sm:flex max-sm:items-center max-sm:gap-2 max-sm:p-0">
                       <span className="text-xs text-text-secondary sm:hidden shrink-0">ТМЦ:</span>
                       <button
                         onClick={() => toggleItem(item.id, order.id)}
@@ -378,13 +378,13 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                         </span>
                       </button>
                     </td>
-                    <td className="w-16 px-2 py-1.5 sm:px-4 sm:py-2 text-text-secondary max-sm:hidden">
-                      {item.units.title}
-                    </td>
-                    <td className="w-20 px-2 py-1.5 sm:px-4 sm:py-2 text-right text-foreground max-sm:hidden">
-                      {item.quantity}
-                    </td>
-                    <td className="sm:w-44 px-2 py-1.5 sm:px-4 sm:py-2 max-sm:flex max-sm:items-center max-sm:gap-2 max-sm:border-0 max-sm:p-0">
+                     <td className="w-16 px-2 py-1.5 sm:px-4 sm:py-0.5 text-text-secondary max-sm:hidden">
+                       {item.units.title}
+                     </td>
+                     <td className="w-20 px-2 py-1.5 sm:px-4 sm:py-0.5 text-right text-foreground max-sm:hidden">
+                       {item.quantity}
+                     </td>
+                     <td className="sm:w-44 px-2 py-1.5 sm:px-4 sm:py-0.5 max-sm:flex max-sm:items-center max-sm:gap-2 max-sm:border-0 max-sm:p-0">
                       <span className="text-xs text-text-secondary sm:hidden shrink-0">Кол-во:</span>
                       <span className="sm:hidden text-xs text-text-secondary tabular-nums whitespace-nowrap">
                         {item.quantity} {item.units.title}

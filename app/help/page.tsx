@@ -306,6 +306,66 @@ export default function HelpPage() {
           </div>
         </section>
 
+        {/* Сообщения */}
+        <section>
+          <h2 className="text-xl font-semibold text-foreground">
+            Сообщения
+          </h2>
+          <p className="mt-2 leading-relaxed text-text-secondary">
+            В системе есть внутренняя переписка между пользователями.
+            Кнопка с конвертом ✉️ в хедере показывает количество непрочитанных сообщений.
+          </p>
+          <div className="mt-3 space-y-3">
+            <div className="rounded-lg border border-border bg-surface p-4">
+              <h3 className="font-medium text-foreground">Отправка сообщения</h3>
+              <p className="mt-1 text-sm leading-relaxed text-text-secondary">
+                В окне сообщений выберите получателя, напишите текст и нажмите Отправить.
+                Также доступна страница /messages с полноценным чатом и историей переписки.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Пропуски */}
+        <section>
+          <h2 className="text-xl font-semibold text-foreground">
+            Пропуски
+          </h2>
+          <p className="mt-2 leading-relaxed text-text-secondary">
+            На вкладке «Создать пропуски» можно сгенерировать Excel-файл пропуска
+            для вывоза/ввоза товаров. Доступно снабжению, складу и заявителям.
+          </p>
+          <div className="mt-3 space-y-3">
+            <div className="rounded-lg border border-border bg-surface p-4">
+              <h3 className="font-medium text-foreground">Типы пропусков</h3>
+              <p className="mt-1 text-sm leading-relaxed text-text-secondary">
+                Выберите тип: Ввоз, Вывоз или Ввоз/Вывоз. Затем укажите дату начала
+                действия и добавьте позиции (ТМЦ, количество, единица измерения).
+                Строки добавляются автоматически при заполнении предыдущей.
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-surface p-4">
+              <h3 className="font-medium text-foreground">Генерация файла</h3>
+              <p className="mt-1 text-sm leading-relaxed text-text-secondary">
+                После заполнения всех позиций нажмите «Сохранить пропуск».
+                Excel-файл будет сгенерирован по шаблону и автоматически скачан.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Оповещения склада */}
+        <section>
+          <h2 className="text-xl font-semibold text-foreground">
+            Оповещения склада
+          </h2>
+          <p className="mt-2 leading-relaxed text-text-secondary">
+            На вкладке склада есть кнопка «Проверить поставки» — она проверяет,
+            появились ли новые позиции со статусом «Отправлено поставщиком».
+            При наличии новых поставок показывается всплывающее уведомление.
+          </p>
+        </section>
+
         {/* Переключение темы */}
         <section>
           <h2 className="text-xl font-semibold text-foreground">

@@ -114,11 +114,11 @@ export function AdminArchiveList() {
         <p className="py-8 text-center text-sm text-text-secondary">Архив пуст</p>
       ) : (
         <>
-          <div className="space-y-3">
+          <div className="space-y-1">
             {data.data.map((entry) => (
               <div key={entry.id} className="overflow-hidden rounded-lg border border-border">
                 <div
-                  className="flex cursor-pointer flex-wrap items-center gap-x-4 gap-y-1.5 bg-surface-secondary px-2 py-1.5 sm:px-4 sm:py-2.5 transition-colors hover:bg-surface sm:gap-4 sm:py-3"
+                  className="flex cursor-pointer flex-wrap items-center gap-x-4 gap-y-0.5 bg-surface-secondary px-2 py-1 sm:px-4 transition-colors hover:bg-surface sm:gap-4"
                   onClick={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
                 >
                   <span className={`text-xs text-text-secondary transition-transform ${expandedId === entry.id ? "rotate-90" : ""}`}>▶</span>
@@ -145,19 +145,19 @@ export function AdminArchiveList() {
                     <table className="w-full text-sm">
                       <thead className="bg-surface">
                         <tr>
-                          <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">ТМЦ</th>
-                          <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">Ед.</th>
-                          <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-right font-medium text-text-secondary">Кол-во</th>
-                          <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-left font-medium text-text-secondary">Комментарий</th>
+                          <th className="px-2 py-0.5 text-left font-medium text-text-secondary sm:px-4">ТМЦ</th>
+                          <th className="px-2 py-0.5 text-left font-medium text-text-secondary sm:px-4">Ед.</th>
+                          <th className="px-2 py-0.5 text-right font-medium text-text-secondary sm:px-4">Кол-во</th>
+                          <th className="px-2 py-0.5 text-left font-medium text-text-secondary sm:px-4">Комментарий</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
                         {entry.items.map((item, idx) => (
-                          <tr key={idx} className="hover:bg-surface">
-                            <td className="px-2 py-1.5 sm:px-4 sm:py-2 text-foreground">{item.product}</td>
-                            <td className="px-2 py-1.5 sm:px-4 sm:py-2 text-text-secondary">{item.unit}</td>
-                            <td className="px-2 py-1.5 sm:px-4 sm:py-2 text-right text-foreground">{item.quantity}</td>
-                            <td className="px-2 py-1.5 sm:px-4 sm:py-2 text-text-secondary">{item.comment || "—"}</td>
+                          <tr key={idx}>
+                            <td className="px-2 py-0.5 text-foreground sm:px-4">{item.product}</td>
+                            <td className="px-2 py-0.5 text-text-secondary sm:px-4">{item.unit}</td>
+                            <td className="px-2 py-0.5 text-right text-foreground sm:px-4">{item.quantity}</td>
+                            <td className="px-2 py-0.5 text-text-secondary sm:px-4">{item.comment || "—"}</td>
                           </tr>
                         ))}
                       </tbody>

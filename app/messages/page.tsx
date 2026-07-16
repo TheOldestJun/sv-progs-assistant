@@ -138,6 +138,11 @@ export default function MessagesPage() {
     }
   }, []);
 
+  /*
+   * Загружаем список диалогов и всех пользователей при монтировании.
+   * conversations — для отображения левой панели (последнее сообщение + unread)
+   * users — для модалки выбора получателя нового сообщения
+   */
   useEffect(() => {
     fetchConversations();
     fetchUsers();
@@ -171,7 +176,11 @@ export default function MessagesPage() {
     }
   }, []);
 
-  // Poll messages when conversation is open
+  /*
+   * Polling сообщений каждые 10 секунд, пока открыт диалог.
+   * Одновременно маркируем все сообщения от собеседника как прочитанные (PATCH /api/messages/read).
+   * Интервал 10 секунд выбран как компромисс между «свежестью» и нагрузкой на сервер.
+   */
   useEffect(() => {
     if (!selectedUserId) return;
     const interval = setInterval(async () => {
@@ -180,6 +189,12 @@ export default function MessagesPage() {
         if (res.ok) {
           const data = await res.json();
           setMessages(data);
+          /*
+           * Определяем текущего пользователя (myId) из первого сообщения,
+           * чтобы правильно раскрашивать «свои» и «чужие» сообщения.
+           * myId не меняется в рамках сессии, но без него нельзя отличить
+           * отправителя от получателя в чате между двумя пользователями.
+           */
           if (data.length > 0) {
             setMyId(
               data[0].senderId === selectedUserId ? data[0].receiver.id : data[0].sender.id,
@@ -198,12 +213,18 @@ export default function MessagesPage() {
     return () => clearInterval(interval);
   }, [selectedUserId]);
 
-  // Scroll to bottom on new messages
+  /*
+   * Авто-скролл к последнему сообщению при загрузке или отправке нового.
+   * bottomRef — пустой div внизу списка сообщений.
+   */
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Focus input when conversation opens
+  /*
+   * Авто-фокус на поле ввода при открытии диалога.
+   * setTimeout 100ms даёт React время отрендерить форму до фокуса.
+   */
   useEffect(() => {
     if (selectedUserId) {
       setTimeout(() => inputRef.current?.focus(), 100);

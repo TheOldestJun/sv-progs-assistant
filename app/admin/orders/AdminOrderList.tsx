@@ -1,5 +1,8 @@
 /*
  * AdminOrderList — таблица заявок с редактированием даты, статуса и количества позиций
+ * ADR: state управляется локально (useState с initial пропсом), без React Query.
+ *      При изменении отправляем PATCH и обновляем локальный стейт.
+ *      Это избавляет от рефетча всего списка при каждом чихе.
  */
 "use client";
 
@@ -13,6 +16,11 @@ import {
   type OrderItemStatus,
 } from "@/hooks/useOrders";
 
+/*
+ * Иконки для каждого статуса — уникальные SVG (React компонент, не спрайт).
+ * Каждая иконка визуально отражает этап: документ (ACCEPTED), счёт (INVOICE_RECEIVED),
+ * деньги (INVOICE_PAID), грузовик (SHIPPED), галочка (RECEIVED).
+ */
 function StatusIcon({ status, className }: { status: OrderItemStatus; className?: string }) {
   const cls = `size-3.5 shrink-0 ${className || ""}`;
   switch (status) {
@@ -77,6 +85,11 @@ const STATUS_COLORS: Record<string, string> = {
   RECEIVED: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
 };
 
+/*
+ * updateItem — обёртка над PATCH /api/orders/:orderId/items/:itemId
+ * Возвращает boolean (успех/неудача), без парсинга ответа.
+ * Вызывается для смены статуса, количества и даты.
+ */
 async function updateItem(
   orderId: string,
   itemId: string,
@@ -91,16 +104,31 @@ async function updateItem(
 }
 
 export function AdminOrderList({ orders: initial }: { orders: Order[] }) {
+  /*
+   * orders — локальный стейт, инициализируется серверными данными.
+   * При PATCH обновляем через map, избегая рефетча всего списка.
+   */
   const [orders, setOrders] = useState(initial);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDate, setEditDate] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [itemSaving, setItemSaving] = useState<Record<string, boolean>>({});
+
+  /*
+   * openMenu/closeMenu — ручное управление выпадающим меню статусов.
+   * menuRef — click-outside для закрытия. Position — абсолютное позиционирование под кнопкой.
+   */
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const { showToast } = useToast();
+
+  /*
+   * bumpItem — перенос позиции в новую заявку.
+   * При подтверждении DELETE /api/orders/:id/items/:itemId с body.reason
+   * удаляет позицию из текущей заявки и создаёт новую с этой позицией.
+   */
   const [bumpItem, setBumpItem] = useState<{ orderId: string; itemId: string; productName: string } | null>(null);
   const [bumpReason, setBumpReason] = useState("");
 

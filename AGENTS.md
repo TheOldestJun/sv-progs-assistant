@@ -49,6 +49,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 - Cover all code with necessary comments clear enough for AI agents to understand context across different machines
 
+## Help page
+
+- Админ-функции НИКОГДА не появляются в странице помощи (/help). Help только для рядовых пользователей (снабжение, склад, заявители).
+
 ## Project structure: components
 
 - All components in `app/components/` must be grouped into subdirectories by purpose (e.g. `layout/`, `theme/`, `ui/`, etc.)

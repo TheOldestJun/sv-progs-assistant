@@ -1,6 +1,7 @@
 /*
  * ReferenceEditor — управление справочниками ТМЦ и единиц измерения
  * Autocomplete для выбора/создания, затем редактирование/удаление
+ * ADR: optimistic ID при создании (id="optimistic-..."), заменяется на реальный после ответа сервера
  */
 "use client";
 
@@ -9,6 +10,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Autocomplete, type AutocompleteItem } from "@/components/ui/Autocomplete";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 
+/*
+ * SelectedCard — карточка выбранной записи.
+ * Два режима:
+ * - display: название + кнопки ✏️ (переименовать) и 🗑️ (удалить с подтверждением)
+ * - editing: инлайн-инпут, Enter → сохранить, Escape → отмена, Ок/Отмена кнопки
+ */
 function SelectedCard({
   item,
   onRename,
@@ -18,10 +25,12 @@ function SelectedCard({
   onRename: (id: string, title: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }) {
-  const { confirm } = useConfirmDialog();
+
+  /* Состояние редактирования: разворачивает инлайн-инпут вместо отображения */
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(item.title);
   const [pending, setPending] = useState(false);
+  const { confirm } = useConfirmDialog();
 
   const handleDelete = async () => {
     const ok = await confirm({
