@@ -11,6 +11,7 @@ const tabs = [
   { href: "/admin", label: "Пользователи" },
   { href: "/admin/reset-requests", label: "Запросы сброса" },
   { href: "/admin/orders", label: "Заявки" },
+  { href: "/admin/reference", label: "Исправления/добавления" },
   { href: "/admin/archive", label: "Архив" },
 ];
 

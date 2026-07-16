@@ -1,6 +1,6 @@
 /*
- * PATCH /api/products/:id — переименование ТМЦ
- * DELETE /api/products/:id — удаление ТМЦ (только ADMIN)
+ * PATCH /api/units/:id — переименование единицы измерения
+ * DELETE /api/units/:id — удаление единицы измерения (только ADMIN)
  */
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
@@ -37,17 +37,17 @@ export async function PATCH(
 
     const value = raw.trim().toUpperCase();
 
-    const dup = await db.product.findFirst({
+    const dup = await db.unit.findFirst({
       where: { title: value, NOT: { id } },
     });
     if (dup) {
       return NextResponse.json(
-        { error: "ТМЦ с таким названием уже существует" },
+        { error: "Единица измерения с таким названием уже существует" },
         { status: 409 },
       );
     }
 
-    const updated = await db.product.update({
+    const updated = await db.unit.update({
       where: { id },
       data: { title: value },
       select: { id: true, title: true },
@@ -77,15 +77,15 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    const inUse = await db.orderItem.count({ where: { productId: id } });
+    const inUse = await db.orderItem.count({ where: { unitId: id } });
     if (inUse > 0) {
       return NextResponse.json(
-        { error: `ТМЦ используется в ${inUse} позициях заявок. Сначала удалите или замените их.` },
+        { error: `Единица измерения используется в ${inUse} позициях заявок. Сначала удалите или замените их.` },
         { status: 409 },
       );
     }
 
-    await db.product.delete({ where: { id } });
+    await db.unit.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json(
