@@ -3,7 +3,15 @@
  * - Отображает все заявки, сгруппированные по дате (свежие сверху)
  * - Каждая позиция имеет статус, который можно менять через выпадающий список
  * - Расширяемая история изменений (statusLogs) при клике на позицию
- * Используется в SupplyDeptDashboard и HeadOfSupplyDashboard.
+ *
+ * Режимы (props):
+ * - warehouseMode: склад видит RECEIVED / SENT_TO_REQUESTER / ORDER_CONFIRMED
+ * - requesterMode: заявитель видит свой заказ, для позиций SENT_TO_REQUESTER
+ *   отображается кнопка «Подтвердить接收ение» (SENT_TO_REQUESTER → ORDER_CONFIRMED)
+ * - readOnly: только просмотр без возможности изменения статусов
+ *
+ * Используется в SupplyDeptDashboard, HeadOfSupplyDashboard,
+ * WarehouseDashboard (warehouseMode), RequesterDashboard (requesterMode).
  */
 "use client";
 
@@ -18,6 +26,8 @@ import { StatusChangeDialog } from "@/components/dashboard/StatusChangeDialog";
 import { EditProductDialog } from "@/components/dashboard/EditProductDialog";
 import { Tooltip } from "@/components/ui/Tooltip";
 
+const FINAL_STATUSES = new Set(["RECEIVED", "SENT_TO_REQUESTER", "ORDER_CONFIRMED"]);
+
 const PAGE_SIZE = 10;
 
 const STATUS_COLORS: Record<OrderItemStatus, string> = {
@@ -26,6 +36,8 @@ const STATUS_COLORS: Record<OrderItemStatus, string> = {
   INVOICE_PAID: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
   SHIPPED: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300",
   RECEIVED: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  SENT_TO_REQUESTER: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300",
+  ORDER_CONFIRMED: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
 };
 
 function StatusIcon({ status, className }: { status: OrderItemStatus; className?: string }) {
@@ -64,18 +76,31 @@ function StatusIcon({ status, className }: { status: OrderItemStatus; className?
           <path d="M2.25 2.25a.75.75 0 0 0 0 1.5h1.386c.17 0 .318.114.362.278l2.558 9.592a3.752 3.752 0 0 0-2.806 3.63c0 .414.336.75.75.75h15.75a.75.75 0 0 0 0-1.5H5.378A2.25 2.25 0 0 1 7.5 15h11.218a.75.75 0 0 0 .674-.421 60.358 60.358 0 0 0 2.96-7.228.75.75 0 0 0-.525-.965A60.864 60.864 0 0 0 5.68 4.509l-.232-.867A1.875 1.875 0 0 0 3.636 2.25H2.25ZM6.75 17.25a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM15.75 17.25a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" />
         </svg>
       );
+    case "SENT_TO_REQUESTER":
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={cls}>
+          <path d="M3 3.25c0-1.036.84-1.875 1.875-1.875h9.75c1.036 0 1.875.84 1.875 1.875v9.75a1.875 1.875 0 0 1-1.875 1.875H12v2.25A2.75 2.75 0 0 1 9.25 18h-6A2.75 2.75 0 0 1 .5 15.25V5.75c0-1.519 1.231-2.75 2.75-2.75h11A2.75 2.75 0 0 1 17 5.75v2.25h-2.25V3.75a.375.375 0 0 0-.375-.375H3.375a.375.375 0 0 0-.375.375Z" />
+          <path d="M13 7.5h-1.5v4.25a.75.75 0 0 1-1.5 0V7.5H8.25a.75.75 0 0 1 0-1.5H10V1.75a.75.75 0 0 1 1.5 0V6H13.25a.75.75 0 0 1 0 1.5Z" />
+        </svg>
+      );
+    case "ORDER_CONFIRMED":
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={cls}>
+          <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
+        </svg>
+      );
   }
 }
 
 // Какие статусы показывать в меню переключения:
-// - default (отдел снабжения): все, кроме RECEIVED (только склад может отмечать получение)
-// - warehouse (склад): только RECEIVED (склад принимает товары, не меняет другие статусы)
+// - default (отдел снабжения): все до RECEIVED (склад принимает товары)
+// - warehouse (склад): RECEIVED, SENT_TO_REQUESTER, ORDER_CONFIRMED
 const STATUS_CHOICES: Record<string, OrderItemStatus[]> = {
-  default: STATUS_ORDER.filter((s) => s !== "RECEIVED"),
-  warehouse: ["RECEIVED"],
+  default: STATUS_ORDER.filter((s) => s !== "RECEIVED" && s !== "SENT_TO_REQUESTER" && s !== "ORDER_CONFIRMED"),
+  warehouse: ["RECEIVED", "SENT_TO_REQUESTER", "ORDER_CONFIRMED"],
 };
 
-export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { warehouseMode?: boolean; readOnly?: boolean }) {
+export function OrderStatusTable({ warehouseMode = false, readOnly = false, requesterMode = false }: { warehouseMode?: boolean; readOnly?: boolean; requesterMode?: boolean }) {
   const { data: orders, isLoading, isError, error } = useOrders();
   const updateStatus = useUpdateOrderItemStatus();
   const deleteOrder = useDeleteOrder();
@@ -104,6 +129,12 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
     orderId: string;
     productId: string;
     productTitle: string;
+  } | null>(null);
+
+  // Токен подтверждения для копирования ссылки
+  const [confirmLink, setConfirmLink] = useState<{
+    token: string;
+    orderId: string;
   } | null>(null);
 
   function openMenu(itemId: string, buttonEl: HTMLButtonElement) {
@@ -159,8 +190,12 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
     updateStatus.mutate(
       { orderId: pendingChange.orderId, itemId: pendingChange.itemId, status: pendingChange.targetStatus, warehouseMode, changedAt },
       {
-        onSuccess: () => {
+        onSuccess: (data: { confirmationToken?: string }) => {
           showToast(`Статус изменён на «${STATUS_LABELS[pendingChange.targetStatus]}»`, "success");
+          // Если перевели в SENT_TO_REQUESTER — сохраняем токен для копирования ссылки
+          if (data.confirmationToken) {
+            setConfirmLink({ token: data.confirmationToken, orderId: pendingChange.orderId });
+          }
           setPendingChange(null);
         },
         onError: (err) => {
@@ -192,12 +227,14 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
   const filtered = useMemo(() => {
     if (!orders) return [];
     let result = orders;
-    // В режиме склада показываем только отправленные (SHIPPED) позиции для приёмки
+    // В режиме склада показываем позиции, которые требуют действий склада:
+    // SHIPPED (для приёмки), RECEIVED (для отправки заявителю), SENT_TO_REQUESTER (для подтверждения)
     if (warehouseMode) {
+      const warehouseStatuses = new Set(["SHIPPED", "RECEIVED", "SENT_TO_REQUESTER"]);
       result = result
         .map((o) => ({
           ...o,
-          items: o.items.filter((it) => it.status === "SHIPPED"),
+          items: o.items.filter((it) => warehouseStatuses.has(it.status)),
         }))
         .filter((o) => o.items.length > 0);
     }
@@ -289,12 +326,12 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
               {!readOnly && (
                 <button
                   onClick={() => handleDeleteOrder(order.id)}
-                  disabled={deleteOrder.isPending || !order.items.every((it) => it.status === "RECEIVED")}
+                  disabled={deleteOrder.isPending || !order.items.every((it) => FINAL_STATUSES.has(it.status))}
                   className="group flex size-7 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50 dark:hover:bg-red-950 dark:hover:text-red-400 max-sm:min-h-11 max-sm:min-w-11"
                   title={
-                    order.items.every((it) => it.status === "RECEIVED")
+                    order.items.every((it) => FINAL_STATUSES.has(it.status))
                       ? "Удалить заявку"
-                      : "Удаление доступно после получения всех позиций на склад"
+                      : "Удаление доступно после завершения всех позиций"
                   }
                 >
                   <IconTrash className="size-3.5" />
@@ -390,19 +427,38 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                         {item.quantity} {item.units.title}
                       </span>
                       <span className="hidden sm:inline">
-                        {readOnly ? (
+                        {(readOnly && !(requesterMode && item.status === "SENT_TO_REQUESTER")) ? (
                           <span className="inline-flex max-sm:min-h-11 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 ${STATUS_COLORS[item.status]}">
                             <StatusIcon status={item.status} />
                             {STATUS_LABELS[item.status]}
                           </span>
+                        ) : requesterMode && item.status === "SENT_TO_REQUESTER" ? (
+                          <button
+                            onClick={() =>
+                              setPendingChange({
+                                itemId: item.id,
+                                orderId: item.orderId,
+                                targetStatus: "ORDER_CONFIRMED" as OrderItemStatus,
+                                currentStatus: item.status,
+                                productTitle: item.product.title,
+                              })
+                            }
+                            disabled={updateStatus.isPending}
+                            className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-3.5">
+                              <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
+                            </svg>
+                            Подтвердить получение
+                          </button>
                         ) : (
                           <div className="relative inline-flex">
                             <button
                               onClick={(e) => {
-                                if (item.status !== "RECEIVED") openMenu(item.id, e.currentTarget);
+                                if (item.status !== "ORDER_CONFIRMED") openMenu(item.id, e.currentTarget);
                               }}
                               disabled={updateStatus.isPending}
-                              className={`inline-flex max-sm:min-h-11 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 transition-colors ${STATUS_COLORS[item.status]} disabled:opacity-50 ${item.status === "RECEIVED" ? "cursor-default" : "cursor-pointer"}`}
+                              className={`inline-flex max-sm:min-h-11 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 transition-colors ${STATUS_COLORS[item.status]} disabled:opacity-50 ${item.status === "ORDER_CONFIRMED" ? "cursor-default" : "cursor-pointer"}`}
                             >
                               <StatusIcon status={item.status} />
                               {STATUS_LABELS[item.status]}
@@ -417,19 +473,38 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
                     <td colSpan={4} className="max-sm:p-0">
                       <span className="text-xs text-text-secondary">Статус:</span>
                       <div className="mt-1">
-                      {readOnly ? (
+                      {(readOnly && !(requesterMode && item.status === "SENT_TO_REQUESTER")) ? (
                         <span className="inline-flex max-sm:min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium max-sm:w-full max-sm:justify-center max-sm:px-3 max-sm:py-1.5 max-sm:text-sm ring-1 ring-inset ring-black/5 ${STATUS_COLORS[item.status]}">
                           <StatusIcon status={item.status} />
                           {STATUS_LABELS[item.status]}
                         </span>
+                      ) : requesterMode && item.status === "SENT_TO_REQUESTER" ? (
+                        <button
+                          onClick={() =>
+                            setPendingChange({
+                              itemId: item.id,
+                              orderId: item.orderId,
+                              targetStatus: "ORDER_CONFIRMED" as OrderItemStatus,
+                              currentStatus: item.status,
+                              productTitle: item.product.title,
+                            })
+                          }
+                          disabled={updateStatus.isPending}
+                          className="inline-flex w-full max-sm:min-h-11 items-center justify-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-3.5">
+                            <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
+                          </svg>
+                          Подтвердить получение
+                        </button>
                       ) : (
                         <div className="relative">
                           <button
                             onClick={(e) => {
-                              if (item.status !== "RECEIVED") openMenu(item.id, e.currentTarget);
+                              if (item.status !== "ORDER_CONFIRMED") openMenu(item.id, e.currentTarget);
                             }}
                             disabled={updateStatus.isPending}
-                            className={`inline-flex max-sm:min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium max-sm:w-full max-sm:justify-center max-sm:px-3 max-sm:py-1.5 max-sm:text-sm ring-1 ring-inset ring-black/5 transition-colors ${STATUS_COLORS[item.status]} disabled:opacity-50 ${item.status === "RECEIVED" ? "cursor-default" : "cursor-pointer"}`}
+                            className={`inline-flex max-sm:min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium max-sm:w-full max-sm:justify-center max-sm:px-3 max-sm:py-1.5 max-sm:text-sm ring-1 ring-inset ring-black/5 transition-colors ${STATUS_COLORS[item.status]} disabled:opacity-50 ${item.status === "ORDER_CONFIRMED" ? "cursor-default" : "cursor-pointer"}`}
                           >
                             <StatusIcon status={item.status} />
                             {STATUS_LABELS[item.status]}
@@ -596,6 +671,47 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false }: { 
           itemId={editingProduct.itemId}
           onClose={() => setEditingProduct(null)}
         />
+      )}
+
+      {/* Диалог копирования ссылки подтверждения для заявителя */}
+      {confirmLink && (
+        <>
+          <div className="fixed inset-0 z-30 bg-black/50" onClick={() => setConfirmLink(null)} />
+          <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
+            <div className="w-full max-w-lg rounded-xl border border-border bg-surface p-6 shadow-lg">
+              <h3 className="text-base font-semibold text-foreground">
+                Ссылка для подтверждения
+              </h3>
+              <p className="mt-1 text-sm text-text-secondary">
+                Отправьте эту ссылку заявителю для подтверждения получения
+              </p>
+              <div className="mt-4 flex items-center gap-2">
+                <input
+                  readOnly
+                  value={`${typeof window !== "undefined" ? window.location.origin : ""}/confirm/${confirmLink.token}`}
+                  className="flex-1 rounded-lg border border-border bg-surface-secondary px-3 py-2 text-sm text-foreground"
+                />
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(
+                      `${window.location.origin}/confirm/${confirmLink.token}`,
+                    );
+                    showToast("Ссылка скопирована", "success");
+                  }}
+                  className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90"
+                >
+                  Копировать
+                </button>
+              </div>
+              <button
+                onClick={() => setConfirmLink(null)}
+                className="mt-4 w-full rounded-lg border border-border px-4 py-2 text-sm text-text-secondary transition-colors hover:bg-surface-secondary"
+              >
+                Закрыть
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       {openSelect && menuPos && (

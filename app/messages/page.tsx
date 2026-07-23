@@ -13,6 +13,29 @@ interface UserBrief {
   name: string;
 }
 
+/**
+ * Парсит текст сообщения и оборачивает ссылки /confirm/... в кликабельные <a>.
+ */
+function renderMessageText(text: string): React.ReactNode {
+  const parts = text.split(/(\/confirm\/[a-f0-9]+)/i);
+  return parts.map((part, i) => {
+    if (part.startsWith("/confirm/")) {
+      return (
+        <a
+          key={i}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline decoration-current opacity-80 hover:opacity-100"
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+}
+
 interface LastMessage {
   id: string;
   text: string;
@@ -364,7 +387,7 @@ export default function MessagesPage() {
                                 : "bg-surface-secondary text-foreground"
                             }`}
                           >
-                            <p>{msg.text}</p>
+                            <p>{renderMessageText(msg.text)}</p>
                             <p className={`mt-0.5 text-[10px] ${isMine ? "text-primary-foreground/60" : "text-text-secondary"}`}>
                               {new Date(msg.createdAt).toLocaleTimeString("ru-RU", {
                                 hour: "2-digit",

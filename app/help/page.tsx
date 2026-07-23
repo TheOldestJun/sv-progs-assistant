@@ -12,7 +12,9 @@ const STATUSES = [
   { id: "INVOICE_RECEIVED", label: "Счёт получен", desc: "Поставщик выставил счёт, документ получен" },
   { id: "INVOICE_PAID", label: "Счёт оплачен", desc: "Счёт оплачен, ожидается отгрузка" },
   { id: "SHIPPED", label: "Отправлено поставщиком", desc: "Товар отгружен, ожидается поступление на склад" },
-  { id: "RECEIVED", label: "Получено на склад", desc: "Товар оприходован на складе — заявка выполнена" },
+  { id: "RECEIVED", label: "Получено на склад", desc: "Товар оприходован на складе" },
+  { id: "SENT_TO_REQUESTER", label: "Отправлено заявителю", desc: "Товар передан/отправлен заявителю со склада" },
+  { id: "ORDER_CONFIRMED", label: "Получено заказчиком", desc: "Заявитель подтвердил получение товара" },
 ];
 
 export default function HelpPage() {
@@ -38,9 +40,11 @@ export default function HelpPage() {
             <li className="rounded-lg border border-border bg-surface p-4">
               <strong className="text-foreground">Заявитель</strong>
               <p className="mt-1 text-sm text-text-secondary">
-                Создание собственных заявок и отслеживание их статусов. У заявителя две вкладки:
-                «Новая заявка» (упрощённая форма, заявитель привязывается автоматически)
-                и «Мои заявки» (просмотр без возможности изменения статусов).
+                Создание собственных заявок и отслеживание их статусов. У заявителя три вкладки:
+                «Новая заявка» (упрощённая форма, заявитель привязывается автоматически),
+                «Мои заявки» (просмотр со статусами + подтверждение получения позиций)
+                и «Создать пропуски». Если позиция отправлена заявителю, в «Мои заявки»
+                появляется кнопка подтверждения получения.
               </p>
             </li>
             <li className="rounded-lg border border-border bg-surface p-4">
@@ -58,10 +62,11 @@ export default function HelpPage() {
             <li className="rounded-lg border border-border bg-surface p-4">
               <strong className="text-foreground">Склад</strong>
               <p className="mt-1 text-sm text-text-secondary">
-                Две вкладки: «Приёмка» (позиции со статусом «Отправлено поставщиком»,
-                ожидающие поступления) и «Выполнение заявок» (просмотр всех заявок
-                без возможности изменения статусов, кроме отметки о получении).
-                Склад может менять статус только на «Получено на склад».
+                Четыре вкладки: «Приёмка» (позиции со статусом «Отправлено поставщиком»,
+                ожидающие поступления), «Выполнение заявок» (просмотр всех заявок),
+                «Ожидание подтверждения» (список ссылок для подтверждения получения заявителями)
+                и «Создать пропуски». Склад может менять статусы: «Получено на склад»,
+                «Отправлено заявителю» и «Получено заказчиком» (подтверждение за заявителя).
               </p>
             </li>
           </ul>
@@ -123,7 +128,8 @@ export default function HelpPage() {
           <p className="mt-1 leading-relaxed text-text-secondary">
             Каждая позиция в заявке проходит последовательные статусы.
             Переход между статусами выполняют сотрудники отдела снабжения и склада.
-            Статус «Получено на склад» финальный — после него изменение невозможно.
+            Финальные статусы: «Получено на склад», «Отправлено заявителю»,
+            «Получено заказчиком» — после них изменение невозможно (кроме админа).
             При смене статуса можно указать дату изменения (по умолчанию — текущая).
           </p>
           <div className="mt-4 space-y-3">
@@ -159,6 +165,8 @@ export default function HelpPage() {
             <span className="rounded-md bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">Счёт оплачен</span>
             <span className="rounded-md bg-cyan-100 px-2.5 py-1 text-xs font-medium text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300">Отправлено поставщиком</span>
             <span className="rounded-md bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700 dark:bg-green-900/40 dark:text-green-300">Получено на склад</span>
+            <span className="rounded-md bg-orange-100 px-2.5 py-1 text-xs font-medium text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">Отправлено заявителю</span>
+            <span className="rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">Получено заказчиком</span>
           </div>
           <div className="mt-4 space-y-3">
             <div className="rounded-lg border border-border bg-surface p-4">
@@ -239,11 +247,12 @@ export default function HelpPage() {
         {/* Удаление заявок */}
         <section>
           <h2 className="text-xl font-semibold text-foreground">
-            Удаление заявок
+            Архивация заявок
           </h2>
           <p className="mt-2 leading-relaxed text-text-secondary">
-            Заявку можно удалить только после того, как все её позиции получили статус
-            «Получено на склад». Кнопка удаления находится справа от заголовка заявки.
+            Заявки архивируются автоматически, когда все её позиции получили финальный
+            статус: «Получено на склад», «Отправлено заявителю» или «Получено заказчиком».
+            Ручное удаление также доступно — кнопка рядом с заголовком заявки.
           </p>
           <div className="mt-3 rounded-lg border border-border bg-surface p-4">
             <h3 className="font-medium text-foreground">Что происходит при удалении</h3>
@@ -290,17 +299,56 @@ export default function HelpPage() {
             Работа склада
           </h2>
           <p className="mt-2 leading-relaxed text-text-secondary">
-            Сотрудники склада видят таблицу заявок со статусами. На вкладке склада
-            отображаются только позиции со статусом «Отправлено поставщиком»,
-            ожидающие поступления.
+            Сотрудники склада видят таблицу заявок со статусами. На вкладке «Приёмка»
+            отображаются позиции со статусом «Отправлено поставщиком» и «Получено на склад»,
+            ожидающие обработки.
           </p>
           <div className="mt-3 space-y-3">
             <div className="rounded-lg border border-border bg-surface p-4">
               <h3 className="font-medium text-foreground">Приёмка товара</h3>
               <p className="mt-1 text-sm leading-relaxed text-text-secondary">
-                Склад может изменить статус позиции только на «Получено на склад».
-                Остальные статусы недоступны. После получения статус становится финальным
-                и не подлежит изменению.
+                Склад может изменить статус на «Получено на склад» или «Отправлено заявителю».
+                После отправки заявителю для каждого пункта автоматически создаётся ссылка
+                подтверждения получения.
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-surface p-4">
+              <h3 className="font-medium text-foreground">Подтверждение получения</h3>
+              <p className="mt-1 text-sm leading-relaxed text-text-secondary">
+                После перевода позиции в статус «Отправлено заявителю» склад может
+                подтвердить получение за заявителя (статья «Получено заказчиком») или
+                подождать, пока заявитель подтвердит самостоятельно. На вкладке
+                «Ожидание подтверждения» отображаются все ссылки для заявителей —
+                их можно скопировать и повторно отправить.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Подтверждение получения заявителем */}
+        <section>
+          <h2 className="text-xl font-semibold text-foreground">
+            Подтверждение получения заявителем
+          </h2>
+          <p className="mt-2 leading-relaxed text-text-secondary">
+            Когда склад передаёт товар заявителю, статус позиции меняется на
+            «Отправлено заявителю». Заявитель видит это в разделе «Мои заявки»
+            и может нажать кнопку «Подтвердить接收ение» для каждого пункта.
+          </p>
+          <div className="mt-3 space-y-3">
+            <div className="rounded-lg border border-border bg-surface p-4">
+              <h3 className="font-medium text-foreground">Как подтвердить</h3>
+              <p className="mt-1 text-sm leading-relaxed text-text-secondary">
+                Откройте вкладку «Мои заявки». Позиции со статусом «Отправлено заявителю»
+                будут иметь зелёную кнопку «Подтвердить接收ение». Нажмите её и подтвердите
+                действие — статус изменится на «Получено заказчиком».
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-surface p-4">
+              <h3 className="font-medium text-foreground">Уведомления</h3>
+              <p className="mt-1 text-sm leading-relaxed text-text-secondary">
+                Если вы — зарегистрированный пользователь системы, при входе
+                появится всплывающее уведомление о заявках, ожидающих подтверждения получения.
               </p>
             </div>
           </div>

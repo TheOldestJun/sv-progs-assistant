@@ -7,7 +7,11 @@ import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";
 import { OrderItemStatus } from "@prisma/client";
 
-const RECEIVED = OrderItemStatus.RECEIVED;
+const FINAL_STATUSES: OrderItemStatus[] = [
+  OrderItemStatus.RECEIVED,
+  OrderItemStatus.SENT_TO_REQUESTER,
+  OrderItemStatus.ORDER_CONFIRMED,
+];
 
 export async function PATCH(
   request: Request,
@@ -71,7 +75,7 @@ export async function DELETE(
             product: { select: { title: true } },
             units: { select: { title: true } },
             statusLogs: {
-              where: { newStatus: RECEIVED },
+              where: { newStatus: OrderItemStatus.RECEIVED },
               select: { changedAt: true },
               orderBy: { changedAt: "desc" },
               take: 1,
@@ -84,10 +88,10 @@ export async function DELETE(
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    const allReceived = order.items.every((it) => it.status === RECEIVED);
-    if (!allReceived) {
+    const allFinished = order.items.every((it) => FINAL_STATUSES.includes(it.status));
+    if (!allFinished) {
       return NextResponse.json(
-        { error: "Можно удалить только заявку, все позиции которой получены на склад" },
+        { error: "Можно удалить только заявку, все позиции которой завершены" },
         { status: 400 },
       );
     }

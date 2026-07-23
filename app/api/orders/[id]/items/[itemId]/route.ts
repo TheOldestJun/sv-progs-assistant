@@ -1,13 +1,25 @@
 /*
  * GET    /api/orders/:id/items/:itemId — история статусов позиции
- * PATCH  /api/orders/:id/items/:itemId — обновление статуса или замена ТМЦ в позиции
+ * PATCH  /api/orders/:id/items/:itemId — обновление статуса или замена ТМЦ в позиции.
+ *   Дополнительная логика при смене статуса:
+ *   - SENT_TO_REQUESTER: генерируется одноразовый токен подтверждения (OrderConfirmToken).
+ *     Если заявитель привязан к пользователю — отправляется внутреннее сообщение.
+ *   - Любой финальный статус (RECEIVED/SENT_TO_REQUESTER/ORDER_CONFIRMED): проверка
+ *     автоархивации через tryArchiveOrder().
  * DELETE /api/orders/:id/items/:itemId — админ: удаляет пункт из заявки и создаёт новую
  *                                        с тем же заявителем/датой + пометка "непредвиденные проблемы"
+ *
+ * Доступ:
+ * - Статусы RECEIVED/SENT_TO_REQUESTER — только склад или админ
+ * - ORDER_CONFIRMED — склад, админ, или заявитель своей заявки (SENT_TO_REQUESTER → ORDER_CONFIRMED)
+ * - После ORDER_CONFIRMED статус заблокирован (кроме админа)
  */
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";
 import { OrderItemStatus, Role } from "@prisma/client";
+import { randomBytes } from "crypto";
+import { tryArchiveOrder } from "@/app/lib/tryArchiveOrder";
 
 /*
  * Роли, которым разрешено менять ТМЦ в позиции
@@ -118,6 +130,7 @@ export async function PATCH(
     }
 
     // ——— Смена статуса ——— (существующая логика)
+    console.log("[PATCH status]", { itemId, currentStatus: item.status, newStatus: status, warehouseMode, roles: session.roles });
     if (!status || !Object.values(OrderItemStatus).includes(status)) {
       return NextResponse.json(
         { error: `Invalid status. Allowed: ${Object.values(OrderItemStatus).join(", ")}` },
@@ -125,29 +138,47 @@ export async function PATCH(
       );
     }
 
+    // Статусы, которые может менять только склад (или админ):
+    // RECEIVED (склад принимает товар), SENT_TO_REQUESTER (склад отправляет заявителю)
+    const WAREHOUSE_ONLY_STATUSES: OrderItemStatus[] = [
+      OrderItemStatus.RECEIVED,
+      OrderItemStatus.SENT_TO_REQUESTER,
+    ];
+
+    // Проверяем, является ли текущий пользователем заявителем этой заявки
+    const isOwnOrder = await db.order.findFirst({
+      where: { id, requester: { userId: session.id } },
+      select: { id: true },
+    });
+
     if (warehouseMode) {
       if (!session.roles.includes(Role.WAREHOUSE)) {
         return NextResponse.json(
-          { error: "Только кладовщик может подтвердить получение товара" },
+          { error: "Только кладовщик может выполнять это действие" },
           { status: 403 },
         );
       }
-      if (status !== OrderItemStatus.RECEIVED) {
+      if (!WAREHOUSE_ONLY_STATUSES.includes(status) && status !== OrderItemStatus.ORDER_CONFIRMED) {
         return NextResponse.json(
-          { error: "Кладовщик может только подтвердить получение товара (RECEIVED)" },
+          { error: "Кладовщик может только RECEIVE, SENT_TO_REQUESTER или ORDER_CONFIRMED" },
           { status: 403 },
         );
       }
-    } else if (status === OrderItemStatus.RECEIVED && !session.roles.includes(Role.ADMIN)) {
-      return NextResponse.json(
-        { error: "Только кладовщик может подтвердить получение товара" },
-        { status: 403 },
-      );
+    } else if (WAREHOUSE_ONLY_STATUSES.includes(status) && !session.roles.includes(Role.ADMIN)) {
+      // Заявитель может подтвердить получение своей заявки (SENT_TO_REQUESTER → ORDER_CONFIRMED)
+      const isRequesterConfirm = isOwnOrder && status === OrderItemStatus.ORDER_CONFIRMED && item.status === OrderItemStatus.SENT_TO_REQUESTER;
+      if (!isRequesterConfirm) {
+        return NextResponse.json(
+          { error: "Только кладовщик может выполнять это действие" },
+          { status: 403 },
+        );
+      }
     }
 
-    if (item.status === OrderItemStatus.RECEIVED && !session.roles.includes(Role.ADMIN)) {
+    // Запрет менять статус после финального (ORDER_CONFIRMED)
+    if (item.status === OrderItemStatus.ORDER_CONFIRMED && !session.roles.includes(Role.ADMIN)) {
       return NextResponse.json(
-        { error: "Нельзя изменить статус после получения товара на склад" },
+        { error: "Нельзя изменить статус после подтверждения получения заказчиком" },
         { status: 400 },
       );
     }
@@ -178,8 +209,46 @@ export async function PATCH(
         : []),
     ]);
 
-    return NextResponse.json(updated);
+    // При переводе в SENT_TO_REQUESTER — генерируем одноразовый токен для этого пункта заявки
+    let confirmationToken: string | null = null;
+    if (status === OrderItemStatus.SENT_TO_REQUESTER) {
+      confirmationToken = randomBytes(32).toString("hex");
+      await db.orderConfirmToken.create({
+        data: {
+          orderItemId: itemId,
+          token: confirmationToken,
+        },
+      });
+
+      // Если заявитель — пользователь системы — уведомляем во внутренних сообщениях
+      const order = await db.order.findUnique({
+        where: { id },
+        select: {
+          requester: { select: { userId: true } },
+          items: {
+            where: { id: itemId },
+            select: { product: { select: { title: true } }, quantity: true, units: { select: { title: true } } },
+          },
+        },
+      });
+      if (order?.requester.userId && order.items[0]) {
+        const item = order.items[0];
+        await db.message.create({
+          data: {
+            senderId: session.id,
+            receiverId: order.requester.userId,
+            text: `Позиция «${item.product.title}» (${item.quantity} ${item.units.title}) готова к получению. Откройте заявку и подтвердите получение.`,
+          },
+        });
+      }
+    }
+
+    // Автоархивация: если все позиции заявки в финальном статусе — перемещаем в архив
+    const archived = await tryArchiveOrder(id);
+
+    return NextResponse.json({ ...updated, confirmationToken, archived });
   } catch (error) {
+    console.error("[PATCH status] Error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 },

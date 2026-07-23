@@ -261,7 +261,7 @@ export function RequesterDashboard() {
         </form>
 
         <div>
-          <OrderStatusTable readOnly />
+          <OrderStatusTable requesterMode />
         </div>
 
         <PassForm />

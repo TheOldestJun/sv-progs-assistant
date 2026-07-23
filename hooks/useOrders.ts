@@ -10,7 +10,9 @@ export type OrderItemStatus =
   | "INVOICE_RECEIVED"
   | "INVOICE_PAID"
   | "SHIPPED"
-  | "RECEIVED";
+  | "RECEIVED"
+  | "SENT_TO_REQUESTER"
+  | "ORDER_CONFIRMED";
 
 export const STATUS_LABELS: Record<OrderItemStatus, string> = {
   ACCEPTED: "Принято в работу",
@@ -18,6 +20,8 @@ export const STATUS_LABELS: Record<OrderItemStatus, string> = {
   INVOICE_PAID: "Счёт оплачен",
   SHIPPED: "Отправлено поставщиком",
   RECEIVED: "Получено на склад",
+  SENT_TO_REQUESTER: "Отправлено заявителю",
+  ORDER_CONFIRMED: "Получено заказчиком",
 };
 
 // Канонический порядок жизненного цикла статусов заявки.
@@ -28,6 +32,8 @@ export const STATUS_ORDER: OrderItemStatus[] = [
   "INVOICE_PAID",
   "SHIPPED",
   "RECEIVED",
+  "SENT_TO_REQUESTER",
+  "ORDER_CONFIRMED",
 ];
 
 export interface StatusLogEntry {
@@ -95,8 +101,8 @@ export function useUpdateOrderItemStatus() {
       orderId: string;
       itemId: string;
       status: OrderItemStatus;
-      // warehouseMode=true: склад отмечает RECEIVED, сервер проверяет роль WAREHOUSE
-      // warehouseMode=false/undefined: другие отделы, RECEIVED запрещён
+      // warehouseMode=true: склад отмечает RECEIVED/SENT_TO_REQUESTER, сервер проверяет роль WAREHOUSE
+      // warehouseMode=false/undefined: другие отделы, RECEIVE/SENT_TO_REQUESTER запрещён
       warehouseMode?: boolean;
       /** Дата смены статуса (YYYY-MM-DD) — если не указана, будет now() */
       changedAt?: string;

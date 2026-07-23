@@ -1,15 +1,17 @@
 /*
  * WarehouseDashboard — приёмка товаров на склад.
- * Три вкладки:
+ * Четыре вкладки:
  * 1. Приёмка — заявки со статусом SHIPPED для отметки RECEIVED (warehouseMode)
  * 2. Выполнение заявок — просмотр всех заявок (readOnly)
- * 3. Пропуска — создание пропусков
+ * 3. Ожидание подтверждения — ссылки для заявителей
+ * 4. Пропуска — создание пропусков
  */
 "use client";
 
 import { OrderStatusTable } from "./OrderStatusTable";
 import { DashboardTabs } from "./DashboardTabs";
 import { PassForm } from "@/components/passes/PassForm";
+import { ConfirmLinksTab } from "./ConfirmLinksTab";
 
 export function WarehouseDashboard() {
   return (
@@ -31,12 +33,15 @@ export function WarehouseDashboard() {
           tabs={[
             { role: "reception", label: "Приёмка", icon: "📥" },
             { role: "overview", label: "Выполнение заявок", icon: "📋" },
+            { role: "confirm-links", label: "Ожидание подтверждения", icon: "🔗" },
             { role: "passes", label: "Создать пропуски", icon: "🪪" },
           ]}
         >
           <OrderStatusTable warehouseMode />
 
           <OrderStatusTable readOnly />
+
+          <ConfirmLinksTab />
 
           <PassForm />
         </DashboardTabs>

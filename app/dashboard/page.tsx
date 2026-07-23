@@ -10,6 +10,7 @@ import { redirect } from "next/navigation";
 import dynamicImport from "next/dynamic";
 import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { PendingConfirmToast } from "@/components/dashboard/PendingConfirmToast";
 
 const DynamicHeadOfSupplyDashboard = dynamicImport(
   () =>
@@ -71,6 +72,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-4 sm:px-6 sm:py-10 lg:px-8">
+      <PendingConfirmToast />
       <div className="mb-8 flex items-center justify-between border-b border-border pb-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">

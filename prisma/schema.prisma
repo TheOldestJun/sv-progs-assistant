@@ -16,6 +16,8 @@ enum OrderItemStatus {
   INVOICE_PAID
   SHIPPED
   RECEIVED
+  SENT_TO_REQUESTER
+  ORDER_CONFIRMED
 }
 
 enum Role {
@@ -81,13 +83,13 @@ model Requester {
 }
 
 model Order {
-  id          String      @id @default(cuid())
-  requester   Requester   @relation(fields: [requesterId], references: [id])
-  requesterId String
-  created     DateTime    @default(now()) @db.Date  // @db.Date — только дата (без времени), т.к. для заявки важна только дата
-  items       OrderItem[]
-  createdBy   User?       @relation(fields: [createdById], references: [id])  // Кто создал заявку (для REQUESTER — сам заявитель)
-  createdById String?
+  id            String              @id @default(cuid())
+  requester     Requester           @relation(fields: [requesterId], references: [id])
+  requesterId   String
+  created       DateTime            @default(now()) @db.Date  // @db.Date — только дата (без времени), т.к. для заявки важна только дата
+  items         OrderItem[]
+  createdBy     User?               @relation(fields: [createdById], references: [id])  // Кто создал заявку (для REQUESTER — сам заявитель)
+  createdById   String?
 
   @@index([requesterId])
   @@index([createdById])
@@ -103,8 +105,9 @@ model OrderItem {
   unitId    String
   quantity  Float
   comment   String?                         // Комментарий к позиции (необязательный, отображается в таблице)
-  status    OrderItemStatus     @default(ACCEPTED)  // Текущий статус — движется по жизненному циклу ACCEPTED → ... → RECEIVED
+  status    OrderItemStatus     @default(ACCEPTED)  // Текущий статус — ACCEPTED → ... → RECEIVED → SENT_TO_REQUESTER → ORDER_CONFIRMED
   statusLogs OrderItemStatusLog[]
+  confirmToken OrderConfirmToken?  // Токен для публичного подтверждения получения этой позиции
 
   @@index([orderId])
   @@index([productId])
@@ -154,4 +157,18 @@ model ArchivedOrder {
   @@index([archivedAt])
   @@index([createdById])
   @@map("archived_orders") // snake_case для MariaDB (Prisma по умолчанию использует camelCase)
+}
+
+// Токен для публичного подтверждения получения конкретного пункта заявки.
+// Генерируется при переводе пункта в SENT_TO_REQUESTER, одноразовый.
+model OrderConfirmToken {
+  id          String    @id @default(cuid())
+  orderItemId String    @unique  // Один токен на один пункт заявки
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  token       String    @unique  // Одноразовый токен (hex 32 байта)
+  usedAt      DateTime?          // Если использован — дата использования
+  createdAt   DateTime  @default(now())
+
+  @@index([token])
+  @@index([orderItemId])
 }

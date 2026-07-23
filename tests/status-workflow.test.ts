@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 
 // Типы и константы, дублирующие бизнес-логику из PATCH /api/orders/:id/items/:itemId
 // для тестирования правил transition без БД.
-type OrderItemStatus = "ACCEPTED" | "INVOICE_RECEIVED" | "INVOICE_PAID" | "SHIPPED" | "RECEIVED";
+type OrderItemStatus = "ACCEPTED" | "INVOICE_RECEIVED" | "INVOICE_PAID" | "SHIPPED" | "RECEIVED" | "SENT_TO_REQUESTER" | "ORDER_CONFIRMED";
 type Role = "ADMIN" | "HEAD_OF_SUPPLY" | "SUPPLY_DEPT" | "WAREHOUSE" | "REQUESTER";
 
 const STATUS_ORDER: OrderItemStatus[] = [
@@ -11,6 +11,8 @@ const STATUS_ORDER: OrderItemStatus[] = [
   "INVOICE_PAID",
   "SHIPPED",
   "RECEIVED",
+  "SENT_TO_REQUESTER",
+  "ORDER_CONFIRMED",
 ];
 
 function isSequentialTransition(from: OrderItemStatus, to: OrderItemStatus): boolean {
@@ -26,15 +28,18 @@ interface TransitionRule {
   reason?: string;
 }
 
+// Статусы, которые может менять только склад (или админ)
+const WAREHOUSE_ONLY_STATUSES: OrderItemStatus[] = ["RECEIVED", "SENT_TO_REQUESTER", "ORDER_CONFIRMED"];
+
 function validateTransition(
   currentStatus: OrderItemStatus,
   newStatus: OrderItemStatus,
   roles: Role[],
   warehouseMode: boolean,
 ): TransitionRule {
-  // Нельзя менять после RECEIVED
-  if (currentStatus === "RECEIVED") {
-    return { canTransition: false, reason: "Нельзя изменить статус после получения товара на склад" };
+  // Нельзя менять после ORDER_CONFIRMED (финальный статус)
+  if (currentStatus === "ORDER_CONFIRMED") {
+    return { canTransition: false, reason: "Нельзя изменить статус после подтверждения получения заказчиком" };
   }
 
   // Тот же статус — не ошибка, но и не переход
@@ -42,19 +47,19 @@ function validateTransition(
     return { canTransition: false, reason: "Новый статус совпадает с текущим" };
   }
 
-  // Warehouse mode: только WAREHOUSE, только RECEIVED
+  // Warehouse mode: только WAREHOUSE, только WAREHOUSE_ONLY_STATUSES
   if (warehouseMode) {
     if (!roles.includes("WAREHOUSE")) {
-      return { canTransition: false, reason: "Только кладовщик может подтвердить получение товара" };
+      return { canTransition: false, reason: "Только кладовщик может выполнять это действие" };
     }
-    if (newStatus !== "RECEIVED") {
-      return { canTransition: false, reason: "Кладовщик может только подтвердить получение товара (RECEIVED)" };
+    if (!WAREHOUSE_ONLY_STATUSES.includes(newStatus)) {
+      return { canTransition: false, reason: "Кладовщик может только RECEIVE, SENT_TO_REQUESTER или ORDER_CONFIRMED" };
     }
   }
 
-  // Не-warehouse: RECEIVED запрещён для всех, кроме WAREHOUSE
-  if (!warehouseMode && newStatus === "RECEIVED") {
-    return { canTransition: false, reason: "Только кладовщик может подтвердить получение товара" };
+  // Не-warehouse: WAREHOUSE_ONLY_STATUSES запрещены для всех, кроме WAREHOUSE и ADMIN
+  if (!warehouseMode && WAREHOUSE_ONLY_STATUSES.includes(newStatus) && !roles.includes("ADMIN")) {
+    return { canTransition: false, reason: "Только кладовщик может выполнять это действие" };
   }
 
   // Sequential check
@@ -87,6 +92,16 @@ describe("Status workflow", () => {
       expect(result.canTransition).toBe(true);
     });
 
+    it("allows RECEIVED → SENT_TO_REQUESTER (warehouse mode)", () => {
+      const result = validateTransition("RECEIVED", "SENT_TO_REQUESTER", ["WAREHOUSE"], true);
+      expect(result.canTransition).toBe(true);
+    });
+
+    it("allows SENT_TO_REQUESTER → ORDER_CONFIRMED (warehouse mode)", () => {
+      const result = validateTransition("SENT_TO_REQUESTER", "ORDER_CONFIRMED", ["WAREHOUSE"], true);
+      expect(result.canTransition).toBe(true);
+    });
+
     it("rejects skipping a step: ACCEPTED → INVOICE_PAID", () => {
       const result = validateTransition("ACCEPTED", "INVOICE_PAID", ["ADMIN"], false);
       expect(result.canTransition).toBe(false);
@@ -102,11 +117,17 @@ describe("Status workflow", () => {
       const result = validateTransition("INVOICE_PAID", "INVOICE_RECEIVED", ["ADMIN"], false);
       expect(result.canTransition).toBe(false);
     });
+
+    it("rejects skipping from SHIPPED to SENT_TO_REQUESTER", () => {
+      const result = validateTransition("SHIPPED", "SENT_TO_REQUESTER", ["WAREHOUSE"], true);
+      expect(result.canTransition).toBe(false);
+      expect(result.reason).toContain("перескочить");
+    });
   });
 
   describe("role restrictions", () => {
-    it("rejects RECEIVED without warehouse mode and non-warehouse role", () => {
-      const result = validateTransition("SHIPPED", "RECEIVED", ["ADMIN"], false);
+    it("rejects RECEIVED without warehouse mode and non-warehouse, non-admin role", () => {
+      const result = validateTransition("SHIPPED", "RECEIVED", ["SUPPLY_DEPT"], false);
       expect(result.canTransition).toBe(false);
       expect(result.reason).toContain("Только кладовщик");
     });
@@ -122,24 +143,47 @@ describe("Status workflow", () => {
       expect(result.canTransition).toBe(true);
     });
 
-    it("rejects non-RECEIVED status in warehouse mode", () => {
+    it("rejects non-warehouse status in warehouse mode", () => {
       const result = validateTransition("ACCEPTED", "INVOICE_RECEIVED", ["WAREHOUSE"], true);
       expect(result.canTransition).toBe(false);
-      expect(result.reason).toContain("может только подтвердить получение");
+      expect(result.reason).toContain("Кладовщик");
+    });
+
+    it("rejects SENT_TO_REQUESTER without warehouse mode and non-admin", () => {
+      const result = validateTransition("RECEIVED", "SENT_TO_REQUESTER", ["SUPPLY_DEPT"], false);
+      expect(result.canTransition).toBe(false);
+      expect(result.reason).toContain("Только кладовщик");
+    });
+
+    it("allows SENT_TO_REQUESTER without warehouse mode but with ADMIN role", () => {
+      const result = validateTransition("RECEIVED", "SENT_TO_REQUESTER", ["ADMIN"], false);
+      expect(result.canTransition).toBe(true);
     });
   });
 
   describe("edge cases", () => {
-    it("rejects change after RECEIVED", () => {
-      const result = validateTransition("RECEIVED", "SHIPPED", ["ADMIN"], false);
+    it("rejects change after ORDER_CONFIRMED", () => {
+      const result = validateTransition("ORDER_CONFIRMED", "SHIPPED", ["ADMIN"], false);
       expect(result.canTransition).toBe(false);
-      expect(result.reason).toContain("после получения");
+      expect(result.reason).toContain("подтверждения получения заказчиком");
     });
 
     it("rejects same status (no-op)", () => {
       const result = validateTransition("ACCEPTED", "ACCEPTED", ["ADMIN"], false);
       expect(result.canTransition).toBe(false);
       expect(result.reason).toContain("совпадает");
+    });
+
+    it("allows full lifecycle for warehouse", () => {
+      const steps: [OrderItemStatus, OrderItemStatus][] = [
+        ["SHIPPED", "RECEIVED"],
+        ["RECEIVED", "SENT_TO_REQUESTER"],
+        ["SENT_TO_REQUESTER", "ORDER_CONFIRMED"],
+      ];
+      for (const [from, to] of steps) {
+        const result = validateTransition(from, to, ["WAREHOUSE"], true);
+        expect(result.canTransition).toBe(true);
+      }
     });
 
     it("allows full lifecycle for non-warehouse roles", () => {
