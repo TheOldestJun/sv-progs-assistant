@@ -4,15 +4,8 @@
  * - Возвращает Order[] (с вложенными позициями, продуктами, единицами, заявителем)
  */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-
-export type OrderItemStatus =
-  | "ACCEPTED"
-  | "INVOICE_RECEIVED"
-  | "INVOICE_PAID"
-  | "SHIPPED"
-  | "RECEIVED"
-  | "SENT_TO_REQUESTER"
-  | "ORDER_CONFIRMED";
+import { OrderItemStatus } from "@prisma/client";
+export type { OrderItemStatus };
 
 export const STATUS_LABELS: Record<OrderItemStatus, string> = {
   ACCEPTED: "Принято в работу",

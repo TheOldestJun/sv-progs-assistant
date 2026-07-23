@@ -7,6 +7,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";
+import { verifyCsrf } from "@/app/lib/csrf";
 
 const RETENTION_MS = 3 * 365 * 24 * 60 * 60 * 1000; // 3 года
 
@@ -70,6 +71,11 @@ export async function POST(request: Request) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const csrf = verifyCsrf(request);
+  if (!csrf.valid) {
+    return NextResponse.json({ error: "CSRF validation failed" }, { status: 403 });
   }
 
   try {

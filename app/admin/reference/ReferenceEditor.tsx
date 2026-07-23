@@ -9,6 +9,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Autocomplete, type AutocompleteItem } from "@/components/ui/Autocomplete";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
 
 /*
  * SelectedCard — карточка выбранной записи.
@@ -118,6 +119,7 @@ function SelectedCard({
 export function ReferenceEditor() {
   const queryClient = useQueryClient();
   const { confirm } = useConfirmDialog();
+  const { showToast } = useToast();
 
   const [selectedProduct, setSelectedProduct] = useState<AutocompleteItem | null>(null);
   const [selectedUnit, setSelectedUnit] = useState<AutocompleteItem | null>(null);
@@ -149,7 +151,7 @@ export function ReferenceEditor() {
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       setSelectedProduct({ id: data.id, title: data.title });
     },
-    onError: (err) => alert(err.message),
+    onError: (err) => showToast(err.message, "error"),
   });
 
   const renameProduct = useMutation({
@@ -169,7 +171,7 @@ export function ReferenceEditor() {
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       setSelectedProduct({ id: data.id, title: data.title });
     },
-    onError: (err) => alert(err.message),
+    onError: (err) => showToast(err.message, "error"),
   });
 
   const deleteProduct = useMutation({
@@ -185,7 +187,7 @@ export function ReferenceEditor() {
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       setSelectedProduct(null);
     },
-    onError: (err) => alert(err.message),
+    onError: (err) => showToast(err.message, "error"),
   });
 
   // Units
@@ -215,7 +217,7 @@ export function ReferenceEditor() {
       queryClient.invalidateQueries({ queryKey: ["admin-units"] });
       setSelectedUnit({ id: data.id, title: data.title });
     },
-    onError: (err) => alert(err.message),
+    onError: (err) => showToast(err.message, "error"),
   });
 
   const renameUnit = useMutation({
@@ -235,7 +237,7 @@ export function ReferenceEditor() {
       queryClient.invalidateQueries({ queryKey: ["admin-units"] });
       setSelectedUnit({ id: data.id, title: data.title });
     },
-    onError: (err) => alert(err.message),
+    onError: (err) => showToast(err.message, "error"),
   });
 
   const deleteUnit = useMutation({
@@ -251,7 +253,7 @@ export function ReferenceEditor() {
       queryClient.invalidateQueries({ queryKey: ["admin-units"] });
       setSelectedUnit(null);
     },
-    onError: (err) => alert(err.message),
+    onError: (err) => showToast(err.message, "error"),
   });
 
   return (

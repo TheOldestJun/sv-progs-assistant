@@ -374,6 +374,7 @@ export async function setupAction(
     return { error: "Пароль должен быть не менее 6 символов" };
   }
 
+  // Проверка количества уже существующих пользователей
   const existingUsers = await db.user.count();
   if (existingUsers > 0) {
     return { error: "Пользователь уже создан. Войдите в систему." };

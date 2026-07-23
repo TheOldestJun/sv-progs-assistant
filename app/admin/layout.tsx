@@ -1,10 +1,12 @@
 /*
  * Layout админ-панели: навигация (табы с бейджем), кнопка выхода.
+ * Проверяет сессию — при отсутствии роли ADMIN редиректит на /login.
  */
 export const dynamic = "force-dynamic";
 
+import { redirect } from "next/navigation";
 import { db } from "@/app/lib/db";
-import { logoutAction } from "../lib/auth";
+import { getSession, logoutAction } from "../lib/auth";
 import { AdminNav } from "./AdminNav";
 
 export default async function AdminLayout({
@@ -12,6 +14,10 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const session = await getSession();
+  if (!session || !session.roles.includes("ADMIN")) {
+    redirect("/login");
+  }
   const pendingCount = await db.passwordResetRequest.count({
     where: { status: "PENDING" },
   });

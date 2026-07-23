@@ -138,7 +138,7 @@ export default function HelpPage() {
                 key={s.id}
                 className="flex items-start gap-4 rounded-lg border border-border bg-surface p-4"
               >
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent-blue/10 text-sm font-bold text-accent-blue">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent/10 text-sm font-bold text-accent">
                   {i + 1}
                 </div>
                 <div>
@@ -333,14 +333,14 @@ export default function HelpPage() {
           <p className="mt-2 leading-relaxed text-text-secondary">
             Когда склад передаёт товар заявителю, статус позиции меняется на
             «Отправлено заявителю». Заявитель видит это в разделе «Мои заявки»
-            и может нажать кнопку «Подтвердить接收ение» для каждого пункта.
+            и может нажать кнопку «Подтвердить получение» для каждого пункта.
           </p>
           <div className="mt-3 space-y-3">
             <div className="rounded-lg border border-border bg-surface p-4">
               <h3 className="font-medium text-foreground">Как подтвердить</h3>
               <p className="mt-1 text-sm leading-relaxed text-text-secondary">
                 Откройте вкладку «Мои заявки». Позиции со статусом «Отправлено заявителю»
-                будут иметь зелёную кнопку «Подтвердить接收ение». Нажмите её и подтвердите
+                будут иметь зелёную кнопку «Подтвердить получение». Нажмите её и подтвердите
                 действие — статус изменится на «Получено заказчиком».
               </p>
             </div>

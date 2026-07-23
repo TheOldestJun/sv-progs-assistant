@@ -35,8 +35,9 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ## Debug browser
 
 - Use `npm run dev:chrome` to start the dev server and open Chrome with a **clean temporary profile** (no accounts, no extensions, no history).
-- Chrome data dir: `%TEMP%\chrome-debug` (auto-created, disposable).
-- The server starts in a separate window; Chrome opens after ~11s once the server is ready.
+- Cross-platform: works on macOS (Terminal + Chrome) and Windows (cmd + Chrome).
+- Chrome data dir: auto-created `chrome-debug` in temp folder (`$TMPDIR` или `%TEMP%`).
+- The server starts in a separate window; Chrome opens after ~11-12s once the server is ready.
 
 ## Git (PRODUCTION — CRITICAL)
 

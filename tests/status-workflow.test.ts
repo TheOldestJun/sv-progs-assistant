@@ -1,9 +1,8 @@
 import { describe, it, expect } from "vitest";
+import type { OrderItemStatus, Role } from "@prisma/client";
 
 // Типы и константы, дублирующие бизнес-логику из PATCH /api/orders/:id/items/:itemId
 // для тестирования правил transition без БД.
-type OrderItemStatus = "ACCEPTED" | "INVOICE_RECEIVED" | "INVOICE_PAID" | "SHIPPED" | "RECEIVED" | "SENT_TO_REQUESTER" | "ORDER_CONFIRMED";
-type Role = "ADMIN" | "HEAD_OF_SUPPLY" | "SUPPLY_DEPT" | "WAREHOUSE" | "REQUESTER";
 
 const STATUS_ORDER: OrderItemStatus[] = [
   "ACCEPTED",

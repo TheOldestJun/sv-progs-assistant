@@ -1,10 +1,6 @@
-/*
- * AdminArchiveList — просмотр архива для ADMIN с кнопкой полного удаления.
- * Фильтрация и пагинация на клиенте.
- */
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/Toast";
 import { DatePicker } from "@/components/ui/DatePicker";
@@ -27,26 +23,37 @@ interface ArchiveEntry {
   items: ArchiveItem[];
 }
 
-const PAGE_SIZE = 20;
+function formatMonth(key: string): string {
+  const [y, m] = key.split("-").map(Number);
+  const months = [
+    "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+    "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
+  ];
+  return `${months[m - 1]} ${y}`;
+}
+
+function getMonthKey(dateStr: string): string {
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
 
 export function AdminArchiveList() {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const { confirm } = useConfirmDialog();
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [page, setPage] = useState(0);
+  const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
   const [requesterFilter, setRequesterFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
   const { data, isLoading, isError } = useQuery<{ data: ArchiveEntry[]; total: number }>({
-    queryKey: ["admin-archive", requesterFilter, dateFrom, dateTo, page],
+    queryKey: ["admin-archive", requesterFilter, dateFrom, dateTo],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (requesterFilter) params.set("requester", requesterFilter);
       if (dateFrom) params.set("dateFrom", dateFrom);
       if (dateTo) params.set("dateTo", dateTo);
-      if (page) params.set("page", String(page));
       const qs = params.toString();
       const res = await fetch(qs ? `/api/archive?${qs}` : "/api/archive");
       if (!res.ok) throw new Error("Failed to fetch archive");
@@ -71,6 +78,19 @@ export function AdminArchiveList() {
     },
   });
 
+  const grouped = useMemo(() => {
+    if (!data) return [];
+    const map = new Map<string, ArchiveEntry[]>();
+    for (const entry of data.data) {
+      const key = getMonthKey(entry.orderDate);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(entry);
+    }
+    return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+  }, [data]);
+
+  const totalCount = data?.total ?? 0;
+
   async function handleDelete(entry: ArchiveEntry) {
     const ok = await confirm({
       title: "Удалить из архива?",
@@ -81,26 +101,37 @@ export function AdminArchiveList() {
     if (ok) deleteMutation.mutate(entry.id);
   }
 
-  const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 0;
-  const safePage = Math.min(page, totalPages - 1);
+  function toggleMonth(key: string) {
+    setCollapsedMonths((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   return (
     <div className="space-y-4">
-      {/* Фильтры */}
       <div className="flex flex-wrap items-end gap-2 rounded-lg border border-border bg-surface-secondary p-2 sm:gap-3 sm:p-3">
         <div>
           <label className="mb-1 block text-xs font-medium text-text-secondary">Заказчик</label>
           <input
             type="text"
             value={requesterFilter}
-            onChange={(e) => { setRequesterFilter(e.target.value); setPage(0); }}
+            onChange={(e) => { setRequesterFilter(e.target.value); }}
             placeholder="Введите имя..."
             className="w-full sm:w-48 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm max-sm:py-2.5 text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary max-sm:min-h-11"
           />
         </div>
-        <DatePicker label="Дата с" value={dateFrom} onChange={(v) => { setDateFrom(v); setPage(0); }} />
-        <DatePicker label="Дата по" value={dateTo} onChange={(v) => { setDateTo(v); setPage(0); }} />
+        <DatePicker label="Дата с" value={dateFrom} onChange={setDateFrom} />
+        <DatePicker label="Дата по" value={dateTo} onChange={setDateTo} />
       </div>
+
+      {totalCount > 0 && (
+        <p className="text-xs text-text-secondary">
+          Всего записей: {totalCount}, по месяцам: {grouped.length}
+        </p>
+      )}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
@@ -110,98 +141,88 @@ export function AdminArchiveList() {
         <div className="rounded-lg border border-dashed border-red-300 bg-red-50 p-6 text-center text-sm text-red-600 dark:border-red-800 dark:bg-red-950 dark:text-red-400">
           Ошибка загрузки архива
         </div>
-      ) : !data || data.data.length === 0 ? (
+      ) : grouped.length === 0 ? (
         <p className="py-8 text-center text-sm text-text-secondary">Архив пуст</p>
       ) : (
-        <>
-          <div className="space-y-1">
-            {data.data.map((entry) => (
-              <div key={entry.id} className="overflow-hidden rounded-lg border border-border">
-                <div
-                  className="flex cursor-pointer flex-wrap items-center gap-x-4 gap-y-0.5 bg-surface-secondary px-2 py-1 sm:px-4 transition-colors hover:bg-surface sm:gap-4"
-                  onClick={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
+        <div className="space-y-6">
+          {grouped.map(([monthKey, entries]) => {
+            const isCollapsed = collapsedMonths.has(monthKey);
+            return (
+              <section key={monthKey} className="overflow-hidden rounded-xl border border-border">
+                <button
+                  onClick={() => toggleMonth(monthKey)}
+                  className="flex w-full items-center gap-3 bg-surface px-4 py-3 text-left transition-colors hover:bg-surface-secondary"
                 >
-                  <span className={`text-xs text-text-secondary transition-transform ${expandedId === entry.id ? "rotate-90" : ""}`}>▶</span>
-                  <span className="font-medium text-foreground">{entry.requesterName}</span>
-                  <span className="text-text-secondary">
-                    Заявлено: {new Date(entry.orderDate).toLocaleDateString("ru-RU")}
+                  <span className={`text-xs text-text-secondary transition-transform duration-200 ${isCollapsed ? "" : "rotate-90"}`}>
+                    ▶
                   </span>
-                  <span className="text-text-secondary">
-                    Получено: {new Date(entry.receivedAt).toLocaleDateString("ru-RU")}
+                  <h2 className="text-base font-semibold text-foreground">
+                    {formatMonth(monthKey)}
+                  </h2>
+                  <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                    {entries.length}
                   </span>
-                  <span className="ml-auto">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDelete(entry); }}
-                      disabled={deleteMutation.isPending}
-                      className="rounded-md bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-100 dark:bg-red-950 dark:text-red-400 dark:hover:bg-red-900 max-sm:min-h-11"
-                    >
-                      {deleteMutation.isPending ? "…" : "Удалить"}
-                    </button>
-                  </span>
-                </div>
+                </button>
 
-                {expandedId === entry.id && (
-                  <div className="overflow-x-auto border-t border-border">
-                    <table className="w-full text-sm">
-                      <thead className="bg-surface">
-                        <tr>
-                          <th className="px-2 py-0.5 text-left font-medium text-text-secondary sm:px-4">ТМЦ</th>
-                          <th className="px-2 py-0.5 text-left font-medium text-text-secondary sm:px-4">Ед.</th>
-                          <th className="px-2 py-0.5 text-right font-medium text-text-secondary sm:px-4">Кол-во</th>
-                          <th className="px-2 py-0.5 text-left font-medium text-text-secondary sm:px-4">Комментарий</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border">
-                        {entry.items.map((item, idx) => (
-                          <tr key={idx}>
-                            <td className="px-2 py-0.5 text-foreground sm:px-4">{item.product}</td>
-                            <td className="px-2 py-0.5 text-text-secondary sm:px-4">{item.unit}</td>
-                            <td className="px-2 py-0.5 text-right text-foreground sm:px-4">{item.quantity}</td>
-                            <td className="px-2 py-0.5 text-text-secondary sm:px-4">{item.comment || "—"}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                {!isCollapsed && (
+                  <div className="divide-y divide-border">
+                    {entries.map((entry) => (
+                      <div key={entry.id}>
+                        <div
+                          className="flex cursor-pointer flex-wrap items-center gap-x-4 gap-y-0.5 bg-surface-secondary px-2 py-1.5 sm:px-4 transition-colors hover:bg-surface"
+                          onClick={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
+                        >
+                          <span className={`text-xs text-text-secondary transition-transform ${expandedId === entry.id ? "rotate-90" : ""}`}>▶</span>
+                          <span className="font-medium text-foreground">{entry.requesterName}</span>
+                          <span className="text-xs text-text-secondary">
+                            Заявлено: {new Date(entry.orderDate).toLocaleDateString("ru-RU")}
+                          </span>
+                          <span className="text-xs text-text-secondary">
+                            Получено: {new Date(entry.receivedAt).toLocaleDateString("ru-RU")}
+                          </span>
+                          <span className="ml-auto">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDelete(entry); }}
+                              disabled={deleteMutation.isPending}
+                              className="rounded-md bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600 transition-colors hover:bg-red-100 dark:bg-red-950 dark:text-red-400 dark:hover:bg-red-900"
+                            >
+                              {deleteMutation.isPending ? "…" : "Удалить"}
+                            </button>
+                          </span>
+                        </div>
+
+                        {expandedId === entry.id && (
+                          <div className="overflow-x-auto border-t border-border">
+                            <table className="w-full text-sm">
+                              <thead className="bg-surface">
+                                <tr>
+                                  <th className="px-2 py-0.5 text-left font-medium text-text-secondary sm:px-4">ТМЦ</th>
+                                  <th className="px-2 py-0.5 text-left font-medium text-text-secondary sm:px-4">Ед.</th>
+                                  <th className="px-2 py-0.5 text-right font-medium text-text-secondary sm:px-4">Кол-во</th>
+                                  <th className="px-2 py-0.5 text-left font-medium text-text-secondary sm:px-4">Комментарий</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-border">
+                                {entry.items.map((item, idx) => (
+                                  <tr key={idx}>
+                                    <td className="px-2 py-0.5 text-foreground sm:px-4">{item.product}</td>
+                                    <td className="px-2 py-0.5 text-text-secondary sm:px-4">{item.unit}</td>
+                                    <td className="px-2 py-0.5 text-right text-foreground sm:px-4">{item.quantity}</td>
+                                    <td className="px-2 py-0.5 text-text-secondary sm:px-4">{item.comment || "—"}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
-              </div>
-            ))}
-          </div>
-
-          {/* Пагинация */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between px-1 text-sm text-text-secondary">
-              <span>
-                {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, data.total)} из {data.total}
-              </span>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  disabled={safePage === 0}
-                  className="rounded-md px-3 py-1.5 text-sm max-sm:py-2 transition-colors hover:bg-surface-secondary disabled:opacity-30 max-sm:min-h-11"
-                >
-                  ← Назад
-                </button>
-                {Array.from({ length: totalPages }, (_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setPage(i)}
-                    className={`rounded-md px-3 py-1.5 text-sm max-sm:py-2 transition-colors max-sm:min-h-11 ${i === safePage ? "bg-primary text-primary-foreground" : "hover:bg-surface-secondary"}`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
-                <button
-                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-                  disabled={safePage === totalPages - 1}
-                  className="rounded-md px-3 py-1.5 text-sm max-sm:py-2 transition-colors hover:bg-surface-secondary disabled:opacity-30 max-sm:min-h-11"
-                >
-                  Вперед →
-                </button>
-              </div>
-            </div>
-          )}
-        </>
+              </section>
+            );
+          })}
+        </div>
       )}
     </div>
   );

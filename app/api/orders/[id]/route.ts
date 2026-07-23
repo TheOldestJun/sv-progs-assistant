@@ -6,6 +6,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";
 import { OrderItemStatus } from "@prisma/client";
+import { verifyCsrf } from "@/app/lib/csrf";
 
 const FINAL_STATUSES: OrderItemStatus[] = [
   OrderItemStatus.RECEIVED,
@@ -17,6 +18,11 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const csrf = verifyCsrf(request);
+  if (!csrf.valid) {
+    return NextResponse.json({ error: "CSRF validation failed" }, { status: 403 });
+  }
+
   const session = await getSession();
   if (!session || !session.roles.includes("ADMIN")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -47,9 +53,14 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const csrf = verifyCsrf(request);
+  if (!csrf.valid) {
+    return NextResponse.json({ error: "CSRF validation failed" }, { status: 403 });
+  }
+
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

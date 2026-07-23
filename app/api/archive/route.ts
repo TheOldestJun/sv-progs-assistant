@@ -7,7 +7,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 500;
 
 export async function GET(request: Request) {
   const session = await getSession();

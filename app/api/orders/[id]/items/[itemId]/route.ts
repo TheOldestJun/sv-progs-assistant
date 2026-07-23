@@ -20,6 +20,7 @@ import { getSession } from "@/app/lib/auth";
 import { OrderItemStatus, Role } from "@prisma/client";
 import { randomBytes } from "crypto";
 import { tryArchiveOrder } from "@/app/lib/tryArchiveOrder";
+import { verifyCsrf } from "@/app/lib/csrf";
 
 /*
  * Роли, которым разрешено менять ТМЦ в позиции
@@ -61,9 +62,14 @@ export async function GET(
 }
 
 export async function PATCH(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string; itemId: string }> },
 ) {
+  const csrf = verifyCsrf(request);
+  if (!csrf.valid) {
+    return NextResponse.json({ error: "CSRF validation failed" }, { status: 403 });
+  }
+
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -72,7 +78,7 @@ export async function PATCH(
   try {
     const { id, itemId } = await params;
 
-    const body = await _request.json();
+    const body = await request.json();
     const { status, quantity, warehouseMode, changedAt, productId } = body;
 
     const item = await db.orderItem.findFirst({
@@ -130,7 +136,6 @@ export async function PATCH(
     }
 
     // ——— Смена статуса ——— (существующая логика)
-    console.log("[PATCH status]", { itemId, currentStatus: item.status, newStatus: status, warehouseMode, roles: session.roles });
     if (!status || !Object.values(OrderItemStatus).includes(status)) {
       return NextResponse.json(
         { error: `Invalid status. Allowed: ${Object.values(OrderItemStatus).join(", ")}` },
@@ -257,9 +262,14 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string; itemId: string }> },
 ) {
+  const csrf = verifyCsrf(request);
+  if (!csrf.valid) {
+    return NextResponse.json({ error: "CSRF validation failed" }, { status: 403 });
+  }
+
   const session = await getSession();
   if (!session || !session.roles.includes(Role.ADMIN)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -271,7 +281,7 @@ export async function DELETE(
     // Читаем причину из тела запроса
     let reason = "непредвиденные проблемы";
     try {
-      const body = await _request.json();
+      const body = await request.json();
       if (body.reason && typeof body.reason === "string" && body.reason.trim()) {
         reason = body.reason.trim();
       }

@@ -20,13 +20,14 @@ export default async function AdminOrdersPage() {
       id: true,
       created: true,
       requester: { select: { name: true } },
-      createdBy: { select: { name: true } },
       items: {
         select: {
           id: true,
           quantity: true,
           comment: true,
           status: true,
+          productId: true,
+          unitId: true,
           product: { select: { title: true } },
           units: { select: { title: true } },
         },
