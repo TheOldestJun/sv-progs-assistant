@@ -142,7 +142,7 @@ export function OrderItemRow({
         </td>
       </tr>
       <tr className="max-sm:flex max-sm:px-4 max-sm:pb-2.5 sm:hidden">
-        <td colSpan={4} className="max-sm:p-0">
+        <td colSpan={4} className="max-sm:block max-sm:w-full max-sm:p-0">
           <span className="text-xs text-text-secondary">Статус:</span>
           <div className="mt-1">
             {renderStatusControlMobile()}
@@ -206,7 +206,7 @@ export function OrderItemRow({
   function renderStatusControlMobile() {
     if (readOnly && !(requesterMode && item.status === "SENT_TO_REQUESTER")) {
       return (
-        <span className={`inline-flex max-sm:min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium max-sm:w-full max-sm:justify-center max-sm:px-3 max-sm:py-1.5 max-sm:text-sm ring-1 ring-inset ring-black/5 ${STATUS_COLORS[item.status]}`}>
+        <span className={`inline-flex max-sm:flex max-sm:min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium max-sm:w-full max-sm:justify-center max-sm:px-3 max-sm:py-1.5 max-sm:text-sm ring-1 ring-inset ring-black/5 ${STATUS_COLORS[item.status]}`}>
           <StatusIcon status={item.status} />
           {STATUS_LABELS[item.status]}
         </span>
@@ -218,7 +218,7 @@ export function OrderItemRow({
         <button
           onClick={onConfirmReceipt}
           disabled={isPending}
-          className="inline-flex w-full max-sm:min-h-11 items-center justify-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
+          className="flex w-full max-sm:min-h-11 items-center justify-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-3.5">
             <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
@@ -235,7 +235,7 @@ export function OrderItemRow({
             if (item.status !== "ORDER_CONFIRMED") onOpenMenu(e.currentTarget);
           }}
           disabled={isPending}
-          className={`inline-flex max-sm:min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium max-sm:w-full max-sm:justify-center max-sm:px-3 max-sm:py-1.5 max-sm:text-sm ring-1 ring-inset ring-black/5 transition-colors ${STATUS_COLORS[item.status]} disabled:opacity-50 ${item.status === "ORDER_CONFIRMED" ? "cursor-default" : "cursor-pointer"}`}
+          className={`inline-flex max-sm:flex max-sm:min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium max-sm:w-full max-sm:justify-center max-sm:px-3 max-sm:py-1.5 max-sm:text-sm ring-1 ring-inset ring-black/5 transition-colors ${STATUS_COLORS[item.status]} disabled:opacity-50 ${item.status === "ORDER_CONFIRMED" ? "cursor-default" : "cursor-pointer"}`}
         >
           <StatusIcon status={item.status} />
           {STATUS_LABELS[item.status]}
