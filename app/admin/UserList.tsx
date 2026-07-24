@@ -27,6 +27,7 @@ const roleLabels: Record<string, string> = {
   SUPPLY_DEPT: "Отдел снабжения",
   WAREHOUSE: "Склад",
   REQUESTER: "Заявитель",
+  DIRECTORATE: "Директорат",
 };
 
 const roleColors: Record<string, { bg: string; text: string; ring: string }> = {
@@ -35,6 +36,7 @@ const roleColors: Record<string, { bg: string; text: string; ring: string }> = {
   SUPPLY_DEPT:  { bg: "bg-blue-50 dark:bg-blue-950",    text: "text-blue-700 dark:text-blue-300",     ring: "ring-blue-600/20" },
   WAREHOUSE:    { bg: "bg-amber-50 dark:bg-amber-950",  text: "text-amber-700 dark:text-amber-300",   ring: "ring-amber-600/20" },
   REQUESTER:    { bg: "bg-teal-50 dark:bg-teal-950",   text: "text-teal-700 dark:text-teal-300",     ring: "ring-teal-600/20" },
+  DIRECTORATE:  { bg: "bg-indigo-50 dark:bg-indigo-950", text: "text-indigo-700 dark:text-indigo-300", ring: "ring-indigo-600/20" },
 };
 
 export function AdminUserList({

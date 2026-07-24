@@ -11,6 +11,8 @@ datasource db {
 }
 
 enum OrderItemStatus {
+  PENDING_DIRECTORATE
+  DIRECTORATE_APPROVED
   ACCEPTED
   INVOICE_RECEIVED
   INVOICE_PAID
@@ -26,6 +28,7 @@ enum Role {
   SUPPLY_DEPT
   WAREHOUSE
   REQUESTER
+  DIRECTORATE
 }
 
 model User {
@@ -105,7 +108,7 @@ model OrderItem {
   unitId    String
   quantity  Float
   comment   String?                         // Комментарий к позиции (необязательный, отображается в таблице)
-  status    OrderItemStatus     @default(ACCEPTED)  // Текущий статус — ACCEPTED → ... → RECEIVED → SENT_TO_REQUESTER → ORDER_CONFIRMED
+  status    OrderItemStatus     @default(PENDING_DIRECTORATE)  // Текущий статус — PENDING_DIRECTORATE → DIRECTORATE_APPROVED → ACCEPTED → ... → ORDER_CONFIRMED
   statusLogs OrderItemStatusLog[]
   confirmToken OrderConfirmToken?  // Токен для публичного подтверждения получения этой позиции
 

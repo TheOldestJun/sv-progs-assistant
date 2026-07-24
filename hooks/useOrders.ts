@@ -8,6 +8,8 @@ import { OrderItemStatus } from "@prisma/client";
 export type { OrderItemStatus };
 
 export const STATUS_LABELS: Record<OrderItemStatus, string> = {
+  PENDING_DIRECTORATE: "Ожидает одобрения директора",
+  DIRECTORATE_APPROVED: "Одобрено директором",
   ACCEPTED: "Принято в работу",
   INVOICE_RECEIVED: "Счёт получен",
   INVOICE_PAID: "Счёт оплачен",
@@ -20,6 +22,8 @@ export const STATUS_LABELS: Record<OrderItemStatus, string> = {
 // Канонический порядок жизненного цикла статусов заявки.
 // Все переходы должны соответствовать этому порядку (нельзя перескочить через шаг).
 export const STATUS_ORDER: OrderItemStatus[] = [
+  "PENDING_DIRECTORATE",
+  "DIRECTORATE_APPROVED",
   "ACCEPTED",
   "INVOICE_RECEIVED",
   "INVOICE_PAID",

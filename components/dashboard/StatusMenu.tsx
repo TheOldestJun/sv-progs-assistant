@@ -8,10 +8,22 @@ import type { OrderItemStatus } from "@prisma/client";
 import { STATUS_LABELS, STATUS_ORDER } from "@/hooks/useOrders";
 import { StatusIcon } from "@/components/dashboard/StatusIcon";
 
-const STATUS_CHOICES: Record<string, OrderItemStatus[]> = {
-  default: STATUS_ORDER.filter((s) => s !== "RECEIVED" && s !== "SENT_TO_REQUESTER" && s !== "ORDER_CONFIRMED"),
-  warehouse: ["RECEIVED", "SENT_TO_REQUESTER", "ORDER_CONFIRMED"],
-};
+function getStatusChoices(currentStatus: OrderItemStatus, warehouseMode: boolean): OrderItemStatus[] {
+  if (warehouseMode) {
+    return ["RECEIVED", "SENT_TO_REQUESTER", "ORDER_CONFIRMED"];
+  }
+
+  // Предварительные статусы — только следующий шаг
+  if (currentStatus === "PENDING_DIRECTORATE") {
+    return ["DIRECTORATE_APPROVED"];
+  }
+  if (currentStatus === "DIRECTORATE_APPROVED") {
+    return ["ACCEPTED"];
+  }
+
+  // Основной флоу: все статусы кроме складских
+  return STATUS_ORDER.filter((s) => s !== "RECEIVED" && s !== "SENT_TO_REQUESTER" && s !== "ORDER_CONFIRMED");
+}
 
 interface StatusMenuProps {
   openItemId: string;
@@ -30,8 +42,8 @@ export function StatusMenu({
   onSelect,
   onClose,
 }: StatusMenuProps) {
-  const choices = warehouseMode ? STATUS_CHOICES.warehouse : STATUS_CHOICES.default;
   const item = openItemId ? itemsMap.get(openItemId) : undefined;
+  const choices = item ? getStatusChoices(item.status, warehouseMode) : [];
 
   return (
     <>

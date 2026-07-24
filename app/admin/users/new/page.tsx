@@ -17,6 +17,7 @@ const allRoles = [
   { value: "SUPPLY_DEPT", label: "Отдел снабжения" },
   { value: "WAREHOUSE", label: "Склад" },
   { value: "REQUESTER", label: "Заявитель" },
+  { value: "DIRECTORATE", label: "Директорат" },
 ];
 
 export default function NewUserPage() {

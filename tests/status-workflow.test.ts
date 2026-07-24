@@ -5,6 +5,8 @@ import type { OrderItemStatus, Role } from "@prisma/client";
 // для тестирования правил transition без БД.
 
 const STATUS_ORDER: OrderItemStatus[] = [
+  "PENDING_DIRECTORATE",
+  "DIRECTORATE_APPROVED",
   "ACCEPTED",
   "INVOICE_RECEIVED",
   "INVOICE_PAID",
@@ -195,6 +197,22 @@ describe("Status workflow", () => {
         const result = validateTransition(from, to, ["ADMIN"], false);
         expect(result.canTransition).toBe(true);
       }
+    });
+
+    it("allows PENDING_DIRECTORATE → DIRECTORATE_APPROVED", () => {
+      const result = validateTransition("PENDING_DIRECTORATE", "DIRECTORATE_APPROVED", ["HEAD_OF_SUPPLY"], false);
+      expect(result.canTransition).toBe(true);
+    });
+
+    it("allows DIRECTORATE_APPROVED → ACCEPTED", () => {
+      const result = validateTransition("DIRECTORATE_APPROVED", "ACCEPTED", ["SUPPLY_DEPT"], false);
+      expect(result.canTransition).toBe(true);
+    });
+
+    it("rejects PENDING_DIRECTORATE → ACCEPTED (skip)", () => {
+      const result = validateTransition("PENDING_DIRECTORATE", "ACCEPTED", ["ADMIN"], false);
+      expect(result.canTransition).toBe(false);
+      expect(result.reason).toContain("перескочить");
     });
   });
 });

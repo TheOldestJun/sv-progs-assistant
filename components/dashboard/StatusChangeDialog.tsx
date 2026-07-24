@@ -10,6 +10,10 @@ import { DatePicker } from "@/components/ui/DatePicker";
 import { STATUS_LABELS, type OrderItemStatus } from "@/hooks/useOrders";
 
 const STATUS_ICONS: Record<OrderItemStatus, string> = {
+  PENDING_DIRECTORATE:
+    "M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 0 0 0-1.5h-3.25V5Z",
+  DIRECTORATE_APPROVED:
+    "M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z",
   ACCEPTED:
     "M6 2.75A.75.75 0 0 1 6.75 2h6.5a.75.75 0 0 1 0 1.5h-2.5v1.75c0 .69-.56 1.25-1.25 1.25h-1.5a.75.75 0 0 1 0-1.5h.5V3.5h-2A.75.75 0 0 1 6 2.75ZM6 7a.75.75 0 0 1 .75-.75h5.5a.75.75 0 0 1 0 1.5h-5.5A.75.75 0 0 1 6 7Zm0 3a.75.75 0 0 1 .75-.75h5.5a.75.75 0 0 1 0 1.5h-5.5A.75.75 0 0 1 6 10Zm6 2.25a.75.75 0 0 1 0 1.5h-3.5a.75.75 0 0 1 0-1.5h3.5Z M11.5 15.25a.75.75 0 0 0 0 1.5h.75a.75.75 0 0 0 0-1.5h-.75Z M3.5 3.5A1.5 1.5 0 0 0 2 5v10a1.5 1.5 0 0 0 1.5 1.5h8a1.5 1.5 0 0 0 1.5-1.5V5a1.5 1.5 0 0 0-1.5-1.5h-8Zm0 1.5h8a.25.25 0 0 1 .25.25v10a.25.25 0 0 1-.25.25h-8a.25.25 0 0 1-.25-.25V5a.25.25 0 0 1 .25-.25Z",
   INVOICE_RECEIVED:
@@ -28,6 +32,8 @@ const STATUS_ICONS: Record<OrderItemStatus, string> = {
 
 /** Маппинг статуса на цвета кнопки подтверждения */
 const CONFIRM_BUTTON_COLORS: Record<OrderItemStatus, string> = {
+  PENDING_DIRECTORATE: "bg-red-600 hover:bg-red-700",
+  DIRECTORATE_APPROVED: "bg-teal-600 hover:bg-teal-700",
   ACCEPTED: "bg-blue-600 hover:bg-blue-700",
   INVOICE_RECEIVED: "bg-amber-600 hover:bg-amber-700",
   INVOICE_PAID: "bg-violet-600 hover:bg-violet-700",
@@ -38,6 +44,8 @@ const CONFIRM_BUTTON_COLORS: Record<OrderItemStatus, string> = {
 };
 
 const STATUS_BADGE_COLORS: Record<OrderItemStatus, string> = {
+  PENDING_DIRECTORATE: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
+  DIRECTORATE_APPROVED: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300",
   ACCEPTED: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   INVOICE_RECEIVED: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
   INVOICE_PAID: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",

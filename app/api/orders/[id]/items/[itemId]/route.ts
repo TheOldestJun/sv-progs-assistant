@@ -143,6 +143,23 @@ export async function PATCH(
       );
     }
 
+    // Статус одобрения директора — только ADMIN, HEAD_OF_SUPPLY или DIRECTORATE
+    if (status === OrderItemStatus.DIRECTORATE_APPROVED) {
+      const allowedRoles: Role[] = [Role.ADMIN, Role.HEAD_OF_SUPPLY, Role.DIRECTORATE];
+      if (!session.roles.some((r) => allowedRoles.includes(r as Role))) {
+        return NextResponse.json(
+          { error: "Только администратор, начальник снабжения или директор может одобрять заявки" },
+          { status: 403 },
+        );
+      }
+      if (item.status !== OrderItemStatus.PENDING_DIRECTORATE) {
+        return NextResponse.json(
+          { error: "Одобрение директора возможно только из статуса ожидания" },
+          { status: 400 },
+        );
+      }
+    }
+
     // Статусы, которые может менять только склад (или админ):
     // RECEIVED (склад принимает товар), SENT_TO_REQUESTER (склад отправляет заявителю)
     const WAREHOUSE_ONLY_STATUSES: OrderItemStatus[] = [
