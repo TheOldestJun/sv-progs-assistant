@@ -303,7 +303,7 @@ export function HeadOfSupplyDashboard() {
         </form>
 
         <div>
-          <OrderStatusTable />
+          <OrderStatusTable showDirectorateOptions />
         </div>
 
         <PassForm />

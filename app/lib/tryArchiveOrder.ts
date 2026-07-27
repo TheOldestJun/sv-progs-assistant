@@ -8,8 +8,6 @@ import { db } from "@/app/lib/db";
 import { OrderItemStatus } from "@prisma/client";
 
 const FINAL_STATUSES: OrderItemStatus[] = [
-  OrderItemStatus.RECEIVED,
-  OrderItemStatus.SENT_TO_REQUESTER,
   OrderItemStatus.ORDER_CONFIRMED,
 ];
 

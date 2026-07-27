@@ -24,12 +24,12 @@ import { EditProductDialog } from "@/components/dashboard/EditProductDialog";
 import { OrderCardHeader } from "@/components/dashboard/OrderCardHeader";
 import { OrderItemRow } from "@/components/dashboard/OrderItemRow";
 import { ConfirmLinkDialog } from "@/components/dashboard/ConfirmLinkDialog";
-import { StatusMenu } from "@/components/dashboard/StatusMenu";
+import { StatusMenu, getStatusChoices } from "@/components/dashboard/StatusMenu";
 
 const PAGE_SIZE = 10;
 const FINAL_STATUSES = new Set(["RECEIVED", "SENT_TO_REQUESTER", "ORDER_CONFIRMED"]);
 
-export function OrderStatusTable({ warehouseMode = false, readOnly = false, requesterMode = false }: { warehouseMode?: boolean; readOnly?: boolean; requesterMode?: boolean }) {
+export function OrderStatusTable({ warehouseMode = false, readOnly = false, requesterMode = false, showDirectorateOptions = false }: { warehouseMode?: boolean; readOnly?: boolean; requesterMode?: boolean; showDirectorateOptions?: boolean }) {
   const { data: orders, isLoading, isError, error } = useOrders();
   const updateStatus = useUpdateOrderItemStatus();
   const deleteOrder = useDeleteOrder();
@@ -57,7 +57,9 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
   function openMenu(itemId: string, buttonEl: HTMLButtonElement) {
     if (openSelect === itemId) { setOpenSelect(null); setMenuPos(null); return; }
     const rect = buttonEl.getBoundingClientRect();
-    const statusChoices = warehouseMode ? ["RECEIVED", "SENT_TO_REQUESTER", "ORDER_CONFIRMED"] : [];
+    const item = itemsMap.get(itemId);
+    const statusChoices = item ? getStatusChoices(item.status, warehouseMode, showDirectorateOptions) : [];
+    if (statusChoices.length === 0) return;
     const menuHeight = statusChoices.length * 36 + 16;
     const menuWidth = 224;
     const left = rect.left + menuWidth > window.innerWidth ? window.innerWidth - menuWidth - 8 : rect.left;
@@ -268,6 +270,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
           openItemId={openSelect}
           position={menuPos}
           warehouseMode={warehouseMode}
+          showDirectorateOptions={showDirectorateOptions}
           itemsMap={itemsMap}
           onSelect={handleStatusClick}
           onClose={closeMenu}

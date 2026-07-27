@@ -235,11 +235,10 @@ export async function PATCH(
     let confirmationToken: string | null = null;
     if (status === OrderItemStatus.SENT_TO_REQUESTER) {
       confirmationToken = randomBytes(32).toString("hex");
-      await db.orderConfirmToken.create({
-        data: {
-          orderItemId: itemId,
-          token: confirmationToken,
-        },
+      await db.orderConfirmToken.upsert({
+        where: { orderItemId: itemId },
+        create: { orderItemId: itemId, token: confirmationToken },
+        update: { token: confirmationToken },
       });
 
       // Если заявитель — пользователь системы — уведомляем во внутренних сообщениях
