@@ -11,7 +11,7 @@
  *
  * Доступ:
  * - Статусы RECEIVED/SENT_TO_REQUESTER — только склад или админ
- * - ORDER_CONFIRMED — склад, админ, или заявитель своей заявки (SENT_TO_REQUESTER → ORDER_CONFIRMED)
+ * - ORDER_CONFIRMED — только заявитель (через token) или админ
  * - После ORDER_CONFIRMED статус заблокирован (кроме админа)
  */
 import { NextResponse } from "next/server";
@@ -180,9 +180,9 @@ export async function PATCH(
           { status: 403 },
         );
       }
-      if (!WAREHOUSE_ONLY_STATUSES.includes(status) && status !== OrderItemStatus.ORDER_CONFIRMED) {
+      if (!WAREHOUSE_ONLY_STATUSES.includes(status)) {
         return NextResponse.json(
-          { error: "Кладовщик может только RECEIVE, SENT_TO_REQUESTER или ORDER_CONFIRMED" },
+          { error: "Кладовщик может только RECEIVE или SENT_TO_REQUESTER" },
           { status: 403 },
         );
       }
@@ -230,6 +230,25 @@ export async function PATCH(
           ]
         : []),
     ]);
+
+    // При переводе в ORDER_CONFIRMED — удаляем уведомление, которое было отправлено при SENT_TO_REQUESTER
+    if (status === OrderItemStatus.ORDER_CONFIRMED) {
+      const orderData = await db.order.findUnique({
+        where: { id },
+        select: {
+          requester: { select: { userId: true } },
+          items: {
+            where: { id: itemId },
+            select: { product: { select: { title: true } }, quantity: true, units: { select: { title: true } } },
+          },
+        },
+      });
+      if (orderData?.requester.userId && orderData.items[0]) {
+        const msgItem = orderData.items[0];
+        const expectedText = `Позиция «${msgItem.product.title}» (${msgItem.quantity} ${msgItem.units.title}) готова к получению. Откройте заявку и подтвердите получение.`;
+        await db.message.deleteMany({ where: { receiverId: orderData.requester.userId, text: expectedText } });
+      }
+    }
 
     // При переводе в SENT_TO_REQUESTER — генерируем одноразовый токен для этого пункта заявки
     let confirmationToken: string | null = null;

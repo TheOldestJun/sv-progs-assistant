@@ -75,6 +75,16 @@ export async function POST(
       }),
     ]);
 
+    // Удаляем уведомление о готовности к получению
+    const orderData = await db.order.findUnique({
+      where: { id: confirmToken.orderItem.order.id },
+      select: { requester: { select: { userId: true } } },
+    });
+    if (orderData?.requester.userId) {
+      const expectedText = `Позиция «${confirmToken.orderItem.product.title}» (${confirmToken.orderItem.quantity} ${confirmToken.orderItem.units.title}) готова к получению. Откройте заявку и подтвердите получение.`;
+      await db.message.deleteMany({ where: { receiverId: orderData.requester.userId, text: expectedText } });
+    }
+
     // Автоархивация заявки, если все её позиции в финальном статусе
     await tryArchiveOrder(confirmToken.orderItem.order.id);
 

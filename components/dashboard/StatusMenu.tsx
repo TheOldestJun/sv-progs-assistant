@@ -10,7 +10,7 @@ import { StatusIcon } from "@/components/dashboard/StatusIcon";
 
 export function getStatusChoices(currentStatus: OrderItemStatus, warehouseMode: boolean, showDirectorateOptions: boolean, requesterMode = false): OrderItemStatus[] {
   if (warehouseMode) {
-    return ["RECEIVED", "SENT_TO_REQUESTER", "ORDER_CONFIRMED"];
+    return ["RECEIVED", "SENT_TO_REQUESTER"];
   }
 
   // Заявитель: DIRECTORATE_APPROVED → ACCEPTED («отправить в работу») или SENT_TO_REQUESTER → ORDER_CONFIRMED («подтвердить получение»)
