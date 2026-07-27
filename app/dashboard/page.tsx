@@ -118,8 +118,8 @@ export default async function DashboardPage() {
             );
           });
 
-          // Архив для не-админов (кроме заявителей)
-          if (!isAdmin && !roles.includes("REQUESTER")) {
+          // Архив для не-админов (заявители видят только свои заявки — фильтр в API)
+          if (!isAdmin) {
             tabs.push(ARCHIVE_TAB);
             components.push(
               <ErrorBoundary key="archive">

@@ -58,7 +58,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
     if (openSelect === itemId) { setOpenSelect(null); setMenuPos(null); return; }
     const rect = buttonEl.getBoundingClientRect();
     const item = itemsMap.get(itemId);
-    const statusChoices = item ? getStatusChoices(item.status, warehouseMode, showDirectorateOptions) : [];
+    const statusChoices = item ? getStatusChoices(item.status, warehouseMode, showDirectorateOptions, requesterMode) : [];
     if (statusChoices.length === 0) return;
     const menuHeight = statusChoices.length * 36 + 16;
     const menuWidth = 224;
@@ -242,6 +242,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
           targetStatus={pendingChange.targetStatus}
           orderId={pendingChange.orderId}
           itemId={pendingChange.itemId}
+          requesterMode={requesterMode}
           onConfirm={handleStatusConfirm}
           onCancel={handleStatusCancel}
         />
@@ -271,6 +272,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
           position={menuPos}
           warehouseMode={warehouseMode}
           showDirectorateOptions={showDirectorateOptions}
+          requesterMode={requesterMode}
           itemsMap={itemsMap}
           onSelect={handleStatusClick}
           onClose={closeMenu}

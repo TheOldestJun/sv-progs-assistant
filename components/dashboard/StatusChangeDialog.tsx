@@ -65,16 +65,12 @@ function StatusIcon({ status, className }: { status: OrderItemStatus; className?
 
 interface StatusChangeDialogProps {
   open: boolean;
-  /** Название продукта */
   productTitle: string;
-  /** Текущий статус */
   currentStatus: OrderItemStatus;
-  /** Целевой статус */
   targetStatus: OrderItemStatus;
-  /** ID заказа */
   orderId: string;
-  /** ID позиции */
   itemId: string;
+  requesterMode?: boolean;
   onConfirm: (changedAt: string) => void;
   onCancel: () => void;
 }
@@ -84,6 +80,7 @@ export function StatusChangeDialog({
   productTitle,
   currentStatus,
   targetStatus,
+  requesterMode = false,
   onConfirm,
   onCancel,
 }: StatusChangeDialogProps) {
@@ -154,7 +151,10 @@ export function StatusChangeDialog({
                 </svg>
                 <span className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium ${STATUS_BADGE_COLORS[targetStatus]}`}>
                   <StatusIcon status={targetStatus} className="size-3.5" />
-                  {STATUS_LABELS[targetStatus]}
+                  {/* Заявитель видит «Отправить в работу» вместо «Принято в работу» */}
+                  {requesterMode && targetStatus === "ACCEPTED"
+                    ? "Отправить в работу"
+                    : STATUS_LABELS[targetStatus]}
                 </span>
               </div>
 
@@ -183,7 +183,11 @@ export function StatusChangeDialog({
             disabled={submitting}
             className={`inline-flex h-10 items-center rounded-lg px-4 text-sm font-medium text-white transition-colors disabled:opacity-50 ${CONFIRM_BUTTON_COLORS[targetStatus]}`}
           >
-            {submitting ? "Сохранение..." : STATUS_LABELS[targetStatus]}
+            {submitting
+              ? "Сохранение..."
+              : requesterMode && targetStatus === "ACCEPTED"
+                ? "Отправить в работу"
+                : STATUS_LABELS[targetStatus]}
           </button>
         </div>
       </div>

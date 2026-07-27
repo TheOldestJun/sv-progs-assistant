@@ -344,6 +344,7 @@ export function AdminOrderList({ orders: initial }: { orders: AdminOrder[] }) {
                                   onSelect={(p) => handleProductChange(order.id, item.id, p.id)}
                                   onCreate={() => ({ id: "", title: "" })}
                                   placeholder={item.product.title}
+                                  inputClassName="px-2.5 py-1 text-xs"
                                 />
                               </div>
                               <div>
@@ -354,6 +355,7 @@ export function AdminOrderList({ orders: initial }: { orders: AdminOrder[] }) {
                                   onSelect={(u) => handleUnitChange(order.id, item.id, u.id)}
                                   onCreate={() => ({ id: "", title: "" })}
                                   placeholder={item.units.title}
+                                  inputClassName="px-2.5 py-1 text-xs"
                                 />
                               </div>
                               <div>
@@ -369,7 +371,7 @@ export function AdminOrderList({ orders: initial }: { orders: AdminOrder[] }) {
                                     if (val !== item.quantity) handleQuantityChange(order.id, item.id, val);
                                   }}
                                   onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                                  className="w-full rounded border border-border bg-surface px-2 py-1.5 text-right text-sm text-foreground outline-none transition-colors focus:border-primary disabled:opacity-50"
+                                  className="w-full rounded border border-border bg-surface px-2.5 py-1 text-right text-xs text-foreground outline-none transition-colors focus:border-primary disabled:opacity-50"
                                 />
                               </div>
                               <div>

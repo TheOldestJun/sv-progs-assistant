@@ -185,11 +185,15 @@ export function HeadOfSupplyDashboard() {
 
       <DashboardTabs
         tabs={[
-          { role: "create", label: "Новая заявка", icon: "✏️" },
           { role: "orders", label: "Выполнение заявок", icon: "📋" },
+          { role: "create", label: "Новая заявка", icon: "✏️" },
           { role: "passes", label: "Создать пропуски", icon: "🪪" },
         ]}
       >
+        <div>
+          <OrderStatusTable showDirectorateOptions />
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid gap-5 sm:grid-cols-2">
             <Autocomplete
@@ -301,10 +305,6 @@ export function HeadOfSupplyDashboard() {
             </button>
           </div>
         </form>
-
-        <div>
-          <OrderStatusTable showDirectorateOptions />
-        </div>
 
         <PassForm />
       </DashboardTabs>

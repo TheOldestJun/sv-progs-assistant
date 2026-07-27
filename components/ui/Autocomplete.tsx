@@ -29,6 +29,8 @@ interface AutocompleteProps {
   onCreate: (title: string) => AutocompleteItem;
   label?: string;
   placeholder?: string;
+  /** Дополнительные классы для input */
+  inputClassName?: string;
 }
 
 export function Autocomplete({
@@ -38,6 +40,7 @@ export function Autocomplete({
   onCreate,
   label,
   placeholder = "Поиск...",
+  inputClassName = "",
 }: AutocompleteProps) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -147,7 +150,8 @@ export function Autocomplete({
         onFocus={() => setOpen(true)}
         onKeyDown={handleKeyDown}
         placeholder={value ? value.title : placeholder}
-        className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm max-sm:py-2.5 text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary max-sm:min-h-11"
+        className={`w-full rounded-lg border border-border bg-surface text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary ${inputClassName || "px-3 py-2 text-sm max-sm:py-2.5 max-sm:min-h-11"}`}
+
       />
       {open && (filtered.length > 0 || noMatch) && (
         <ul
