@@ -79,7 +79,7 @@ export async function PATCH(
     const { id, itemId } = await params;
 
     const body = await request.json();
-    const { status, quantity, warehouseMode, changedAt, productId } = body;
+    const { status, quantity, warehouseMode, changedAt, productId, unitId } = body;
 
     const item = await db.orderItem.findFirst({
       where: { id: itemId, orderId: id },
@@ -126,6 +126,29 @@ export async function PATCH(
       const updated = await db.orderItem.update({
         where: { id: itemId },
         data: { productId },
+        include: {
+          product: { select: { title: true } },
+          units: { select: { title: true } },
+        },
+      });
+
+      return NextResponse.json(updated);
+    }
+
+    // ——— Замена единицы измерения ———
+    if (unitId) {
+      if (!session.roles.some((r) => PRODUCT_EDIT_ROLES.includes(r as Role))) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+
+      const unit = await db.unit.findUnique({ where: { id: unitId } });
+      if (!unit) {
+        return NextResponse.json({ error: "Unit not found" }, { status: 404 });
+      }
+
+      const updated = await db.orderItem.update({
+        where: { id: itemId },
+        data: { unitId },
         include: {
           product: { select: { title: true } },
           units: { select: { title: true } },

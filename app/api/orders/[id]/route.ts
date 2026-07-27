@@ -69,6 +69,14 @@ export async function DELETE(
   try {
     const { id } = await params;
 
+    const body = await request.json().catch(() => ({}));
+    const force = body.force === true;
+
+    const isAdmin = session.roles.includes("ADMIN");
+    if (force && !isAdmin) {
+      return NextResponse.json({ error: "Только администратор может принудительно удалять заявки" }, { status: 403 });
+    }
+
     const order = await db.order.findUnique({
       where: { id },
       select: {
@@ -99,12 +107,14 @@ export async function DELETE(
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    const allFinished = order.items.every((it) => FINAL_STATUSES.includes(it.status));
-    if (!allFinished) {
-      return NextResponse.json(
-        { error: "Можно удалить только заявку, все позиции которой завершены" },
-        { status: 400 },
-      );
+    if (!force) {
+      const allFinished = order.items.every((it) => FINAL_STATUSES.includes(it.status));
+      if (!allFinished) {
+        return NextResponse.json(
+          { error: "Можно удалить только заявку, все позиции которой завершены" },
+          { status: 400 },
+        );
+      }
     }
 
     // Находим дату получения последней позиции

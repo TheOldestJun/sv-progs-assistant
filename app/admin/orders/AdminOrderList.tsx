@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect, Fragment } from "react";
+import { useState, useRef, useEffect, Fragment, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { OrderItemStatus } from "@prisma/client";
 import { useToast } from "@/components/ui/Toast";
@@ -9,6 +9,7 @@ import { Autocomplete, type AutocompleteItem } from "@/components/ui/Autocomplet
 import { StatusIcon } from "@/components/dashboard/StatusIcon";
 import { STATUS_LABELS } from "@/hooks/useOrders";
 import { useReferenceData } from "@/hooks/useReferenceData";
+import { IconSearch } from "@/components/ui/Icon";
 
 interface AdminItem {
   id: string;
@@ -97,6 +98,9 @@ export function AdminOrderList({ orders: initial }: { orders: AdminOrder[] }) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   const [bumpItem, setBumpItem] = useState<{ orderId: string; itemId: string; productName: string } | null>(null);
+  const [search, setSearch] = useState("");
+
+  const [addItem, setAddItem] = useState<{ orderId: string; product: AutocompleteItem | null; unit: AutocompleteItem | null; quantity: string; comment: string } | null>(null);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -224,8 +228,77 @@ export function AdminOrderList({ orders: initial }: { orders: AdminOrder[] }) {
     }
   }
 
+  const addItemMutation = useMutation({
+    mutationFn: async ({ orderId, productId, unitId, quantity, comment }: { orderId: string; productId: string; unitId: string; quantity: number; comment?: string }) => {
+      const res = await fetch(`/api/orders/${orderId}/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId, unitId, quantity, comment }),
+      });
+      if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Ошибка"); }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    },
+  });
+
+  async function handleAddItemConfirm() {
+    if (!addItem || !addItem.product || !addItem.unit || !addItem.quantity) return;
+    const qty = parseFloat(addItem.quantity);
+    if (isNaN(qty) || qty <= 0) { showToast("Количество должно быть положительным числом", "error"); return; }
+    try {
+      await addItemMutation.mutateAsync({
+        orderId: addItem.orderId,
+        productId: addItem.product.id,
+        unitId: addItem.unit.id,
+        quantity: qty,
+        comment: addItem.comment || undefined,
+      });
+      showToast("Позиция добавлена", "success");
+      setAddItem(null);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Ошибка", "error");
+    }
+  }
+
+  async function handleArchiveOrder(orderId: string) {
+    const ok = await confirm({ title: "Архивировать заявку?", message: "Заявка будет перемещена в архив.", confirmText: "Архивировать", variant: "default" });
+    if (!ok) return;
+    try {
+      await apiDelete(`/api/orders/${orderId}`);
+      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      showToast("Заявка архивирована", "success");
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Ошибка", "error");
+    }
+  }
+
+  async function handleForceDeleteOrder(orderId: string) {
+    const ok = await confirm({ title: "Удалить заявку?", message: "Заявка будет удалена без возможности восстановления.", confirmText: "Удалить", variant: "danger" });
+    if (!ok) return;
+    try {
+      await apiDelete(`/api/orders/${orderId}`, { force: true });
+      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      showToast("Заявка удалена", "success");
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Ошибка", "error");
+    }
+  }
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return orders;
+    const q = search.toLowerCase();
+    return orders.filter(
+      (o) => o.requester.name.toLowerCase().includes(q) || o.items.some((it) => it.product.title.toLowerCase().includes(q)),
+    );
+  }, [orders, search]);
+
   const itemsMap = new Map<string, { id: string; orderId: string; status: OrderItemStatus; product: { title: string } }>();
-  for (const order of orders) {
+  for (const order of filtered) {
     for (const item of order.items) {
       itemsMap.set(item.id, { id: item.id, orderId: order.id, status: item.status, product: { title: item.product.title } });
     }
@@ -238,6 +311,16 @@ export function AdminOrderList({ orders: initial }: { orders: AdminOrder[] }) {
   return (
     <>
     <div className="overflow-x-auto">
+      <div className="relative mb-3">
+        <IconSearch className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-text-secondary" />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Поиск по заявителю или ТМЦ..."
+          className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-sm text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary"
+        />
+      </div>
       {openMenu && menuPos && (
         <>
           <div className="fixed inset-0 z-30" onClick={() => { setOpenMenu(null); setMenuPos(null); }} />
@@ -276,7 +359,7 @@ export function AdminOrderList({ orders: initial }: { orders: AdminOrder[] }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
-          {orders.map((order) => {
+          {filtered.map((order) => {
             const isExpanded = expandedId === order.id;
             const isDateEditing = editingDate === order.id;
             return (
@@ -319,7 +402,23 @@ export function AdminOrderList({ orders: initial }: { orders: AdminOrder[] }) {
                 <td className="px-3 py-2 text-foreground">{order.requester.name}</td>
                 <td className="px-3 py-2 text-right text-text-secondary">{order.items.length}</td>
                 <td className="px-3 py-2 text-right">
-                  <span className="text-xs text-text-secondary">{isExpanded ? "▲" : "▼"}</span>
+                  <div className="flex items-center justify-end gap-1">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleArchiveOrder(order.id); }}
+                      className="rounded px-1.5 py-0.5 text-[10px] font-medium text-text-secondary transition-colors hover:bg-surface-secondary hover:text-foreground"
+                      title="Архивировать"
+                    >
+                      🗃️
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleForceDeleteOrder(order.id); }}
+                      className="rounded px-1.5 py-0.5 text-[10px] font-medium text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-950"
+                      title="Удалить навсегда"
+                    >
+                      🗑️
+                    </button>
+                    <span className="text-xs text-text-secondary ml-1">{isExpanded ? "▲" : "▼"}</span>
+                  </div>
                 </td>
               </tr>
               {isExpanded && (
@@ -450,6 +549,17 @@ export function AdminOrderList({ orders: initial }: { orders: AdminOrder[] }) {
                         })}
                       </div>
                     )}
+                    <div className="mt-3 flex justify-end border-t border-border pt-3">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setAddItem({ orderId: order.id, product: null, unit: null, quantity: "", comment: "" }); }}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-1.5 text-xs text-text-secondary transition-colors hover:border-primary hover:text-primary"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-3.5">
+                          <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+                        </svg>
+                        Добавить позицию
+                      </button>
+                    </div>
                   </td>
                 </tr>
               )}
@@ -459,6 +569,68 @@ export function AdminOrderList({ orders: initial }: { orders: AdminOrder[] }) {
         </tbody>
       </table>
     </div>
+
+      {addItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setAddItem(null)} />
+          <div className="relative z-10 w-full max-w-md animate-fade-in overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-800 dark:text-gray-100">
+            <div className="p-6 space-y-4">
+              <h2 className="text-base font-semibold text-foreground">Добавить позицию</h2>
+              <Autocomplete
+                label="ТМЦ"
+                placeholder="Начните вводить..."
+                items={products}
+                value={addItem.product}
+                onSelect={(p) => setAddItem((prev) => prev ? { ...prev, product: p } : null)}
+                onCreate={() => ({ id: "", title: "" })}
+              />
+              <Autocomplete
+                label="Ед. изм."
+                placeholder="Начните вводить..."
+                items={units}
+                value={addItem.unit}
+                onSelect={(u) => setAddItem((prev) => prev ? { ...prev, unit: u } : null)}
+                onCreate={() => ({ id: "", title: "" })}
+              />
+              <div>
+                <label className="mb-1 block text-xs font-medium text-text-secondary">Количество</label>
+                <input
+                  type="number"
+                  step="0.001"
+                  min="0.001"
+                  value={addItem.quantity}
+                  onChange={(e) => setAddItem((prev) => prev ? { ...prev, quantity: e.target.value } : null)}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-text-secondary">Комментарий</label>
+                <input
+                  type="text"
+                  value={addItem.comment}
+                  onChange={(e) => setAddItem((prev) => prev ? { ...prev, comment: e.target.value } : null)}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 border-t border-border bg-surface-secondary px-6 py-4">
+              <button
+                onClick={() => setAddItem(null)}
+                className="inline-flex h-10 items-center rounded-lg border border-border bg-surface px-4 text-sm font-medium text-foreground transition-colors hover:bg-surface-secondary"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleAddItemConfirm}
+                disabled={addItemMutation.isPending || !addItem.product || !addItem.unit || !addItem.quantity}
+                className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
+              >
+                {addItemMutation.isPending ? "Сохранение..." : "Добавить"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {bumpItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
