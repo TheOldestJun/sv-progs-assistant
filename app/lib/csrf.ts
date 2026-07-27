@@ -51,6 +51,9 @@ function isTrusted(url: string): boolean {
 }
 
 export function verifyCsrf(request: Request): { valid: boolean; reason?: string } {
+  // Динамически доверяем origin самого запроса (покрывает кастомные домены на Vercel)
+  ALLOWED_ORIGINS.add(new URL(request.url).origin);
+
   const origin = request.headers.get("origin");
   const referer = request.headers.get("referer");
 
