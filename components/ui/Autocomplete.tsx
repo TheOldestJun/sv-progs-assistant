@@ -124,7 +124,7 @@ export function Autocomplete({
         e.preventDefault();
         if (focusedIdx >= 0 && focusedIdx < filtered.length) {
           selectItem(filtered[focusedIdx]);
-        } else if (focusedIdx === filtered.length && noMatch) {
+        } else if (noMatch) {
           handleCreate();
         }
         break;
