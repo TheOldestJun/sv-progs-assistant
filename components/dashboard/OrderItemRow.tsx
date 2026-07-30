@@ -55,6 +55,7 @@ interface OrderItemRowProps {
   onOpenMenu: (buttonEl: HTMLButtonElement) => void;
   onConfirmReceipt: () => void;
   onEditProduct: () => void;
+  onAskRequester?: () => void;
 }
 
 export function OrderItemRow({
@@ -68,6 +69,7 @@ export function OrderItemRow({
   onOpenMenu,
   onConfirmReceipt,
   onEditProduct,
+  onAskRequester,
 }: OrderItemRowProps) {
   return (
     <>
@@ -108,6 +110,21 @@ export function OrderItemRow({
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-3.5">
                     <path d="M5.433 13.917l1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65z" />
                     <path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0 0 10 3H4.75A2.75 2.75 0 0 0 2 5.75v9.5A2.75 2.75 0 0 0 4.75 18h9.5A2.75 2.75 0 0 0 17 15.25V10a.75.75 0 0 0-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5z" />
+                  </svg>
+                </span>
+              )}
+              {!requesterMode && onAskRequester && (
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAskRequester();
+                  }}
+                  className="inline-flex cursor-pointer items-center justify-center rounded-md p-0.5 text-text-secondary transition-colors hover:text-primary"
+                  title="Задать вопрос заявителю"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-3.5">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0ZM8.94 6.94a.75.75 0 1 1-1.061-1.061 3 3 0 1 1 2.871 5.026v.345a.75.75 0 0 1-1.5 0v-.5c0-.414.336-.75.75-.75a1.5 1.5 0 1 0-1.06-2.56.75.75 0 0 1-1.06 0Z" clipRule="evenodd" />
+                    <path d="M10 15a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" />
                   </svg>
                 </span>
               )}

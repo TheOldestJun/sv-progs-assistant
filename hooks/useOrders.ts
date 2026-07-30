@@ -60,7 +60,7 @@ export interface Order {
   id: string;
   requesterId: string;
   created: string;
-  requester: { name: string };
+  requester: { name: string; userId: string | null };
   items: OrderItem[];
 }
 

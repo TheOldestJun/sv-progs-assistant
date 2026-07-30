@@ -26,6 +26,7 @@ import { EditProductDialog } from "@/components/dashboard/EditProductDialog";
 import { OrderCardHeader } from "@/components/dashboard/OrderCardHeader";
 import { OrderItemRow } from "@/components/dashboard/OrderItemRow";
 import { ConfirmLinkDialog } from "@/components/dashboard/ConfirmLinkDialog";
+import { AskQuestionDialog } from "@/components/dashboard/AskQuestionDialog";
 import { StatusMenu, getStatusChoices } from "@/components/dashboard/StatusMenu";
 
 const PAGE_SIZE = 10;
@@ -58,6 +59,11 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
   } | null>(null);
 
   const [confirmLink, setConfirmLink] = useState<{ token: string; orderId: string } | null>(null);
+
+  const [askQuestion, setAskQuestion] = useState<{
+    productTitle: string; quantity: number; unitTitle: string;
+    requesterUserId: string; orderDate: string;
+  } | null>(null);
 
   function openMenu(itemId: string, buttonEl: HTMLButtonElement) {
     if (openSelect === itemId) { setOpenSelect(null); setMenuPos(null); return; }
@@ -244,6 +250,13 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
                       itemId: item.id, orderId: order.id,
                       productId: item.productId, productTitle: item.product.title,
                     })}
+                    onAskRequester={!requesterMode && order.requester.userId ? () => setAskQuestion({
+                      productTitle: item.product.title,
+                      quantity: item.quantity,
+                      unitTitle: item.units.title,
+                      requesterUserId: order.requester.userId!,
+                      orderDate: order.created.slice(0, 10),
+                    }) : undefined}
                   />
                 ))}
               </tbody>
@@ -302,6 +315,18 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
         <ConfirmLinkDialog
           token={confirmLink.token}
           onClose={() => setConfirmLink(null)}
+        />
+      )}
+
+      {askQuestion && (
+        <AskQuestionDialog
+          open
+          productTitle={askQuestion.productTitle}
+          quantity={askQuestion.quantity}
+          unitTitle={askQuestion.unitTitle}
+          requesterUserId={askQuestion.requesterUserId}
+          orderDate={askQuestion.orderDate}
+          onClose={() => setAskQuestion(null)}
         />
       )}
 

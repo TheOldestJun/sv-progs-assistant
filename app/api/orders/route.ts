@@ -25,7 +25,7 @@ export async function GET() {
       orderBy: { created: "desc" },
       take: 200, // Безопасный лимит — не даёт уйти в OOM при тысячах заявок
       include: {
-        requester: { select: { name: true } },
+        requester: { select: { name: true, userId: true } },
         items: {
           include: {
             product: { select: { title: true } },
