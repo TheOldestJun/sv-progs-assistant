@@ -1,5 +1,12 @@
 "use client";
 
+/*
+ * AskQuestionDialog — модальное окно для отправки вопроса заявителю по конкретной позиции.
+ * Используется снабжением (supply) для уточнения деталей ТМЦ.
+ * Вопрос отправляется через POST /api/messages получателю = requester.userId.
+ * Заявитель отвечает в чате (/messages) — диалог 1:1 с отправителем.
+ */
+
 import { useState } from "react";
 import { useToast } from "@/components/ui/Toast";
 

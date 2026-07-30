@@ -382,6 +382,14 @@ export default function HelpPage() {
                 Также доступна страница /messages с полноценным чатом и историей переписки.
               </p>
             </div>
+            <div className="rounded-lg border border-border bg-surface p-4">
+              <h3 className="font-medium text-foreground">Вопрос по позиции заявки</h3>
+              <p className="mt-1 text-sm leading-relaxed text-text-secondary">
+                Отдел снабжения может задать уточняющий вопрос заявителю по любой позиции.
+                Напротив названия ТМЦ есть иконка <span className="inline-flex items-center">? — нажмите её, напишите вопрос, и он будет отправлен
+                заявителю во внутренний чат.</span> Заявитель отвечает в разделе «Сообщения».
+              </p>
+            </div>
           </div>
         </section>
 

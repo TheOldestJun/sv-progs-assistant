@@ -55,6 +55,7 @@ interface OrderItemRowProps {
   onOpenMenu: (buttonEl: HTMLButtonElement) => void;
   onConfirmReceipt: () => void;
   onEditProduct: () => void;
+  /** Callback для кнопки «Задать вопрос заявителю» (иконка ? рядом с карандашом) */
   onAskRequester?: () => void;
 }
 

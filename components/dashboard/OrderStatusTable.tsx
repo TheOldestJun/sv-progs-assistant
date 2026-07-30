@@ -7,6 +7,9 @@
  *   отображается кнопка «Подтвердить получение» (SENT_TO_REQUESTER → ORDER_CONFIRMED)
  * - readOnly: только просмотр без возможности изменения статусов
  *
+ * Для снабжения (supply) рядом с названием ТМЦ отображается иконка ? —
+ * задать вопрос заявителю через внутренний чат (см. AskQuestionDialog).
+ *
  * Используется в SupplyDeptDashboard, HeadOfSupplyDashboard,
  * WarehouseDashboard (warehouseMode), RequesterDashboard (requesterMode).
  */
