@@ -1,4 +1,13 @@
 "use client";
+/*
+ * AdminOrderList — панель управления заявками для ADMIN.
+ * Возможности:
+ *   - Поиск и фильтрация по заявителю/ТМЦ, пагинация
+ *   - Редактирование: дата заявки, количество, ТМЦ, единица, комментарий, статус
+ *   - Добавление новой позиции в существующую заявку
+ *   - Архивация и принудительное удаление заявки (force)
+ *   - Выброс позиции в новую заявку (bump)
+ */
 import { useState, useRef, useEffect, Fragment, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { OrderItemStatus } from "@prisma/client";

@@ -1,13 +1,12 @@
 /*
- * Преобразование чисел в пропись (русский язык).
- * Обёртка над to-words/ru-RU с тем же API, что и в Passes.jsx (uk-UA).
+ * Преобразование чисел в пропись (украинский язык).
  * Функции:
  *   numToWords(num, opts?)       — с заглавной буквы
  *   numToWordsUpper(num, opts?)  — ВЕРХНИЙ РЕГИСТР
  *   numToWordsLower(num, opts?)  — нижний регистр
  *   numToCurrency(num)           — сумма прописью (рубли/копейки)
  */
-import { toWords, toCurrency } from "to-words/ru-RU";
+import { toWords, toCurrency } from "to-words/uk-UA";
 
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();

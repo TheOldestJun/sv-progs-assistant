@@ -1,6 +1,7 @@
 /*
- * POST /api/orders/:id/items — добавить новую позицию в существующую заявку.
- * Только для ADMIN.
+ * POST /api/orders/:id/items — добавить новую позицию в существующую заявку (только ADMIN).
+ * Тело: { productId, unitId, quantity, comment? }
+ * Возвращает созданную позицию с product.title и units.title.
  */
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
