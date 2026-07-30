@@ -16,10 +16,12 @@ import { useMemo, useState } from "react";
 import { useOrders, useUpdateOrderItemStatus, fetchItemLogs, STATUS_LABELS, type StatusLogEntry } from "@/hooks/useOrders";
 import type { OrderItemStatus } from "@prisma/client";
 import { useDeleteOrder } from "@/hooks/useDeleteOrder";
+import { useBatchApprove } from "@/hooks/useBatchApprove";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { IconSearch } from "@/components/ui/Icon";
 import { StatusChangeDialog } from "@/components/dashboard/StatusChangeDialog";
+import { BatchApproveDialog } from "@/components/dashboard/BatchApproveDialog";
 import { EditProductDialog } from "@/components/dashboard/EditProductDialog";
 import { OrderCardHeader } from "@/components/dashboard/OrderCardHeader";
 import { OrderItemRow } from "@/components/dashboard/OrderItemRow";
@@ -33,6 +35,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
   const { data: orders, isLoading, isError, error } = useOrders();
   const updateStatus = useUpdateOrderItemStatus();
   const deleteOrder = useDeleteOrder();
+  const batchApprove = useBatchApprove();
   const { showToast } = useToast();
   const { confirm } = useConfirmDialog();
 
@@ -47,6 +50,8 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
     itemId: string; orderId: string; targetStatus: OrderItemStatus;
     currentStatus: OrderItemStatus; productTitle: string;
   } | null>(null);
+
+  const [pendingBatchApprove, setPendingBatchApprove] = useState<string | null>(null);
 
   const [editingProduct, setEditingProduct] = useState<{
     itemId: string; orderId: string; productId: string; productTitle: string;
@@ -109,6 +114,27 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
       onSuccess: () => showToast("Заявка удалена", "success"),
       onError: (err) => showToast(err.message, "error"),
     });
+  }
+
+  function handleApproveConfirm(changedAt: string) {
+    if (!pendingBatchApprove) return;
+    batchApprove.mutate(
+      { orderId: pendingBatchApprove, changedAt },
+      {
+        onSuccess: (data) => {
+          showToast(`Одобрено ${data.count} позиций`, "success");
+          setPendingBatchApprove(null);
+        },
+        onError: (err) => {
+          showToast(err.message || "Ошибка при одобрении", "error");
+          setPendingBatchApprove(null);
+        },
+      },
+    );
+  }
+
+  function handleBatchApproveCancel() {
+    setPendingBatchApprove(null);
   }
 
   const filtered = useMemo(() => {
@@ -181,6 +207,9 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
               : order.items.every((it) => FINAL_STATUSES.has(it.status))}
             deletePending={deleteOrder.isPending}
             onDelete={() => handleDeleteOrder(order.id)}
+            showApprove={showDirectorateOptions && order.items.some((it) => it.status === "PENDING_DIRECTORATE")}
+            approvePending={batchApprove.isPending}
+            onApprove={() => setPendingBatchApprove(order.id)}
           />
 
           <div className="max-sm:border-t max-sm:border-border">
@@ -193,7 +222,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
                   <th className="w-44 px-2 py-1.5 sm:px-4 sm:py-0.5 text-left font-medium text-text-secondary">Статус</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
+              <tbody className="divide-y divide-[#c8ccd0] dark:divide-[#3a3a4e]">
                 {order.items.map((item) => (
                   <OrderItemRow
                     key={item.id}
@@ -234,6 +263,14 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
             <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={safePage === totalPages - 1} className="rounded-md px-3 py-1.5 text-sm max-sm:py-2 transition-colors hover:bg-surface-secondary disabled:opacity-30 max-sm:min-h-11">Вперед →</button>
           </div>
         </div>
+      )}
+
+      {pendingBatchApprove && (
+        <BatchApproveDialog
+          open
+          onConfirm={handleApproveConfirm}
+          onCancel={handleBatchApproveCancel}
+        />
       )}
 
       {pendingChange && (
