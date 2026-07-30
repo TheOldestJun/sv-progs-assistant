@@ -33,6 +33,7 @@ const STATUS_COLORS: Record<OrderItemStatus, string> = {
   PENDING_DIRECTORATE: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
   DIRECTORATE_APPROVED: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300",
   ACCEPTED: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+  REQUEST_SENT: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
   INVOICE_RECEIVED: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
   INVOICE_PAID: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
   SHIPPED: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300",
