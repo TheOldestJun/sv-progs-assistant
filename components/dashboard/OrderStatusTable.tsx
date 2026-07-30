@@ -103,7 +103,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
   function handleStatusCancel() { setPendingChange(null); }
 
   async function handleDeleteOrder(orderId: string) {
-    const ok = await confirm({ title: "Архивирование заявки", message: "Заявка будет перемещена в архив. Вы сможете просмотреть её на вкладке «Архив».", confirmText: "Архивировать", variant: "danger" });
+    const ok = await confirm({ title: "Удаление заявки", message: "Заявка будет полностью удалена. Продолжить?", confirmText: "Удалить", variant: "danger" });
     if (!ok) return;
     deleteOrder.mutate(orderId, {
       onSuccess: () => showToast("Заявка удалена", "success"),
@@ -176,7 +176,9 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
             created={order.created}
             totalQuantity={order.items.reduce((s, it) => s + it.quantity, 0)}
             readOnly={readOnly}
-            allFinished={order.items.every((it) => FINAL_STATUSES.has(it.status))}
+            allFinished={requesterMode
+              ? order.items.every((it) => FINAL_STATUSES.has(it.status) || it.status === "PENDING_DIRECTORATE")
+              : order.items.every((it) => FINAL_STATUSES.has(it.status))}
             deletePending={deleteOrder.isPending}
             onDelete={() => handleDeleteOrder(order.id)}
           />

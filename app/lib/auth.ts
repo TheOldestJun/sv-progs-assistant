@@ -97,7 +97,7 @@ export async function loginAction(
   if (!valid) {
     recordAttempt(`login:${ip}`, false);
     if (user.mustChangePassword) {
-      return { error: "Ваш пароль был сброшен администратором. Используйте временный пароль для входа." };
+      return { error: "Ваш пароль был сброшен администратором. Используйте временный пароль reset123 для входа." };
     }
     return { error: "Неверный email или пароль" };
   }

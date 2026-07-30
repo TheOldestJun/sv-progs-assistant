@@ -14,6 +14,10 @@ const FINAL_STATUSES: OrderItemStatus[] = [
   OrderItemStatus.ORDER_CONFIRMED,
 ];
 
+const PENDING_STATUSES: OrderItemStatus[] = [
+  OrderItemStatus.PENDING_DIRECTORATE,
+];
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -84,7 +88,7 @@ export async function DELETE(
         requesterId: true,
         created: true,
         createdById: true,
-        requester: { select: { name: true } },
+        requester: { select: { name: true, userId: true } },
         items: {
           select: {
             id: true,
@@ -109,7 +113,12 @@ export async function DELETE(
 
     if (!force) {
       const allFinished = order.items.every((it) => FINAL_STATUSES.includes(it.status));
-      if (!allFinished) {
+      const allPending = order.items.every((it) => PENDING_STATUSES.includes(it.status));
+      const isRequester = session.id === order.requester.userId;
+
+      if (allPending && isRequester) {
+        // Заказчик может удалить заявку до утверждения директором
+      } else if (!allFinished) {
         return NextResponse.json(
           { error: "Можно удалить только заявку, все позиции которой завершены" },
           { status: 400 },

@@ -12,6 +12,7 @@ import { Autocomplete, type AutocompleteItem } from "@/components/ui/Autocomplet
 import { useReferenceData } from "@/hooks/useReferenceData";
 import { useCreateOrder } from "@/hooks/useCreateOrder";
 import { useToast } from "@/components/ui/Toast";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { OrderStatusTable } from "./OrderStatusTable";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { DashboardTabs } from "./DashboardTabs";
@@ -38,6 +39,7 @@ export function RequesterDashboard() {
   const { data: products, creation: productCreation } = useReferenceData("products", "/api/products");
   const { data: units, creation: unitCreation } = useReferenceData("units", "/api/units");
   const { showToast } = useToast();
+  const { confirm } = useConfirmDialog();
   const createOrder = useCreateOrder();
 
   const [items, setItems] = useState<OrderItem[]>([createEmptyItem()]);
@@ -100,23 +102,20 @@ export function RequesterDashboard() {
     return id.startsWith("optimistic-");
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-
+  function submitOrder() {
     const validItems = items.filter(isItemComplete);
     if (validItems.length === 0) {
       showToast("Добавьте хотя бы одну заполненную позицию", "error");
-      return;
+      return false;
     }
 
     for (const item of validItems) {
       if (isOptimistic(item.product!.id) || isOptimistic(item.unit!.id)) {
         showToast("Подождите сохранения новых продуктов/единиц", "error");
-        return;
+        return false;
       }
     }
 
-    // requesterId не передаём — API сам найдёт/создаст Requester по userId из сессии
     const payload = {
       created: date,
       items: validItems.map((it) => ({
@@ -136,6 +135,24 @@ export function RequesterDashboard() {
         showToast(err.message || "Ошибка при создании заявки", "error");
       },
     });
+    return true;
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    submitOrder();
+  }
+
+  async function handleItemKeyDown(e: React.KeyboardEvent, item: OrderItem) {
+    if (e.key !== "Enter" || !isItemComplete(item)) return;
+    e.preventDefault();
+    const ok = await confirm({
+      title: "Отправка заявки",
+      message: "Завершить создание заявки и отправить её?",
+      confirmText: "Отправить",
+    });
+    if (!ok) return;
+    submitOrder();
   }
 
   const lastItem = items[items.length - 1];
@@ -204,6 +221,7 @@ export function RequesterDashboard() {
                     value={item.quantity}
                     onChange={(e) => updateItem(item.id, { quantity: e.target.value })}
                     onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                    onKeyDown={(e) => handleItemKeyDown(e, item)}
                     placeholder="КОЛ-ВО"
                     className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary"
                   />
