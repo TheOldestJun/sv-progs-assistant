@@ -11,6 +11,7 @@ import { OrderItemStatus } from "@prisma/client";
 import type { Role } from "@prisma/client";
 import { verifyCsrf } from "@/app/lib/csrf";
 import { SUPPLY_WORKFLOW_ROLES } from "@/app/lib/orderStatuses";
+import { handleApiError } from "@/app/lib/api-errors";
 
 export async function POST(request: Request) {
   const csrf = verifyCsrf(request);
@@ -78,9 +79,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, count: items.length });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "orders / batch-accept");
   }
 }

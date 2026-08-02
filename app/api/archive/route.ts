@@ -6,6 +6,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";
+import { handleApiError } from "@/app/lib/api-errors";
 
 const PAGE_SIZE = 500;
 
@@ -69,9 +70,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ data: archives, total });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "archive");
   }
 }

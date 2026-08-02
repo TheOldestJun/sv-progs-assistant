@@ -8,6 +8,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 import { OrderItemStatus } from "@prisma/client";
 import { tryArchiveOrder } from "@/app/lib/tryArchiveOrder";
+import { handleApiError } from "@/app/lib/api-errors";
 
 const ITEM_INCLUDE = {
   product: { select: { title: true } },
@@ -98,10 +99,7 @@ export async function POST(
       },
     });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "confirm / [token]");
   }
 }
 
@@ -144,10 +142,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "confirm / [token]");
   }
 }
 

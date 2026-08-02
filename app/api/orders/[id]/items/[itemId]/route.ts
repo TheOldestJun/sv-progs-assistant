@@ -28,6 +28,7 @@ import {
   SUPPLY_WORKFLOW_STATUSES,
   SUPPLY_WORKFLOW_ROLES,
 } from "@/app/lib/orderStatuses";
+import { handleApiError } from "@/app/lib/api-errors";
 
 export async function GET(
   _request: Request,
@@ -51,10 +52,7 @@ export async function GET(
 
     return NextResponse.json(logs);
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "orders / [id] / items / [itemId]");
   }
 }
 
@@ -339,11 +337,7 @@ export async function PATCH(
 
     return NextResponse.json({ ...updated, confirmationToken, archived });
   } catch (error) {
-    console.error("[PATCH status] Error:", error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "orders / [id] / items / [itemId]");
   }
 }
 
@@ -419,9 +413,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, newOrder });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "orders / [id] / items / [itemId]");
   }
 }

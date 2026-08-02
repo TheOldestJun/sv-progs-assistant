@@ -7,6 +7,7 @@ import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";
 import { Role } from "@prisma/client";
 import { verifyCsrf } from "@/app/lib/csrf";
+import { handleApiError } from "@/app/lib/api-errors";
 
 const ALLOWED_ROLES: Role[] = [
   Role.ADMIN,
@@ -61,10 +62,7 @@ export async function PATCH(
 
     return NextResponse.json(updated);
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "products / [id]");
   }
 }
 
@@ -99,9 +97,6 @@ export async function DELETE(
     await db.product.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "products / [id]");
   }
 }

@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";
 import { verifyCsrf } from "@/app/lib/csrf";
+import { handleApiError } from "@/app/lib/api-errors";
 
 const PRODUCT_EDIT_ROLES = ["ADMIN", "HEAD_OF_SUPPLY", "SUPPLY_DEPT", "WAREHOUSE"];
 
@@ -69,10 +70,6 @@ export async function POST(
 
     return NextResponse.json(item, { status: 201 });
   } catch (error) {
-    console.error("[POST /api/orders/:id/items] Error:", error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "orders / [id] / items");
   }
 }

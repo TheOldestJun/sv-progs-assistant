@@ -16,6 +16,7 @@ import {
   PENDING_STATUSES,
   ARCHIVE_ROLES,
 } from "@/app/lib/orderStatuses";
+import { handleApiError } from "@/app/lib/api-errors";
 
 export async function PATCH(
   request: Request,
@@ -48,10 +49,7 @@ export async function PATCH(
 
     return NextResponse.json(updated);
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "orders / [id]");
   }
 }
 
@@ -170,9 +168,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "orders / [id]");
   }
 }

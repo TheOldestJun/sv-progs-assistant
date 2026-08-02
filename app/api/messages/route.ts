@@ -8,6 +8,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";
 import { verifyCsrf } from "@/app/lib/csrf";
+import { handleApiError } from "@/app/lib/api-errors";
 
 const RETENTION_MS = 3 * 365 * 24 * 60 * 60 * 1000; // 3 года
 
@@ -60,10 +61,7 @@ export async function GET() {
     const conversations = Array.from(conversationsMap.values());
     return NextResponse.json(conversations);
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "messages");
   }
 }
 
@@ -105,9 +103,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json(message, { status: 201 });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "messages");
   }
 }

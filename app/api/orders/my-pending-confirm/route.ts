@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";
 import { OrderItemStatus } from "@prisma/client";
+import { handleApiError } from "@/app/lib/api-errors";
 
 export async function GET() {
   const session = await getSession();
@@ -45,9 +46,6 @@ export async function GET() {
 
     return NextResponse.json({ pending: totalPending, orders: orders.map((o) => o.id) });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "orders / my-pending-confirm");
   }
 }
