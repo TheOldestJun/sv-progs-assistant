@@ -287,13 +287,13 @@ export function AdminOrderList({ orders: initial }: { orders: AdminOrder[] }) {
   }
 
   async function handleForceDeleteOrder(orderId: string) {
-    const ok = await confirm({ title: "Удалить заявку?", message: "Заявка будет удалена без возможности восстановления.", confirmText: "Удалить", variant: "danger" });
+    const ok = await confirm({ title: "Удалить заявку навсегда?", message: "Заявка будет полностью удалена без записи в архив и без возможности восстановления.", confirmText: "Удалить", variant: "danger" });
     if (!ok) return;
     try {
-      await apiDelete(`/api/orders/${orderId}`, { force: true });
+      await apiDelete(`/api/orders/${orderId}`, { force: true, permanent: true });
       queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-      showToast("Заявка удалена", "success");
+      showToast("Заявка удалена навсегда", "success");
     } catch (e) {
       showToast(e instanceof Error ? e.message : "Ошибка", "error");
     }

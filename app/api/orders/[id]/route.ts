@@ -3,6 +3,7 @@
  * DELETE /api/orders/:id — архивирует, затем удаляет заявку.
  *   - Без force: только если все позиции в финальном статусе (или все PENDING + заявитель)
  *   - С force (только ADMIN): принудительно, без проверки статусов
+ *   - С permanent (только ADMIN, вместе с force): полное удаление БЕЗ записи в архив
  * Архивирование сохраняет краткие данные (заявитель, даты, список пунктов).
  */
 import { NextResponse } from "next/server";
@@ -78,9 +79,10 @@ export async function DELETE(
 
     const body = await request.json().catch(() => ({}));
     const force = body.force === true;
+    const permanent = body.permanent === true;
 
     const isAdmin = session.roles.includes("ADMIN");
-    if (force && !isAdmin) {
+    if ((force || permanent) && !isAdmin) {
       return NextResponse.json({ error: "Только администратор может принудительно удалять заявки" }, { status: 403 });
     }
 
@@ -144,6 +146,12 @@ export async function DELETE(
       quantity: it.quantity,
       comment: it.comment,
     }));
+
+    // Полное удаление без записи в архив (только ADMIN, только с force)
+    if (permanent) {
+      await db.order.delete({ where: { id } });
+      return NextResponse.json({ success: true, permanent: true });
+    }
 
     await db.$transaction([
       db.archivedOrder.create({
