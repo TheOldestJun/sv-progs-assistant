@@ -9,18 +9,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";
-import { OrderItemStatus } from "@prisma/client";
+import type { Role } from "@prisma/client";
 import { verifyCsrf } from "@/app/lib/csrf";
-
-const FINAL_STATUSES: OrderItemStatus[] = [
-  OrderItemStatus.RECEIVED,
-  OrderItemStatus.SENT_TO_REQUESTER,
-  OrderItemStatus.ORDER_CONFIRMED,
-];
-
-const PENDING_STATUSES: OrderItemStatus[] = [
-  OrderItemStatus.PENDING_DIRECTORATE,
-];
+import {
+  DELETE_FINAL_STATUSES,
+  PENDING_STATUSES,
+  ARCHIVE_ROLES,
+} from "@/app/lib/orderStatuses";
 
 export async function PATCH(
   request: Request,
@@ -103,7 +98,7 @@ export async function DELETE(
             product: { select: { title: true } },
             units: { select: { title: true } },
             statusLogs: {
-              where: { newStatus: OrderItemStatus.RECEIVED },
+              where: { newStatus: "RECEIVED" },
               select: { changedAt: true },
               orderBy: { changedAt: "desc" },
               take: 1,
@@ -117,7 +112,7 @@ export async function DELETE(
     }
 
     if (!force) {
-      const allFinished = order.items.every((it) => FINAL_STATUSES.includes(it.status));
+      const allFinished = order.items.every((it) => DELETE_FINAL_STATUSES.includes(it.status));
       const allPending = order.items.every((it) => PENDING_STATUSES.includes(it.status));
       const isRequester = session.id === order.requester.userId;
 
@@ -127,6 +122,12 @@ export async function DELETE(
         return NextResponse.json(
           { error: "Можно удалить только заявку, все позиции которой завершены" },
           { status: 400 },
+        );
+      } else if (!session.roles.some((r) => ARCHIVE_ROLES.includes(r as Role))) {
+        // Завершённую заявку может архивировать только отдел снабжения/склад/админ
+        return NextResponse.json(
+          { error: "Только отдел снабжения или администратор может архивировать заявки" },
+          { status: 403 },
         );
       }
     }

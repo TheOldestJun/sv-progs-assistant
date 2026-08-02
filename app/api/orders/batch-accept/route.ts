@@ -7,8 +7,10 @@
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";
-import { OrderItemStatus, Role } from "@prisma/client";
+import { OrderItemStatus } from "@prisma/client";
+import type { Role } from "@prisma/client";
 import { verifyCsrf } from "@/app/lib/csrf";
+import { SUPPLY_WORKFLOW_ROLES } from "@/app/lib/orderStatuses";
 
 export async function POST(request: Request) {
   const csrf = verifyCsrf(request);
@@ -21,8 +23,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const allowedRoles: Role[] = [Role.ADMIN, Role.HEAD_OF_SUPPLY, Role.SUPPLY_DEPT, Role.DIRECTORATE];
-  if (!session.roles.some((r) => allowedRoles.includes(r as Role))) {
+  if (!session.roles.some((r) => SUPPLY_WORKFLOW_ROLES.includes(r as Role))) {
     return NextResponse.json(
       { error: "Только сотрудники снабжения могут принимать заявки в работу" },
       { status: 403 },

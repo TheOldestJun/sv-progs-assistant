@@ -53,7 +53,25 @@ export async function getSession(): Promise<SessionUser | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  return verifyToken(token);
+
+  const payload = await verifyToken(token);
+  if (!payload) return null;
+
+  // JWT-отзыв: сверяемся с БД. Токен действителен 24ч, но пользователь может быть
+  // удалён админом, лишён ролей или пароль сброшен — тогда доступ должен закрыться сразу.
+  // Роли берём из БД, а не из токена (в токене они могли устареть).
+  const user = await db.user.findUnique({
+    where: { id: payload.id },
+    select: { id: true, name: true, email: true, roles: { select: { role: true } } },
+  });
+  if (!user) return null;
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    roles: user.roles.map((r) => r.role),
+  };
 }
 
 /*
@@ -161,6 +179,17 @@ export async function refreshSessionAction(): Promise<ActionResult> {
   const payload = await verifyRefreshToken(refreshToken);
   if (!payload) {
     // Refresh невалиден — чистим всё
+    cookieStore.delete(SESSION_COOKIE);
+    cookieStore.delete(REFRESH_COOKIE);
+    return { error: "Сессия истекла" };
+  }
+
+  // Пользователь мог быть удалён/деактивирован — не продлеваем сессию мёртвому юзеру.
+  const user = await db.user.findUnique({
+    where: { id: payload.sub },
+    select: { id: true },
+  });
+  if (!user) {
     cookieStore.delete(SESSION_COOKIE);
     cookieStore.delete(REFRESH_COOKIE);
     return { error: "Сессия истекла" };

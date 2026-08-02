@@ -20,20 +20,10 @@ export const STATUS_LABELS: Record<OrderItemStatus, string> = {
   ORDER_CONFIRMED: "Получено заказчиком",
 };
 
-// Канонический порядок жизненного цикла статусов заявки.
-// Все переходы должны соответствовать этому порядку (нельзя перескочить через шаг).
-export const STATUS_ORDER: OrderItemStatus[] = [
-  "PENDING_DIRECTORATE",
-  "DIRECTORATE_APPROVED",
-  "ACCEPTED",
-  "REQUEST_SENT",
-  "INVOICE_RECEIVED",
-  "INVOICE_PAID",
-  "SHIPPED",
-  "RECEIVED",
-  "SENT_TO_REQUESTER",
-  "ORDER_CONFIRMED",
-];
+// Канонический порядок жизненного цикла статусов заявки — единый источник в app/lib/orderStatuses.ts.
+// Сервер проверяет переходы (forward-only) по этому же порядку, см. PATCH items/[itemId].
+import { ORDER_STATUS_SEQUENCE } from "@/app/lib/orderStatuses";
+export const STATUS_ORDER = ORDER_STATUS_SEQUENCE;
 
 export interface StatusLogEntry {
   id: string;

@@ -7,6 +7,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";
 import { verifyCsrf } from "@/app/lib/csrf";
+import type { Role } from "@prisma/client";
+import { REFERENCE_CREATE_ROLES } from "@/app/lib/orderStatuses";
 
 type DbModel = "product" | "unit" | "requester";
 
@@ -72,6 +74,12 @@ export function createHandlers(opts: FactoryOptions) {
       const session = await getSession();
       if (!session) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      // Справочные данные может создавать только отдел снабжения/заявитель/админ.
+      // Ранее POST был доступен любой авторизованной роли (напр. WAREHOUSE мог создать Product).
+      if (!session.roles.some((r) => REFERENCE_CREATE_ROLES.includes(r as Role))) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
 
       const body = await request.json();

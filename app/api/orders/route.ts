@@ -73,12 +73,21 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+    if (typeof item.quantity !== "number" || item.quantity <= 0) {
+      return NextResponse.json(
+        { error: "Each item quantity must be a positive number" },
+        { status: 400 },
+      );
+    }
   }
 
   try {
-    // Для REQUESTER-пользователя: если requesterId не передан, находим/создаём его профиль
+    // REQUESTER всегда создаёт заявку ТОЛЬКО от своего имени:
+    // переданный requesterId для него игнорируется (иначе можно подменить заявителя).
+    // Снабжение/админ могут указать любого заявителя.
+    const isRequesterRole = session.roles.includes("REQUESTER");
     let resolvedRequesterId = requesterId;
-    if (!resolvedRequesterId) {
+    if (isRequesterRole || !resolvedRequesterId) {
       let requester = await db.requester.findUnique({ where: { userId: session.id } });
       if (!requester) {
         requester = await db.requester.create({

@@ -5,11 +5,7 @@
  * Возвращает true если заявка была заархивирована.
  */
 import { db } from "@/app/lib/db";
-import { OrderItemStatus } from "@prisma/client";
-
-const FINAL_STATUSES: OrderItemStatus[] = [
-  OrderItemStatus.ORDER_CONFIRMED,
-];
+import { AUTO_ARCHIVE_STATUSES } from "@/app/lib/orderStatuses";
 
 export async function tryArchiveOrder(orderId: string): Promise<boolean> {
   const order = await db.order.findUnique({
@@ -40,7 +36,7 @@ export async function tryArchiveOrder(orderId: string): Promise<boolean> {
 
   if (!order || order.items.length === 0) return false;
 
-  const allFinished = order.items.every((it) => FINAL_STATUSES.includes(it.status));
+  const allFinished = order.items.every((it) => AUTO_ARCHIVE_STATUSES.includes(it.status));
   if (!allFinished) return false;
 
   // Берём последнюю дату изменения статуса из логов всех позиций

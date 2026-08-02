@@ -21,16 +21,13 @@ import { OrderItemStatus, Role } from "@prisma/client";
 import { randomBytes } from "crypto";
 import { tryArchiveOrder } from "@/app/lib/tryArchiveOrder";
 import { verifyCsrf } from "@/app/lib/csrf";
-
-/*
- * Роли, которым разрешено менять ТМЦ в позиции
- */
-const PRODUCT_EDIT_ROLES: Role[] = [
-  Role.ADMIN,
-  Role.HEAD_OF_SUPPLY,
-  Role.SUPPLY_DEPT,
-  Role.WAREHOUSE,
-];
+import {
+  STATUS_ORDER,
+  PRODUCT_EDIT_ROLES,
+  WAREHOUSE_ONLY_STATUSES,
+  SUPPLY_WORKFLOW_STATUSES,
+  SUPPLY_WORKFLOW_ROLES,
+} from "@/app/lib/orderStatuses";
 
 export async function GET(
   _request: Request,
@@ -95,6 +92,10 @@ export async function PATCH(
 
     // ——— Обновление количества ———
     if (quantity !== undefined) {
+      // Количество, как и ТМЦ, может менять только отдел снабжения/склад/админ
+      if (!session.roles.some((r) => PRODUCT_EDIT_ROLES.includes(r as Role))) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
       if (typeof quantity !== "number" || quantity <= 0) {
         return NextResponse.json({ error: "Quantity must be a positive number" }, { status: 400 });
       }
@@ -166,6 +167,8 @@ export async function PATCH(
       );
     }
 
+    const isAdmin = session.roles.includes(Role.ADMIN);
+
     // Статус одобрения директора — только ADMIN, HEAD_OF_SUPPLY или DIRECTORATE
     if (status === OrderItemStatus.DIRECTORATE_APPROVED) {
       const allowedRoles: Role[] = [Role.ADMIN, Role.HEAD_OF_SUPPLY, Role.DIRECTORATE];
@@ -183,19 +186,8 @@ export async function PATCH(
       }
     }
 
-    // Статусы, которые может менять только склад (или админ):
-    // RECEIVED (склад принимает товар), SENT_TO_REQUESTER (склад отправляет заявителю)
-    const WAREHOUSE_ONLY_STATUSES: OrderItemStatus[] = [
-      OrderItemStatus.RECEIVED,
-      OrderItemStatus.SENT_TO_REQUESTER,
-    ];
-
-    // Проверяем, является ли текущий пользователем заявителем этой заявки
-    const isOwnOrder = await db.order.findFirst({
-      where: { id, requester: { userId: session.id } },
-      select: { id: true },
-    });
-
+    // Складские статусы (RECEIVED — приёмка, SENT_TO_REQUESTER — отправка заявителю):
+    // только склад или админ
     if (warehouseMode) {
       if (!session.roles.includes(Role.WAREHOUSE)) {
         return NextResponse.json(
@@ -209,21 +201,57 @@ export async function PATCH(
           { status: 403 },
         );
       }
-    } else if (WAREHOUSE_ONLY_STATUSES.includes(status) && !session.roles.includes(Role.ADMIN)) {
-      // Заявитель может подтвердить получение своей заявки (SENT_TO_REQUESTER → ORDER_CONFIRMED)
-      const isRequesterConfirm = isOwnOrder && status === OrderItemStatus.ORDER_CONFIRMED && item.status === OrderItemStatus.SENT_TO_REQUESTER;
+    } else if (WAREHOUSE_ONLY_STATUSES.includes(status) && !isAdmin) {
+      return NextResponse.json(
+        { error: "Только кладовщик может выполнять это действие" },
+        { status: 403 },
+      );
+    }
+
+    // Проверяем, является ли текущий пользователь заявителем этой заявки
+    // (нужно для подтверждения получения SENT_TO_REQUESTER → ORDER_CONFIRMED)
+    const isOwnOrder = await db.order.findFirst({
+      where: { id, requester: { userId: session.id } },
+      select: { id: true },
+    });
+
+    // ORDER_CONFIRMED — подтверждает получение сам заявитель своей заявки или админ
+    if (status === OrderItemStatus.ORDER_CONFIRMED && !isAdmin) {
+      const isRequesterConfirm = isOwnOrder && item.status === OrderItemStatus.SENT_TO_REQUESTER;
       if (!isRequesterConfirm) {
         return NextResponse.json(
-          { error: "Только кладовщик может выполнять это действие" },
+          { error: "Подтвердить получение может только заявитель этой заявки или администратор" },
+          { status: 403 },
+        );
+      }
+    }
+
+    // Промежуточные статусы снабжения (ACCEPTED..SHIPPED) — только отдел снабжения/директор/админ
+    if (SUPPLY_WORKFLOW_STATUSES.includes(status)) {
+      if (!session.roles.some((r) => SUPPLY_WORKFLOW_ROLES.includes(r as Role))) {
+        return NextResponse.json(
+          { error: "Только отдел снабжения может изменять этот статус" },
           { status: 403 },
         );
       }
     }
 
     // Запрет менять статус после финального (ORDER_CONFIRMED)
-    if (item.status === OrderItemStatus.ORDER_CONFIRMED && !session.roles.includes(Role.ADMIN)) {
+    if (item.status === OrderItemStatus.ORDER_CONFIRMED && !isAdmin) {
       return NextResponse.json(
         { error: "Нельзя изменить статус после подтверждения получения заказчиком" },
+        { status: 400 },
+      );
+    }
+
+    // Forward-only: нельзя откатить статус на более ранний этап (для не-админов).
+    // Пропуск этапов вперёд разрешён — UI «основного флоу» позволяет выбрать любой
+    // последующий статус; строгий пошаговый порядок не навязываем, чтобы не ломать сценарии.
+    const currentIdx = STATUS_ORDER.indexOf(item.status);
+    const targetIdx = STATUS_ORDER.indexOf(status);
+    if (!isAdmin && targetIdx < currentIdx) {
+      return NextResponse.json(
+        { error: "Нельзя изменить статус на более ранний этап" },
         { status: 400 },
       );
     }
