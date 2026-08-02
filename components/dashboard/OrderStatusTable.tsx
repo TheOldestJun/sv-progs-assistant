@@ -20,11 +20,13 @@ import { useOrders, useUpdateOrderItemStatus, fetchItemLogs, STATUS_LABELS, type
 import type { OrderItemStatus } from "@prisma/client";
 import { useDeleteOrder } from "@/hooks/useDeleteOrder";
 import { useBatchApprove } from "@/hooks/useBatchApprove";
+import { useBatchAccept } from "@/hooks/useBatchAccept";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { IconSearch } from "@/components/ui/Icon";
 import { StatusChangeDialog } from "@/components/dashboard/StatusChangeDialog";
 import { BatchApproveDialog } from "@/components/dashboard/BatchApproveDialog";
+import { BatchAcceptDialog } from "@/components/dashboard/BatchAcceptDialog";
 import { EditProductDialog } from "@/components/dashboard/EditProductDialog";
 import { OrderCardHeader } from "@/components/dashboard/OrderCardHeader";
 import { OrderItemRow } from "@/components/dashboard/OrderItemRow";
@@ -40,6 +42,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
   const updateStatus = useUpdateOrderItemStatus();
   const deleteOrder = useDeleteOrder();
   const batchApprove = useBatchApprove();
+  const batchAccept = useBatchAccept();
   const { showToast } = useToast();
   const { confirm } = useConfirmDialog();
 
@@ -56,6 +59,8 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
   } | null>(null);
 
   const [pendingBatchApprove, setPendingBatchApprove] = useState<string | null>(null);
+
+  const [pendingBatchAccept, setPendingBatchAccept] = useState<string | null>(null);
 
   const [editingProduct, setEditingProduct] = useState<{
     itemId: string; orderId: string; productId: string; productTitle: string;
@@ -146,6 +151,27 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
     setPendingBatchApprove(null);
   }
 
+  function handleAcceptConfirm(changedAt: string) {
+    if (!pendingBatchAccept) return;
+    batchAccept.mutate(
+      { orderId: pendingBatchAccept, changedAt },
+      {
+        onSuccess: (data) => {
+          showToast(`Принято в работу ${data.count} позиций`, "success");
+          setPendingBatchAccept(null);
+        },
+        onError: (err) => {
+          showToast(err.message || "Ошибка при принятии в работу", "error");
+          setPendingBatchAccept(null);
+        },
+      },
+    );
+  }
+
+  function handleBatchAcceptCancel() {
+    setPendingBatchAccept(null);
+  }
+
   const filtered = useMemo(() => {
     if (!orders) return [];
     let result = orders;
@@ -219,6 +245,9 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
             showApprove={showDirectorateOptions && order.items.some((it) => it.status === "PENDING_DIRECTORATE")}
             approvePending={batchApprove.isPending}
             onApprove={() => setPendingBatchApprove(order.id)}
+            showAccept={showDirectorateOptions && order.items.some((it) => it.status === "DIRECTORATE_APPROVED")}
+            acceptPending={batchAccept.isPending}
+            onAccept={() => setPendingBatchAccept(order.id)}
           />
 
           <div className="max-sm:border-t max-sm:border-border">
@@ -286,6 +315,14 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
           open
           onConfirm={handleApproveConfirm}
           onCancel={handleBatchApproveCancel}
+        />
+      )}
+
+      {pendingBatchAccept && (
+        <BatchAcceptDialog
+          open
+          onConfirm={handleAcceptConfirm}
+          onCancel={handleBatchAcceptCancel}
         />
       )}
 
