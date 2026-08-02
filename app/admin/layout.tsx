@@ -24,8 +24,8 @@ export default async function AdminLayout({
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-8 flex items-center justify-between border-b border-border pb-4">
-        <div className="flex items-center gap-6">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 border-b border-border pb-4">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-3">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             Админ-панель
           </h1>

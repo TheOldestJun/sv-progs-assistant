@@ -19,7 +19,7 @@ export function AdminNav({ pendingCount }: { pendingCount: number }) {
   const pathname = usePathname();
 
   return (
-    <nav className="flex items-center gap-1 rounded-lg bg-surface-secondary p-1">
+    <nav className="flex items-center gap-1 overflow-x-auto rounded-lg bg-surface-secondary p-1">
       {tabs.map((tab) => {
         const isActive = pathname === tab.href;
         return (

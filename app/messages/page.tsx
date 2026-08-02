@@ -299,8 +299,8 @@ export default function MessagesPage() {
   return (
     <div className="mx-auto flex h-[calc(100vh-4rem)] w-full max-w-6xl flex-col px-4 sm:px-6 lg:px-8">
       <div className="flex flex-1 gap-4 overflow-hidden py-4">
-        {/* Left panel — conversations */}
-        <div className="flex w-72 shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-surface">
+        {/* Left panel — conversations (на мобильном видна только пока не выбран диалог) */}
+        <div className={`${selectedUserId ? "hidden sm:flex" : "flex"} w-full sm:w-72 sm:shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-surface`}>
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <h2 className="text-sm font-semibold text-foreground">Диалоги</h2>
             <button
@@ -350,13 +350,22 @@ export default function MessagesPage() {
           </div>
         </div>
 
-        {/* Right panel — conversation or empty state */}
-        <div className="flex flex-1 flex-col overflow-hidden rounded-lg border border-border bg-surface">
+        {/* Right panel — conversation or empty state (на мобильном видна только при выбранном диалоге) */}
+        <div className={`${selectedUserId ? "flex" : "hidden sm:flex"} flex-1 flex-col overflow-hidden rounded-lg border border-border bg-surface`}>
           {selectedUserId && selectedUser ? (
             <>
               {/* Chat header */}
               <div className="flex items-center justify-between border-b border-border px-5 py-3">
                 <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setSelectedUserId(null)}
+                    className="flex sm:hidden size-9 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-surface-secondary"
+                    aria-label="Назад к диалогам"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-5">
+                      <path fillRule="evenodd" d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 1 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z" clipRule="evenodd" />
+                    </svg>
+                  </button>
                   <div className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
                     {selectedUser.name.charAt(0).toUpperCase()}
                   </div>
