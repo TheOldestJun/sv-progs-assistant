@@ -1,6 +1,6 @@
 /*
  * GET /api/archive — архив удалённых заявок с пагинацией.
- * Фильтр: requester (startsWith — использует индекс), dateFrom, dateTo.
+ * Фильтр: requester (startsWith — использует индекс), product (поиск по ТМЦ), dateFrom, dateTo.
  * Автоматически удаляет записи старше 3 лет при каждом запросе.
  */
 import { NextResponse } from "next/server";
@@ -25,6 +25,7 @@ export async function GET(request: Request) {
     });
     const { searchParams } = new URL(request.url);
     const requester = searchParams.get("requester")?.trim();
+    const product = searchParams.get("product")?.trim();
     const dateFrom = searchParams.get("dateFrom");
     const dateTo = searchParams.get("dateTo");
     const page = Math.max(0, parseInt(searchParams.get("page") ?? "0", 10));
@@ -33,6 +34,14 @@ export async function GET(request: Request) {
       requesterName?: { startsWith: string };
       orderDate?: { gte?: Date; lte?: Date };
       createdById?: string;
+      items?: {
+        some: {
+          OR: (
+            | { productTitle: { contains: string } }
+            | { productId: { in: string[] } }
+          )[];
+        };
+      };
     };
 
     const conditions: WhereInput = {};
@@ -44,6 +53,22 @@ export async function GET(request: Request) {
 
     if (requester) {
       conditions.requesterName = { startsWith: requester };
+    }
+    if (product) {
+      // Поиск по ТМЦ: снимок наименования (productTitle) + актуальные названия товара
+      // через productId (товар могли переименовать после архивации)
+      const matchingProducts = await db.product.findMany({
+        where: { title: { contains: product } },
+        select: { id: true },
+      });
+      conditions.items = {
+        some: {
+          OR: [
+            { productTitle: { contains: product } },
+            { productId: { in: matchingProducts.map((p) => p.id) } },
+          ],
+        },
+      };
     }
     if (dateFrom || dateTo) {
       const orderDate: { gte?: Date; lte?: Date } = {};

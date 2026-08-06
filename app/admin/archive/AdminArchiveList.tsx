@@ -40,14 +40,16 @@ export function AdminArchiveList() {
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
   const [requesterFilter, setRequesterFilter] = useState("");
+  const [productFilter, setProductFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
   const { data, isLoading, isError } = useQuery<{ data: ArchiveEntry[]; total: number }>({
-    queryKey: ["admin-archive", requesterFilter, dateFrom, dateTo],
+    queryKey: ["admin-archive", requesterFilter, productFilter, dateFrom, dateTo],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (requesterFilter) params.set("requester", requesterFilter);
+      if (productFilter) params.set("product", productFilter);
       if (dateFrom) params.set("dateFrom", dateFrom);
       if (dateTo) params.set("dateTo", dateTo);
       const qs = params.toString();
@@ -117,6 +119,16 @@ export function AdminArchiveList() {
             onChange={(e) => { setRequesterFilter(e.target.value); }}
             placeholder="Введите имя..."
             className="w-full sm:w-48 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm max-sm:py-2.5 text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary max-sm:min-h-11"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-text-secondary">Наименование ТМЦ</label>
+          <input
+            type="text"
+            value={productFilter}
+            onChange={(e) => { setProductFilter(e.target.value); }}
+            placeholder="Введите наименование..."
+            className="w-full sm:w-64 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm max-sm:py-2.5 text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary max-sm:min-h-11"
           />
         </div>
         <DatePicker label="Дата с" value={dateFrom} onChange={setDateFrom} />

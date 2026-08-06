@@ -1,6 +1,6 @@
 /*
  * ArchiveTable — таблица архивных (удалённых) заявок с фильтрами и пагинацией.
- * Фильтры: заявитель (debounce 300ms), дата с/по.
+ * Фильтры: заявитель (debounce 300ms), наименование ТМЦ (debounce 300ms), дата с/по.
  * Пагинация: 20 записей на страницу.
  */
 "use client";
@@ -26,6 +26,8 @@ const PAGE_SIZE = 20;
 export function ArchiveTable() {
   const [requester, setRequester] = useState("");
   const [debouncedRequester, setDebouncedRequester] = useState("");
+  const [product, setProduct] = useState("");
+  const [debouncedProduct, setDebouncedProduct] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(0);
@@ -35,17 +37,19 @@ export function ArchiveTable() {
     clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
       setDebouncedRequester(requester);
+      setDebouncedProduct(product);
       setPage(0);
     }, 300);
     return () => clearTimeout(debounceTimer.current);
-  }, [requester]);
+  }, [requester, product]);
 
-  const queryKey = ["archive", debouncedRequester, dateFrom, dateTo, page];
+  const queryKey = ["archive", debouncedRequester, debouncedProduct, dateFrom, dateTo, page];
   const { data, isLoading, isError, error } = useQuery<{ data: ArchiveEntry[]; total: number }>({
     queryKey,
     queryFn: () => {
       const params = new URLSearchParams();
       if (debouncedRequester) params.set("requester", debouncedRequester);
+      if (debouncedProduct) params.set("product", debouncedProduct);
       if (dateFrom) params.set("dateFrom", dateFrom);
       if (dateTo) params.set("dateTo", dateTo);
       if (page) params.set("page", String(page));
@@ -75,6 +79,18 @@ export function ArchiveTable() {
             }}
             placeholder="Введите имя..."
             className="w-full sm:w-48 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm max-sm:py-2.5 text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary max-sm:min-h-11"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-text-secondary">Наименование ТМЦ</label>
+          <input
+            type="text"
+            value={product}
+            onChange={(e) => {
+              setProduct(e.target.value);
+            }}
+            placeholder="Введите наименование..."
+            className="w-full sm:w-64 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm max-sm:py-2.5 text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary max-sm:min-h-11"
           />
         </div>
         <DatePicker label="Дата с" value={dateFrom} onChange={(v) => { setDateFrom(v); setPage(0); }} />
