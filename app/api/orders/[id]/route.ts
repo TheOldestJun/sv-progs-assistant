@@ -93,13 +93,16 @@ export async function DELETE(
             status: true,
             quantity: true,
             comment: true,
-            product: { select: { title: true } },
+            product: { select: { id: true, title: true } },
             units: { select: { title: true } },
             statusLogs: {
-              where: { newStatus: "RECEIVED" },
-              select: { changedAt: true },
-              orderBy: { changedAt: "desc" },
-              take: 1,
+              orderBy: { changedAt: "asc" },
+              select: {
+                oldStatus: true,
+                newStatus: true,
+                changedAt: true,
+                changedBy: { select: { id: true, name: true } },
+              },
             },
           },
         },
@@ -130,27 +133,41 @@ export async function DELETE(
       }
     }
 
-    // Находим дату получения последней позиции
+    // Находим дату получения последней позиции (последний переход в RECEIVED)
     const receivedTimestamps = order.items
-      .map((it) => it.statusLogs[0]?.changedAt)
+      .flatMap((it) => it.statusLogs)
+      .filter((log) => log.newStatus === "RECEIVED")
+      .map((log) => log.changedAt)
       .filter(Boolean) as Date[];
     const receivedAt =
       receivedTimestamps.length > 0
         ? new Date(Math.max(...receivedTimestamps.map((d) => d.getTime())))
         : new Date();
 
-    const items = order.items.map((it) => ({
-      product: it.product.title,
-      unit: it.units.title,
-      quantity: it.quantity,
-      comment: it.comment,
-    }));
-
     // Полное удаление без записи в архив (только ADMIN, только с force)
     if (permanent) {
       await db.order.delete({ where: { id } });
       return NextResponse.json({ success: true, permanent: true });
     }
+
+    // Снимок каждой позиции: скан ТМЦ + полная история статусов с датами и именем исполнителя
+    const items = order.items.map((it) => ({
+      productId: it.product.id,
+      productTitle: it.product.title,
+      unitTitle: it.units.title,
+      quantity: it.quantity,
+      comment: it.comment,
+      finalStatus: it.status,
+      statusLogs: {
+        create: it.statusLogs.map((log) => ({
+          oldStatus: log.oldStatus,
+          newStatus: log.newStatus,
+          changedAt: log.changedAt,
+          changedById: log.changedBy?.id ?? null,
+          changedByName: log.changedBy?.name ?? null,
+        })),
+      },
+    }));
 
     await db.$transaction([
       db.archivedOrder.create({
@@ -159,7 +176,7 @@ export async function DELETE(
           requesterName: order.requester.name,
           orderDate: order.created,
           receivedAt,
-          items,
+          items: { create: items },
           createdById: order.createdById,
         },
       }),

@@ -138,7 +138,7 @@ model Message {
   sender     User      @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
   receiverId String
   receiver   User      @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
-  text       String
+  text       String   @db.Text // @db.Text — сообщения могут быть длинными (в реальной БД уже TEXT)
   createdAt  DateTime  @default(now())
   readAt     DateTime?
 
@@ -148,19 +148,54 @@ model Message {
 }
 
 model ArchivedOrder {
-  id             String   @id @default(cuid())
+  id             String               @id @default(cuid())
   originalId     String
-  requesterName  String   @map("requester_name")
-  orderDate      DateTime @map("order_date") @db.Date
-  receivedAt     DateTime @map("received_at")               // Дата получения последней позиции (макс. из статус-логов RECEIVED)
-  archivedAt     DateTime @default(now()) @map("archived_at")
-  items          Json     // Массив объектов: [{ productTitle, unitTitle, quantity, comment, status }] на момент архивации
-  createdById    String?  // Кто создал заявку (для REQUESTER-фильтра) — хранится как String, без FK
+  requesterName  String               @map("requester_name")
+  orderDate      DateTime             @map("order_date") @db.Date
+  receivedAt     DateTime             @map("received_at")               // Дата получения последней позиции (макс. из статус-логов RECEIVED)
+  archivedAt     DateTime             @default(now()) @map("archived_at")
+  items          ArchivedOrderItem[]  // Позиции заявки со снимком ТМЦ и полной историей статусов
+  createdById    String?              // Кто создал заявку (для REQUESTER-фильтра) — хранится как String, без FK
 
   @@index([requesterName])
   @@index([archivedAt])
   @@index([createdById])
   @@map("archived_orders") // snake_case для MariaDB (Prisma по умолчанию использует camelCase)
+}
+
+// Позиция архивной заявки. Хранит снимок ТМЦ на момент архивации (productTitle/unitTitle)
+// + ссылку productId на справочник Product (без FK, как createdById) для быстрого поиска по ТМЦ.
+model ArchivedOrderItem {
+  id              String                      @id @default(cuid())
+  archivedOrder   ArchivedOrder               @relation(fields: [archivedOrderId], references: [id], onDelete: Cascade)
+  archivedOrderId String
+  productId       String?                     // Ссылка на Product (без FK — товар могут удалить из справочника)
+  productTitle    String                      // Снимок наименования ТМЦ на момент архивации
+  unitTitle       String                      // Снимок единицы измерения
+  quantity        Float
+  comment         String?
+  finalStatus     OrderItemStatus             // Финальный статус позиции на момент архивации
+  statusLogs      ArchivedOrderItemStatusLog[] // Полная история смены статусов с датами
+
+  @@index([archivedOrderId])
+  @@index([productId])
+  @@map("archived_order_items")
+}
+
+// История смены статусов позиции архивной заявки.
+// changedByName — снимок имени пользователя (без FK: юзера могут удалить).
+model ArchivedOrderItemStatusLog {
+  id             String            @id @default(cuid())
+  archivedItem   ArchivedOrderItem @relation(fields: [archivedItemId], references: [id], onDelete: Cascade)
+  archivedItemId String
+  oldStatus      OrderItemStatus?
+  newStatus      OrderItemStatus
+  changedById    String?
+  changedByName  String?
+  changedAt      DateTime          @default(now())
+
+  @@index([archivedItemId])
+  @@map("archived_order_item_status_logs")
 }
 
 // Токен для публичного подтверждения получения конкретного пункта заявки.

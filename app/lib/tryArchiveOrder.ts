@@ -22,12 +22,16 @@ export async function tryArchiveOrder(orderId: string): Promise<boolean> {
           status: true,
           quantity: true,
           comment: true,
-          product: { select: { title: true } },
+          product: { select: { id: true, title: true } },
           units: { select: { title: true } },
           statusLogs: {
-            orderBy: { changedAt: "desc" },
-            take: 1,
-            select: { changedAt: true, newStatus: true },
+            orderBy: { changedAt: "asc" },
+            select: {
+              oldStatus: true,
+              newStatus: true,
+              changedAt: true,
+              changedBy: { select: { id: true, name: true } },
+            },
           },
         },
       },
@@ -49,11 +53,24 @@ export async function tryArchiveOrder(orderId: string): Promise<boolean> {
       ? new Date(Math.max(...lastTimestamps.map((d) => d.getTime())))
       : new Date();
 
+  // Снимок каждой позиции: скан ТМЦ + полная история статусов с датами и именем исполнителя.
+  // changedByName/createdById храним как снимок без FK — юзера могут удалить.
   const items = order.items.map((it) => ({
-    product: it.product.title,
-    unit: it.units.title,
+    productId: it.product.id,
+    productTitle: it.product.title,
+    unitTitle: it.units.title,
     quantity: it.quantity,
     comment: it.comment,
+    finalStatus: it.status,
+    statusLogs: {
+      create: it.statusLogs.map((log) => ({
+        oldStatus: log.oldStatus,
+        newStatus: log.newStatus,
+        changedAt: log.changedAt,
+        changedById: log.changedBy?.id ?? null,
+        changedByName: log.changedBy?.name ?? null,
+      })),
+    },
   }));
 
   await db.$transaction([
@@ -63,7 +80,7 @@ export async function tryArchiveOrder(orderId: string): Promise<boolean> {
         requesterName: order.requester.name,
         orderDate: order.created,
         receivedAt,
-        items,
+        items: { create: items },
         createdById: order.createdById,
       },
     }),

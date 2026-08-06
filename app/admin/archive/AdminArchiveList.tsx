@@ -1,17 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { Fragment, useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/Toast";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
-
-interface ArchiveItem {
-  product: string;
-  unit: string;
-  quantity: number;
-  comment: string | null;
-}
+import type { ArchivedItem } from "@/components/archive/ArchiveItemDetails";
+import { ArchiveItemHistory, ArchiveStatusBadge } from "@/components/archive/ArchiveItemDetails";
 
 interface ArchiveEntry {
   id: string;
@@ -20,7 +15,7 @@ interface ArchiveEntry {
   orderDate: string;
   receivedAt: string;
   archivedAt: string;
-  items: ArchiveItem[];
+  items: ArchivedItem[];
 }
 
 function formatMonth(key: string): string {
@@ -42,6 +37,7 @@ export function AdminArchiveList() {
   const queryClient = useQueryClient();
   const { confirm } = useConfirmDialog();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
   const [requesterFilter, setRequesterFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
@@ -196,20 +192,40 @@ export function AdminArchiveList() {
                             <table className="w-full text-sm">
                               <thead className="bg-surface">
                                 <tr>
+                                  <th className="w-8 px-2 py-0.5 sm:px-2" />
                                   <th className="px-2 py-0.5 text-left font-medium text-text-secondary sm:px-4">ТМЦ</th>
                                   <th className="px-2 py-0.5 text-left font-medium text-text-secondary sm:px-4">Ед.</th>
                                   <th className="px-2 py-0.5 text-right font-medium text-text-secondary sm:px-4">Кол-во</th>
                                   <th className="px-2 py-0.5 text-left font-medium text-text-secondary sm:px-4">Комментарий</th>
+                                  <th className="px-2 py-0.5 text-left font-medium text-text-secondary sm:px-4">Статус</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-border">
-                                {entry.items.map((item, idx) => (
-                                  <tr key={idx}>
-                                    <td className="px-2 py-0.5 text-foreground sm:px-4">{item.product}</td>
-                                    <td className="px-2 py-0.5 text-text-secondary sm:px-4">{item.unit}</td>
-                                    <td className="px-2 py-0.5 text-right text-foreground sm:px-4">{item.quantity}</td>
-                                    <td className="px-2 py-0.5 text-text-secondary sm:px-4">{item.comment || "—"}</td>
-                                  </tr>
+                                {entry.items.map((item) => (
+                                  <Fragment key={item.id}>
+                                    <tr
+                                      className="cursor-pointer transition-colors hover:bg-surface"
+                                      onClick={() => setExpandedItem(expandedItem === item.id ? null : item.id)}
+                                    >
+                                      <td className="px-2 py-0.5 sm:px-2">
+                                        <span className={`inline-block text-xs text-text-secondary transition-transform ${expandedItem === item.id ? "rotate-90" : ""}`}>▶</span>
+                                      </td>
+                                      <td className="px-2 py-0.5 text-foreground sm:px-4">{item.productTitle}</td>
+                                      <td className="px-2 py-0.5 text-text-secondary sm:px-4">{item.unitTitle}</td>
+                                      <td className="px-2 py-0.5 text-right text-foreground sm:px-4">{item.quantity}</td>
+                                      <td className="px-2 py-0.5 text-text-secondary sm:px-4">{item.comment || "—"}</td>
+                                      <td className="px-2 py-0.5 sm:px-4">
+                                        <ArchiveStatusBadge status={item.finalStatus} />
+                                      </td>
+                                    </tr>
+                                    {expandedItem === item.id && (
+                                      <tr>
+                                        <td colSpan={6} className="p-0">
+                                          <ArchiveItemHistory item={item} />
+                                        </td>
+                                      </tr>
+                                    )}
+                                  </Fragment>
                                 ))}
                               </tbody>
                             </table>

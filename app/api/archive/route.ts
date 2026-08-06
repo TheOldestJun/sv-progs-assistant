@@ -64,6 +64,13 @@ export async function GET(request: Request) {
         orderBy: { archivedAt: "desc" },
         take: PAGE_SIZE,
         skip: page * PAGE_SIZE,
+        include: {
+          items: {
+            include: {
+              statusLogs: { orderBy: { changedAt: "asc" } },
+            },
+          },
+        },
       }),
       db.archivedOrder.count({ where: conditions }),
     ]);
