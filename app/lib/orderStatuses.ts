@@ -80,10 +80,12 @@ export const ARCHIVE_ROLES: Role[] = [
 ];
 
 /** Роли, которым разрешено создавать справочные данные (Product/Unit/Requester).
- *  REQUESTER включён, т.к. заявитель добавляет новые ТМЦ через Enter-create в автокомплите. */
+ *  REQUESTER включён, т.к. заявитель добавляет новые ТМЦ через Enter-create в автокомплите.
+ *  WAREHOUSE включён, т.к. склад создаёт ТМЦ при приёмке (ранее работало). */
 export const REFERENCE_CREATE_ROLES: Role[] = [
   "ADMIN",
   "HEAD_OF_SUPPLY",
   "SUPPLY_DEPT",
+  "WAREHOUSE",
   "REQUESTER",
 ];
