@@ -33,6 +33,8 @@ import { OrderItemRow } from "@/components/dashboard/OrderItemRow";
 import { ConfirmLinkDialog } from "@/components/dashboard/ConfirmLinkDialog";
 import { AskQuestionDialog } from "@/components/dashboard/AskQuestionDialog";
 import { StatusMenu, getStatusChoices } from "@/components/dashboard/StatusMenu";
+import { downloadRequestExcel } from "@/components/orders/requestExcel";
+import type { Order } from "@/hooks/useOrders";
 
 const PAGE_SIZE = 10;
 const FINAL_STATUSES = new Set(["RECEIVED", "SENT_TO_REQUESTER", "ORDER_CONFIRMED"]);
@@ -72,6 +74,29 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
     productTitle: string; quantity: number; unitTitle: string;
     requesterUserId: string; orderDate: string;
   } | null>(null);
+
+  const [downloadingExcelId, setDownloadingExcelId] = useState<string | null>(null);
+
+  // Скачивание заявки в Excel по шаблону REQUEST.xlsx (для «Мои заявки»)
+  async function handleOrderExcel(order: Order) {
+    setDownloadingExcelId(order.id);
+    try {
+      await downloadRequestExcel({
+        date: order.created.slice(0, 10),
+        items: order.items.map((it) => ({
+          title: it.product.title,
+          unitTitle: it.units.title,
+          quantity: it.quantity,
+        })),
+        requesterName: order.requester.name,
+      });
+      showToast("Заявка сохранена в Excel", "success");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Ошибка при сохранении файла", "error");
+    } finally {
+      setDownloadingExcelId(null);
+    }
+  }
 
   function openMenu(itemId: string, buttonEl: HTMLButtonElement) {
     if (openSelect === itemId) { setOpenSelect(null); setMenuPos(null); return; }
@@ -248,6 +273,9 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
             showAccept={showDirectorateOptions && order.items.some((it) => it.status === "DIRECTORATE_APPROVED")}
             acceptPending={batchAccept.isPending}
             onAccept={() => setPendingBatchAccept(order.id)}
+            showExcel={requesterMode}
+            excelPending={downloadingExcelId === order.id}
+            onExcel={() => handleOrderExcel(order)}
           />
 
           <div className="max-sm:border-t max-sm:border-border">

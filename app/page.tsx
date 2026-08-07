@@ -23,8 +23,8 @@ export default function Home() {
             SV Progs Assistant
           </h1>
           <p className="mt-4 text-lg leading-relaxed text-text-secondary">
-            Добро пожаловать! Используйте это пространство для работы с вашими
-            проектами и задачами.
+            Добро пожаловать в систему управления снабжением{" "}
+            <span className="whitespace-nowrap">ДП «Ферротранс»</span>.
           </p>
         </div>
         <div className="flex gap-4">

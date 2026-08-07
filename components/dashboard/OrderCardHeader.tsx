@@ -21,6 +21,9 @@ interface OrderCardHeaderProps {
   showAccept?: boolean;
   acceptPending?: boolean;
   onAccept?: () => void;
+  showExcel?: boolean;
+  excelPending?: boolean;
+  onExcel?: () => void;
 }
 
 export function OrderCardHeader({
@@ -37,6 +40,9 @@ export function OrderCardHeader({
   showAccept,
   acceptPending,
   onAccept,
+  showExcel,
+  excelPending,
+  onExcel,
 }: OrderCardHeaderProps) {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 bg-surface-secondary px-4 py-3 sm:gap-4 sm:py-1">
@@ -76,6 +82,20 @@ export function OrderCardHeader({
               <path d="M6 2.75A.75.75 0 0 1 6.75 2h6.5a.75.75 0 0 1 0 1.5h-2.5v1.75c0 .69-.56 1.25-1.25 1.25h-1.5a.75.75 0 0 1 0-1.5h.5V3.5h-2A.75.75 0 0 1 6 2.75ZM6 7a.75.75 0 0 1 .75-.75h5.5a.75.75 0 0 1 0 1.5h-5.5A.75.75 0 0 1 6 7Zm0 3a.75.75 0 0 1 .75-.75h5.5a.75.75 0 0 1 0 1.5h-5.5A.75.75 0 0 1 6 10Zm6 2.25a.75.75 0 0 1 0 1.5h-3.5a.75.75 0 0 1 0-1.5h3.5Z" />
             </svg>
             Принять в работу
+          </button>
+        )}
+        {showExcel && onExcel && (
+          <button
+            onClick={onExcel}
+            disabled={excelPending}
+            className="inline-flex h-7 items-center gap-1 rounded-md border border-border px-2 text-xs font-medium text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50 max-sm:min-h-11"
+            title="Скачать заявку в Excel"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-3.5">
+              <path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z" />
+              <path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+            </svg>
+            Скачать Excel
           </button>
         )}
         {!readOnly && (

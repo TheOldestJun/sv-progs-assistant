@@ -17,6 +17,7 @@ import { OrderStatusTable } from "./OrderStatusTable";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { DashboardTabs } from "./DashboardTabs";
 import { PassForm } from "@/components/passes/PassForm";
+import { RequestExcelButton } from "@/components/orders/RequestExcelButton";
 
 interface OrderItem {
   id: string;
@@ -157,6 +158,8 @@ export function RequesterDashboard() {
 
   const lastItem = items[items.length - 1];
   const canAdd = isItemComplete(lastItem);
+  // Заполненные позиции — используются и при отправке, и для кнопки «Сохранить в Excel»
+  const validItems = items.filter(isItemComplete);
 
   return (
     <section className="rounded-xl border border-border bg-surface p-4 sm:p-6">
@@ -263,7 +266,16 @@ export function RequesterDashboard() {
             )}
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-3">
+            <RequestExcelButton
+              date={date}
+              items={validItems.map((it) => ({
+                title: it.product!.title,
+                unitTitle: it.unit!.title,
+                quantity: parseFloat(it.quantity),
+              }))}
+              disabled={createOrder.isPending}
+            />
             <button
               type="submit"
               disabled={createOrder.isPending}
