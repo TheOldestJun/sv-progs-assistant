@@ -14,7 +14,6 @@
 import type { OrderItemStatus } from "@prisma/client";
 import type { StatusLogEntry } from "@/hooks/useOrders";
 import { STATUS_LABELS } from "@/hooks/useOrders";
-import { Tooltip } from "@/components/ui/Tooltip";
 import { StatusIcon } from "@/components/dashboard/StatusIcon";
 import { ItemStatusHistory } from "@/components/dashboard/ItemStatusHistory";
 
@@ -96,9 +95,7 @@ export function OrderItemRow({
               />
             </svg>
             <span className="min-w-0 flex-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-              <Tooltip text={item.product.title}>
-                <span className="break-words">{item.product.title}</span>
-              </Tooltip>
+              <span className="break-words">{item.product.title}</span>
               {!readOnly && (
                 <span
                   onClick={(e) => {
