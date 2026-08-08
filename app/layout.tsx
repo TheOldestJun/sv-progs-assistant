@@ -17,6 +17,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import Script from "next/script";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { UpdateBanner } from "@/components/layout/UpdateBanner";
 
 // Подключение шрифтов Geist через CSS-переменные (Tailwind v4 @theme)
 const geistSans = Geist({
@@ -76,6 +77,8 @@ export default function RootLayout({
                 {/* flex-1 flex flex-col чтобы main растягивался на всю высоту */}
                 <main className="flex-1 flex flex-col">{children}</main>
                 <Footer />
+                {/* Баннер о выходе новой версии — принудительное обновление страницы */}
+                <UpdateBanner />
                 <Analytics />
                 <SpeedInsights />
               </ConfirmProvider>
