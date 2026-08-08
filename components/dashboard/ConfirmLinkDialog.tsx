@@ -31,7 +31,7 @@ export function ConfirmLinkDialog({ token, onClose }: ConfirmLinkDialogProps) {
           role="dialog"
           aria-modal="true"
           aria-labelledby="confirm-link-title"
-          className="w-full max-w-lg rounded-xl border border-border bg-surface p-6 shadow-lg"
+          className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-xl border border-border bg-surface p-6 shadow-lg"
         >
           <h3 id="confirm-link-title" className="text-base font-semibold text-foreground">
             Ссылка для подтверждения

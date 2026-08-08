@@ -199,7 +199,7 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
       {/* Modal body */}
       <div
         ref={modalRef}
-        className="relative z-10 flex h-[80vh] max-h-[calc(100vh-2rem)] w-full max-w-4xl animate-fade-in flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-800 dark:text-gray-100"
+        className="relative z-10 flex h-[80dvh] max-h-[calc(100dvh-2rem)] w-full max-w-4xl animate-fade-in flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-800 dark:text-gray-100"
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-5 py-4">

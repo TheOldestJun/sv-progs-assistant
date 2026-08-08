@@ -72,9 +72,9 @@ export function UpdateBanner() {
     <div
       role="status"
       aria-live="polite"
-      className="fixed inset-x-0 bottom-0 z-50 px-4 pb-4 sm:px-6"
+      className="fixed inset-x-0 bottom-0 z-50 px-4 pb-[max(env(safe-area-inset-bottom),1rem)] sm:px-6"
     >
-      <div className="animate-slide-down mx-auto flex max-w-3xl flex-col items-start gap-3 rounded-lg border border-accent/30 bg-surface shadow-xl sm:flex-row sm:items-center sm:gap-4 sm:px-6">
+      <div className="animate-slide-down mx-auto flex max-w-3xl flex-col items-stretch gap-3 rounded-lg border border-accent/30 bg-surface p-4 shadow-xl sm:flex-row sm:items-center sm:gap-4 sm:px-6">
         <div className="flex items-start gap-3 sm:items-center">
           {/* Иконка обновления */}
           <svg
@@ -99,7 +99,7 @@ export function UpdateBanner() {
         </div>
         <button
           onClick={() => window.location.reload()}
-          className="ml-auto rounded-md bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
+          className="w-full rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover sm:w-auto sm:py-2"
         >
           Обновить сейчас
         </button>

@@ -69,7 +69,7 @@ export function AskQuestionDialog({
       aria-modal="true"
     >
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md animate-fade-in overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-800 dark:text-gray-100">
+      <div className="relative z-10 w-full max-w-md animate-fade-in max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl bg-white shadow-2xl dark:bg-gray-800 dark:text-gray-100">
         <div className="p-6">
           <h2 className="text-base font-semibold text-foreground">
             Задать вопрос по позиции

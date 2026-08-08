@@ -62,7 +62,7 @@ export function StatusChangeDialog({
 
       <div
         ref={dialogRef}
-        className="relative z-10 w-full max-w-md animate-fade-in overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-800 dark:text-gray-100"
+        className="relative z-10 w-full max-w-md animate-fade-in max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl bg-white shadow-2xl dark:bg-gray-800 dark:text-gray-100"
       >
         <div className="p-6">
           <div className="flex items-start gap-4">
