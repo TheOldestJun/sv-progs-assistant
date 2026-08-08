@@ -7,6 +7,7 @@
 
 import { useEffect, useRef } from "react";
 import { useToast } from "@/components/ui/Toast";
+import { pluralRu } from "@/app/lib/format";
 
 export function PendingConfirmToast() {
   const { showToast } = useToast();
@@ -20,8 +21,9 @@ export function PendingConfirmToast() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && data.pending > 0) {
+          const word = pluralRu(data.pending, ["заявка", "заявки", "заявок"]);
           showToast(
-            `У вас ${data.pending} заяв${data.pending === 1 ? "ка" : "ки"} ожидают подтверждения получения. Откройте заявки для подтверждения.`,
+            `У вас ${data.pending} ${word} ожидают подтверждения получения. Откройте заявки для подтверждения.`,
             "info",
             true,
           );

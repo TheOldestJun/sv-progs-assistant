@@ -20,6 +20,13 @@ const labels: Record<string, string> = {
   system: "\u0421\u0438\u0441\u0442\u0435\u043C\u043D\u0430\u044F",
 };
 
+// Полные подписи для скринридеров (aria-label)
+const ariaLabels: Record<string, string> = {
+  light: "\u0421\u0432\u0435\u0442\u043B\u0430\u044F \u0442\u0435\u043C\u0430",
+  dark: "\u0422\u0451\u043C\u043D\u0430\u044F \u0442\u0435\u043C\u0430",
+  system: "\u0421\u0438\u0441\u0442\u0435\u043C\u043D\u0430\u044F \u0442\u0435\u043C\u0430",
+};
+
 const order: Array<"light" | "dark" | "system"> = ["light", "dark", "system"];
 
 export function ThemeSwitcher() {
@@ -32,6 +39,8 @@ export function ThemeSwitcher() {
           key={t}
           onClick={() => setTheme(t)}
           title={labels[t]}
+          aria-label={ariaLabels[t]}
+          aria-pressed={theme === t}
           className={
             "flex size-9 max-sm:min-h-11 max-sm:min-w-11 items-center justify-center rounded-md text-sm transition-colors " +
             (theme === t

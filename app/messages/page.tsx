@@ -2,16 +2,21 @@
  * /messages — страница сообщений (вариант B)
  * Левая панель: список диалогов + кнопка "Новое сообщение"
  * Правая панель: переписка или форма нового сообщения
+ * Данные: общие хуки из hooks/useChat (visibility-aware polling 10s)
  */
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-
-interface UserBrief {
-  id: string;
-  name: string;
-}
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/components/ui/Toast";
+import {
+  useConversations,
+  useChatUsers,
+  useCurrentUser,
+  useChatMessages,
+  useSendMessage,
+  type UserBrief,
+} from "@/hooks/useChat";
 
 /**
  * Парсит текст сообщения и оборачивает ссылки /confirm/... в кликабельные <a>.
@@ -36,40 +41,21 @@ function renderMessageText(text: string): React.ReactNode {
   });
 }
 
-interface LastMessage {
-  id: string;
-  text: string;
-  createdAt: string;
-  senderId: string;
-}
-
-interface Conversation {
-  user: UserBrief;
-  lastMessage: LastMessage;
-  unreadCount: number;
-}
-
-interface Message {
-  id: string;
-  text: string;
-  createdAt: string;
-  senderId: string;
-  sender: UserBrief;
-  receiver: UserBrief;
-  readAt: string | null;
-}
-
 // ─── Recipient Picker (для нового сообщения) ───
 function RecipientPicker({
   users,
   selectedId,
   onSelect,
   onClose,
+  error = false,
+  onRetry,
 }: {
   users: UserBrief[];
   selectedId: string;
   onSelect: (id: string) => void;
   onClose: () => void;
+  error?: boolean;
+  onRetry?: () => void;
 }) {
   const [query, setQuery] = useState("");
   const filtered = users.filter(
@@ -92,7 +78,17 @@ function RecipientPicker({
           />
         </div>
         <div className="max-h-60 overflow-y-auto">
-          {filtered.length === 0 ? (
+          {error ? (
+            <div className="p-4 text-center">
+              <p className="text-sm text-text-secondary">Не удалось загрузить</p>
+              <button
+                onClick={onRetry}
+                className="mt-2 rounded-md border border-border px-3 py-1 text-xs text-foreground transition-colors hover:bg-surface"
+              >
+                Повторить
+              </button>
+            </div>
+          ) : filtered.length === 0 ? (
             <p className="p-4 text-center text-sm text-text-secondary">Ничего не найдено</p>
           ) : (
             filtered.map((u) => (
@@ -118,123 +114,52 @@ function RecipientPicker({
 
 // ─── Main Page ───
 export default function MessagesPage() {
-  const router = useRouter();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [loadingConv, setLoadingConv] = useState(true);
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loadingMsgs, setLoadingMsgs] = useState(false);
-  const [myId, setMyId] = useState<string | null>(null);
   const [text, setText] = useState("");
-  const [sending, setSending] = useState(false);
   const [showNewMessage, setShowNewMessage] = useState(false);
-  const [users, setUsers] = useState<UserBrief[]>([]);
   const [newMsgUserId, setNewMsgUserId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch conversations
-  const fetchConversations = useCallback(async () => {
-    try {
-      const res = await fetch("/api/messages");
-      if (res.ok) {
-        const data = await res.json();
-        setConversations(data);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLoadingConv(false);
-    }
-  }, []);
+  // Conversations list (visibility-aware polling 10s)
+  const {
+    data: conversations = [],
+    isLoading: loadingConv,
+    isError: convError,
+  } = useConversations();
 
-  // Fetch users for recipient picker
-  const fetchUsers = useCallback(async () => {
-    try {
-      const res = await fetch("/api/users");
-      if (res.ok) {
-        const data = await res.json();
-        setUsers(data);
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
+  // Users list для выбора получателя (кэш 5 мин)
+  const { data: users = [], isError: usersError } = useChatUsers();
 
-  /*
-   * Загружаем список диалогов и всех пользователей при монтировании.
-   * conversations — для отображения левой панели (последнее сообщение + unread)
-   * users — для модалки выбора получателя нового сообщения
-   */
-  useEffect(() => {
-    fetchConversations();
-    fetchUsers();
-  }, [fetchConversations, fetchUsers]);
+  // Текущий пользователь — надёжный источник myId (вместо выведения из сообщений)
+  const { data: currentUser } = useCurrentUser();
+  const myId = currentUser?.id ?? null;
 
-  // Open conversation
-  const openConversation = useCallback(async (userId: string) => {
+  // Messages for selected conversation (visibility-aware polling 10s + auto-read)
+  const {
+    data: messages = [],
+    isLoading: loadingMsgs,
+    isError: messagesError,
+  } = useChatMessages(selectedUserId);
+
+  // Send message mutation (общий хук)
+  const sendMutation = useSendMessage(selectedUserId);
+
+  // Open conversation — выбор диалога просто меняет userId, данные подтянет хук
+  const openConversation = useCallback((userId: string) => {
     setSelectedUserId(userId);
     setNewMsgUserId(null);
-    setLoadingMsgs(true);
-    try {
-      const res = await fetch(`/api/messages/${userId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setMessages(data);
-        if (data.length > 0) {
-          setMyId(
-            data[0].senderId === userId ? data[0].receiver.id : data[0].sender.id,
-          );
-        }
-        await fetch("/api/messages/read", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ senderId: userId }),
-        });
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLoadingMsgs(false);
-    }
   }, []);
 
-  /*
-   * Polling сообщений каждые 10 секунд, пока открыт диалог.
-   * Одновременно маркируем все сообщения от собеседника как прочитанные (PATCH /api/messages/read).
-   * Интервал 10 секунд выбран как компромисс между «свежестью» и нагрузкой на сервер.
-   */
-  useEffect(() => {
-    if (!selectedUserId) return;
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/messages/${selectedUserId}`);
-        if (res.ok) {
-          const data = await res.json();
-          setMessages(data);
-          /*
-           * Определяем текущего пользователя (myId) из первого сообщения,
-           * чтобы правильно раскрашивать «свои» и «чужие» сообщения.
-           * myId не меняется в рамках сессии, но без него нельзя отличить
-           * отправителя от получателя в чате между двумя пользователями.
-           */
-          if (data.length > 0) {
-            setMyId(
-              data[0].senderId === selectedUserId ? data[0].receiver.id : data[0].sender.id,
-            );
-          }
-        }
-        await fetch("/api/messages/read", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ senderId: selectedUserId }),
-        });
-      } catch {
-        // ignore
-      }
-    }, 10_000);
-    return () => clearInterval(interval);
-  }, [selectedUserId]);
+  // Повторная загрузка по кнопке «Повторить» (invalidation → refetch)
+  const retryQuery = useCallback(
+    (queryKey: readonly unknown[]) => {
+      void queryClient.invalidateQueries({ queryKey });
+    },
+    [queryClient],
+  );
 
   /*
    * Авто-скролл к последнему сообщению при загрузке или отправке нового.
@@ -255,27 +180,17 @@ export default function MessagesPage() {
   }, [selectedUserId]);
 
   // Send message (reply)
-  async function handleSend(e: React.FormEvent) {
+  function handleSend(e: React.FormEvent) {
     e.preventDefault();
-    if (!text.trim() || sending || !selectedUserId) return;
-    setSending(true);
-    try {
-      const res = await fetch("/api/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ receiverId: selectedUserId, text: text.trim() }),
-      });
-      if (res.ok) {
-        const msg = await res.json();
-        setMessages((prev) => [...prev, msg]);
-        setText("");
-        fetchConversations();
-      }
-    } catch {
-      // ignore
-    } finally {
-      setSending(false);
-    }
+    if (!text.trim() || sendMutation.isPending || !selectedUserId) return;
+    sendMutation.mutate(text.trim(), {
+      onSuccess: () => setText(""),
+      onError: (err) =>
+        showToast(
+          err instanceof Error ? err.message : "Не удалось отправить сообщение",
+          "error",
+        ),
+    });
   }
 
   // Start new message flow
@@ -290,9 +205,9 @@ export default function MessagesPage() {
   const selectedUser = selectedUserId
     ? (conversations.find((c) => c.user.id === selectedUserId)?.user
       ?? (messages.length > 0
-        ? (messages[0].senderId === selectedUserId
-          ? messages[0].sender
-          : messages[0].receiver)
+        ? (messages[0].senderId === myId
+          ? messages[0].receiver
+          : messages[0].sender)
         : null))
     : null;
 
@@ -316,6 +231,16 @@ export default function MessagesPage() {
           <div className="flex-1 overflow-y-auto">
             {loadingConv ? (
               <p className="p-4 text-center text-xs text-text-secondary">Загрузка…</p>
+            ) : convError ? (
+              <div className="p-4 text-center">
+                <p className="text-xs text-text-secondary">Не удалось загрузить</p>
+                <button
+                  onClick={() => retryQuery(["conversations"])}
+                  className="mt-2 rounded-md border border-border px-3 py-1 text-xs text-foreground transition-colors hover:bg-surface-secondary"
+                >
+                  Повторить
+                </button>
+              </div>
             ) : conversations.length === 0 ? (
               <p className="p-4 text-center text-xs text-text-secondary">Нет диалогов</p>
             ) : (
@@ -379,6 +304,16 @@ export default function MessagesPage() {
               <div className="flex-1 overflow-y-auto p-4">
                 {loadingMsgs ? (
                   <p className="py-12 text-center text-sm text-text-secondary">Загрузка…</p>
+                ) : messagesError ? (
+                  <div className="py-12 text-center">
+                    <p className="text-sm text-text-secondary">Не удалось загрузить</p>
+                    <button
+                      onClick={() => retryQuery(["messages", selectedUserId])}
+                      className="mt-2 rounded-md border border-border px-3 py-1 text-xs text-foreground transition-colors hover:bg-surface-secondary"
+                    >
+                      Повторить
+                    </button>
+                  </div>
                 ) : messages.length === 0 ? (
                   <p className="py-12 text-center text-sm text-text-secondary">
                     Напишите первое сообщение
@@ -421,15 +356,15 @@ export default function MessagesPage() {
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   placeholder="Ответить…"
-                  disabled={sending}
+                  disabled={sendMutation.isPending}
                   className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary disabled:opacity-50"
                 />
                 <button
                   type="submit"
-                  disabled={!text.trim() || sending}
+                  disabled={!text.trim() || sendMutation.isPending}
                   className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
                 >
-                  {sending ? "…" : "Отправить"}
+                  {sendMutation.isPending ? "…" : "Отправить"}
                 </button>
               </form>
             </>
@@ -461,6 +396,8 @@ export default function MessagesPage() {
           selectedId={newMsgUserId ?? ""}
           onSelect={(id) => handleNewMessage(id)}
           onClose={() => setShowNewMessage(false)}
+          error={usersError}
+          onRetry={() => retryQuery(["users"])}
         />
       )}
     </div>

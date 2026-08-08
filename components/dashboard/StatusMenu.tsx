@@ -1,9 +1,12 @@
 /*
  * StatusMenu — выпадающее меню выбора статуса.
  * Позиционируется с учётом границ экрана (не вылезает за края).
+ * Клавиатурная навигация: ArrowDown/ArrowUp — перебор пунктов,
+ * Enter/Space — выбор, Escape — закрытие. Фокус — на первом пункте.
  */
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import type { OrderItemStatus } from "@prisma/client";
 import { STATUS_LABELS, STATUS_ORDER } from "@/hooks/useOrders";
 import { StatusIcon } from "@/components/dashboard/StatusIcon";
@@ -60,18 +63,77 @@ export function StatusMenu({
   const item = openItemId ? itemsMap.get(openItemId) : undefined;
   const choices = item ? getStatusChoices(item.status, warehouseMode, showDirectorateOptions, requesterMode) : [];
 
+  // Индекс текущего выделенного пункта (roving tabindex)
+  const [focusedIndex, setFocusedIndex] = useState(0);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // При открытии меню фокусируем первый пункт.
+  // Меню монтируется заново на каждое открытие (см. OrderStatusTable).
+  useEffect(() => {
+    setFocusedIndex(0);
+    menuRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openItemId]);
+
+  // Синхронизация фокуса с выделенным пунктом при навигации стрелками
+  useEffect(() => {
+    const items = menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]');
+    items?.[focusedIndex]?.focus();
+  }, [focusedIndex]);
+
   if (choices.length === 0) return null;
+
+  // Клавиатурное управление меню (ARIA menu pattern)
+  function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setFocusedIndex((i) => (i + 1) % choices.length);
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setFocusedIndex((i) => (i - 1 + choices.length) % choices.length);
+        break;
+      case "Home":
+        e.preventDefault();
+        setFocusedIndex(0);
+        break;
+      case "End":
+        e.preventDefault();
+        setFocusedIndex(choices.length - 1);
+        break;
+      case "Escape":
+        // Возврат фокуса на триггер требует ref из OrderItemRow — вне зоны правок
+        onClose();
+        break;
+      case "Enter":
+      case " ": {
+        e.preventDefault();
+        const s = choices[focusedIndex];
+        if (item && s) onSelect(item.id, item.orderId, item.status, s, item.product.title);
+        break;
+      }
+    }
+  }
 
   return (
     <>
       <div className="fixed inset-0 z-30" onClick={onClose} />
       <div
+        ref={menuRef}
+        role="menu"
+        aria-orientation="vertical"
+        onKeyDown={handleKeyDown}
         className="fixed z-40 w-56 rounded-lg border border-border bg-surface py-1 shadow-lg"
         style={{ top: position.top, left: position.left }}
       >
-        {choices.map((s) => (
+        {choices.map((s, i) => (
           <button
             key={s}
+            role="menuitem"
+            tabIndex={i === focusedIndex ? 0 : -1}
+            // При наведении курсора тоже обновляем выделение
+            onMouseEnter={() => setFocusedIndex(i)}
             onClick={() =>
               item && onSelect(item.id, item.orderId, item.status, s, item.product.title)
             }

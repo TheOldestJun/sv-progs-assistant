@@ -5,6 +5,7 @@
 import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";
 import { AdminUserList } from "./UserList";
+import { getPendingResetCount } from "./layout";
 
 export const dynamic = "force-dynamic";
 
@@ -31,9 +32,8 @@ export default async function AdminPage() {
     roles: roles.map((r) => r.role),
   }));
 
-  const pendingResetCount = await db.passwordResetRequest.count({
-    where: { status: "PENDING" },
-  });
+  // Кэшированный в layout запрос — без повторного обращения к БД
+  const pendingResetCount = await getPendingResetCount();
 
   return (
     <AdminUserList

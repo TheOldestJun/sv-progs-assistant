@@ -43,7 +43,6 @@ function ConfirmClient({ token }: { token: string }) {
       })
       .then((d: ConfirmData) => {
         setData(d);
-        if (d.used || !d.order) setConfirmed(true);
         setLoading(false);
       })
       .catch(() => {
@@ -92,6 +91,39 @@ function ConfirmClient({ token }: { token: string }) {
 
   const orderExists = !!data.order;
   const item = data.item;
+  // used=true — токен уже был использован ранее; item.status — позиция могла
+  // получить ORDER_CONFIRMED другим путём (например, со склада). В обоих
+  // случаях показываем нейтральное «Уже подтверждено», а не зелёный «успех».
+  const tokenUsed = data.used || item?.status === "ORDER_CONFIRMED";
+
+  // Токен валиден, но заявка/позиция исчезла — это ошибка, а не успех.
+  if (!orderExists) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-surface px-4">
+        <div className="w-full max-w-md rounded-xl border border-border bg-surface-secondary p-8 text-center">
+          <div className="mb-4 text-4xl">⚠️</div>
+          <h1 className="text-lg font-semibold text-foreground">Заявка не найдена</h1>
+          <p className="mt-2 text-sm text-text-secondary">
+            Заявка была удалена или ссылка устарела. Обратитесь к снабжению для уточнения.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (tokenUsed) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-surface px-4">
+        <div className="w-full max-w-md rounded-xl border border-border bg-surface-secondary p-8 text-center">
+          <div className="mb-4 text-4xl">ℹ️</div>
+          <h1 className="text-lg font-semibold text-foreground">Уже подтверждено</h1>
+          <p className="mt-2 text-sm text-text-secondary">
+            Это получение уже было подтверждено ранее. Ничего делать не нужно.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface px-4">
@@ -120,7 +152,8 @@ function ConfirmClient({ token }: { token: string }) {
           </div>
         )}
 
-        {/* Кнопка подтверждения */}
+        {/* Кнопка подтверждения. Сюда попадаем только если токен свежий,
+            заявка существует и позиция ещё не подтверждена (см. early-return выше). */}
         {!confirmed ? (
           <button
             onClick={handleConfirm}
@@ -131,9 +164,7 @@ function ConfirmClient({ token }: { token: string }) {
           </button>
         ) : (
           <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-center text-sm text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-300">
-            {item?.status === "ORDER_CONFIRMED"
-              ? "Получение подтверждено"
-              : "Уже подтверждено"}
+            Получение подтверждено
           </div>
         )}
       </div>

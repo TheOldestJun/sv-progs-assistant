@@ -4,7 +4,9 @@
  */
 "use client";
 
+import { useRef } from "react";
 import { useToast } from "@/components/ui/Toast";
+import { useFocusTrap } from "@/components/ui/useFocusTrap";
 
 interface ConfirmLinkDialogProps {
   token: string;
@@ -13,6 +15,10 @@ interface ConfirmLinkDialogProps {
 
 export function ConfirmLinkDialog({ token, onClose }: ConfirmLinkDialogProps) {
   const { showToast } = useToast();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  // Компонент монтируется только когда диалог открыт, поэтому open=true всегда.
+  // Focus-trap: фокус не уходит, Escape закрывает, фокус возвращается (UI-аудит L2).
+  useFocusTrap(true, dialogRef, onClose);
 
   const link = `${typeof window !== "undefined" ? window.location.origin : ""}/confirm/${token}`;
 
@@ -20,8 +26,14 @@ export function ConfirmLinkDialog({ token, onClose }: ConfirmLinkDialogProps) {
     <>
       <div className="fixed inset-0 z-30 bg-black/50" onClick={onClose} />
       <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
-        <div className="w-full max-w-lg rounded-xl border border-border bg-surface p-6 shadow-lg">
-          <h3 className="text-base font-semibold text-foreground">
+        <div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirm-link-title"
+          className="w-full max-w-lg rounded-xl border border-border bg-surface p-6 shadow-lg"
+        >
+          <h3 id="confirm-link-title" className="text-base font-semibold text-foreground">
             Ссылка для подтверждения
           </h3>
           <p className="mt-1 text-sm text-text-secondary">

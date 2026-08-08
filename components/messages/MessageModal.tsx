@@ -1,40 +1,21 @@
 /*
  * MessageModal — модальное окно с двухпанельным макетом диалогов
  * Закрывается по клику вне области модала или Escape
- * Использует TanStack Query (polling 10s)
+ * Данные: общие хуки из hooks/useChat (visibility-aware polling 10s)
  */
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-
-interface UserBrief {
-  id: string;
-  name: string;
-}
-
-interface LastMessage {
-  id: string;
-  text: string;
-  createdAt: string;
-  senderId: string;
-}
-
-interface Conversation {
-  user: UserBrief;
-  lastMessage: LastMessage;
-  unreadCount: number;
-}
-
-interface Message {
-  id: string;
-  text: string;
-  createdAt: string;
-  senderId: string;
-  sender: UserBrief;
-  receiver: UserBrief;
-  readAt: string | null;
-}
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/components/ui/Toast";
+import {
+  useConversations,
+  useChatUsers,
+  useCurrentUser,
+  useChatMessages,
+  useSendMessage,
+  type UserBrief,
+} from "@/hooks/useChat";
 
 // ——— Recipient Picker ———
 function RecipientPicker({
@@ -42,11 +23,15 @@ function RecipientPicker({
   selectedId,
   onSelect,
   onClose,
+  error = false,
+  onRetry,
 }: {
   users: UserBrief[];
   selectedId: string;
   onSelect: (id: string) => void;
   onClose: () => void;
+  error?: boolean;
+  onRetry?: () => void;
 }) {
   const [query, setQuery] = useState("");
   const filtered = users.filter((u) =>
@@ -74,7 +59,19 @@ function RecipientPicker({
           />
         </div>
         <div className="max-h-60 overflow-y-auto">
-          {filtered.length === 0 ? (
+          {error ? (
+            <div className="p-4 text-center">
+              <p className="text-sm text-text-secondary">
+                Не удалось загрузить
+              </p>
+              <button
+                onClick={onRetry}
+                className="mt-2 rounded-md border border-border px-3 py-1 text-xs text-foreground transition-colors hover:bg-surface"
+              >
+                Повторить
+              </button>
+            </div>
+          ) : filtered.length === 0 ? (
             <p className="p-4 text-center text-sm text-text-secondary">
               Ничего не найдено
             </p>
@@ -105,6 +102,7 @@ function RecipientPicker({
 // ——— Main Modal ———
 export function MessageModal({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [text, setText] = useState("");
   const [showNewMessage, setShowNewMessage] = useState(false);
@@ -112,88 +110,28 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
-  // Conversations list (polling 10s)
-  const { data: conversations = [], isLoading: loadingConv } = useQuery<Conversation[]>({
-    queryKey: ["conversations"],
-    queryFn: async () => {
-      const res = await fetch("/api/messages");
-      if (!res.ok) throw new Error("Failed to fetch conversations");
-      return res.json();
-    },
-    refetchInterval: 10_000,
-  });
+  // Conversations list (visibility-aware polling 10s)
+  const {
+    data: conversations = [],
+    isLoading: loadingConv,
+    isError: convError,
+  } = useConversations();
 
-  // Current user
-  const { data: currentUser } = useQuery<UserBrief | null>({
-    queryKey: ["currentUser"],
-    queryFn: async () => {
-      const res = await fetch("/api/auth/me");
-      if (!res.ok) return null;
-      return res.json();
-    },
-    staleTime: 5 * 60 * 1000,
-  });
+  // Current user (надёжный источник myId)
+  const { data: currentUser } = useCurrentUser();
 
-  // Users list (long-lived cache)
-  const { data: users = [] } = useQuery<UserBrief[]>({
-    queryKey: ["users"],
-    queryFn: async () => {
-      const res = await fetch("/api/users");
-      if (!res.ok) throw new Error("Failed to fetch users");
-      return res.json();
-    },
-    staleTime: 5 * 60 * 1000,
-  });
+  // Users list (long-lived cache, 5 мин)
+  const { data: users = [], isError: usersError } = useChatUsers();
 
-  // Messages for selected conversation (polling 10s)
+  // Messages for selected conversation (visibility-aware polling 10s + auto-read)
   const {
     data: messages = [],
     isLoading: loadingMsgs,
-  } = useQuery<Message[]>({
-    queryKey: ["messages", selectedUserId],
-    queryFn: async () => {
-      const res = await fetch(`/api/messages/${selectedUserId}`);
-      if (!res.ok) throw new Error("Failed to fetch messages");
-      return res.json();
-    },
-    enabled: !!selectedUserId,
-    refetchInterval: 10_000,
-  });
+    isError: messagesError,
+  } = useChatMessages(selectedUserId);
 
-  // Send message mutation
-  const sendMutation = useMutation({
-    mutationFn: async (messageText: string) => {
-      const res = await fetch("/api/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ receiverId: selectedUserId, text: messageText }),
-      });
-      if (!res.ok) throw new Error("Failed to send message");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["messages", selectedUserId] });
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
-    },
-  });
-
-  // Mark as read mutation
-  const readMutation = useMutation({
-    mutationFn: async (senderId: string) => {
-      await fetch("/api/messages/read", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ senderId }),
-      });
-    },
-  });
-
-  // Mark messages as read when conversation opens
-  useEffect(() => {
-    if (selectedUserId) {
-      readMutation.mutate(selectedUserId);
-    }
-  }, [selectedUserId]);
+  // Send message mutation (общий хук)
+  const sendMutation = useSendMessage(selectedUserId);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -216,12 +154,25 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
     return () => document.removeEventListener("keydown", handleEscape);
   }, [onClose]);
 
+  // Повторная загрузка по кнопке «Повторить» (invalidation → refetch)
+  const retryQuery = useCallback(
+    (queryKey: readonly unknown[]) => {
+      void queryClient.invalidateQueries({ queryKey });
+    },
+    [queryClient],
+  );
+
   // Send message handler
-  async function handleSend(e: React.FormEvent) {
+  function handleSend(e: React.FormEvent) {
     e.preventDefault();
     if (!text.trim() || sendMutation.isPending || !selectedUserId) return;
     sendMutation.mutate(text.trim(), {
       onSuccess: () => setText(""),
+      onError: (err) =>
+        showToast(
+          err instanceof Error ? err.message : "Не удалось отправить сообщение",
+          "error",
+        ),
     });
   }
 
@@ -287,6 +238,16 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
             <div className="flex-1 overflow-y-auto">
               {loadingConv ? (
                 <p className="p-4 text-center text-xs text-text-secondary">Загрузка…</p>
+              ) : convError ? (
+                <div className="p-4 text-center">
+                  <p className="text-xs text-text-secondary">Не удалось загрузить</p>
+                  <button
+                    onClick={() => retryQuery(["conversations"])}
+                    className="mt-2 rounded-md border border-border px-3 py-1 text-xs text-foreground transition-colors hover:bg-surface"
+                  >
+                    Повторить
+                  </button>
+                </div>
               ) : conversations.length === 0 ? (
                 <p className="p-4 text-center text-xs text-text-secondary">Нет диалогов</p>
               ) : (
@@ -348,6 +309,16 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
                 <div className="flex-1 overflow-y-auto p-4">
                   {loadingMsgs ? (
                     <p className="py-12 text-center text-sm text-text-secondary">Загрузка…</p>
+                  ) : messagesError ? (
+                    <div className="py-12 text-center">
+                      <p className="text-sm text-text-secondary">Не удалось загрузить</p>
+                      <button
+                        onClick={() => retryQuery(["messages", selectedUserId])}
+                        className="mt-2 rounded-md border border-border px-3 py-1 text-xs text-foreground transition-colors hover:bg-surface"
+                      >
+                        Повторить
+                      </button>
+                    </div>
                   ) : messages.length === 0 ? (
                     <p className="py-12 text-center text-sm text-text-secondary">
                       Напишите первое сообщение
@@ -422,6 +393,16 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
                   <div className="mt-3 space-y-1">
                     {loadingConv ? (
                       <p className="text-center text-xs text-text-secondary">Загрузка…</p>
+                    ) : convError ? (
+                      <div className="text-center">
+                        <p className="text-xs text-text-secondary">Не удалось загрузить</p>
+                        <button
+                          onClick={() => retryQuery(["conversations"])}
+                          className="mt-2 rounded-md border border-border px-3 py-1 text-xs text-foreground transition-colors hover:bg-surface"
+                        >
+                          Повторить
+                        </button>
+                      </div>
                     ) : conversations.length === 0 ? (
                       <p className="text-center text-xs text-text-secondary">Нет диалогов</p>
                     ) : (
@@ -483,6 +464,8 @@ export function MessageModal({ onClose }: { onClose: () => void }) {
             setShowNewMessage(false);
           }}
           onClose={() => setShowNewMessage(false)}
+          error={usersError}
+          onRetry={() => retryQuery(["users"])}
         />
       )}
     </div>

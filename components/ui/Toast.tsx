@@ -102,7 +102,11 @@ export function ToastProvider({
       {children}
 
       {toasts.length > 0 && (
-        <div className="fixed left-1/2 top-4 z-50 flex w-full max-w-md -translate-x-1/2 flex-col gap-2 px-4">
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed left-1/2 top-4 z-50 flex w-full max-w-md -translate-x-1/2 flex-col gap-2 px-4"
+        >
           {toasts.map((t) => (
             <div
               key={t.id}

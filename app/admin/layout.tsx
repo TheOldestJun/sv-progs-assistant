@@ -4,10 +4,18 @@
  */
 export const dynamic = "force-dynamic";
 
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { db } from "@/app/lib/db";
 import { getSession, logoutAction } from "../lib/auth";
 import { AdminNav } from "./AdminNav";
+
+// Единый источник правды для количества запросов сброса пароля.
+// cache() дедуплицирует вызов в пределах одного рендера запроса,
+// поэтому page.tsx переиспользует результат вместо повторного запроса к БД.
+export const getPendingResetCount = cache(() =>
+  db.passwordResetRequest.count({ where: { status: "PENDING" } })
+);
 
 export default async function AdminLayout({
   children,
@@ -18,9 +26,7 @@ export default async function AdminLayout({
   if (!session || !session.roles.includes("ADMIN")) {
     redirect("/login");
   }
-  const pendingCount = await db.passwordResetRequest.count({
-    where: { status: "PENDING" },
-  });
+  const pendingCount = await getPendingResetCount();
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-8 sm:px-6 lg:px-8">

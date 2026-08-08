@@ -18,6 +18,7 @@ import { DatePicker } from "@/components/ui/DatePicker";
 import { DashboardTabs } from "./DashboardTabs";
 import { PassForm } from "@/components/passes/PassForm";
 import { RequestExcelButton } from "@/components/orders/RequestExcelButton";
+import { getLocalDateISO } from "@/app/lib/format";
 
 interface OrderItem {
   id: string;
@@ -44,7 +45,8 @@ export function RequesterDashboard() {
   const createOrder = useCreateOrder();
 
   const [items, setItems] = useState<OrderItem[]>([createEmptyItem()]);
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  // Локальная дата, а не UTC: toISOString() в UTC+2/+3 до 02:59 даёт «вчера»
+  const [date, setDate] = useState(() => getLocalDateISO());
 
   function updateItem(id: string, patch: Partial<OrderItem>) {
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));

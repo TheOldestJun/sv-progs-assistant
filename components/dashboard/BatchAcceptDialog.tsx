@@ -5,9 +5,11 @@
  */
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { STATUS_LABELS } from "@/hooks/useOrders";
+import { getLocalDateISO } from "@/app/lib/format";
+import { useFocusTrap } from "@/components/ui/useFocusTrap";
 
 export function BatchAcceptDialog({
   open,
@@ -18,18 +20,12 @@ export function BatchAcceptDialog({
   onConfirm: (changedAt: string) => void;
   onCancel: () => void;
 }) {
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  // Локальная дата, а не UTC: toISOString() в UTC+2/+3 до 02:59 даёт «вчера»
+  const [date, setDate] = useState(() => getLocalDateISO());
   const [submitting, setSubmitting] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function handleEscape(e: KeyboardEvent) {
-      if (e.key === "Escape") onCancel();
-    }
-    document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, [open, onCancel]);
+  // Focus-trap: фокус не уходит из диалога, Escape закрывает, фокус возвращается
+  useFocusTrap(open, dialogRef, onCancel);
 
   function handleConfirm() {
     setSubmitting(true);

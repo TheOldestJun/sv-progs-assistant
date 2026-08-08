@@ -20,6 +20,7 @@ import { DashboardTabs } from "./DashboardTabs";
 import { PassForm } from "@/components/passes/PassForm";
 import { ConfirmLinksTab } from "./ConfirmLinksTab";
 import { DatePicker } from "@/components/ui/DatePicker";
+import { getLocalDateISO } from "@/app/lib/format";
 
 interface OrderItem {
   id: string;
@@ -52,7 +53,8 @@ export function WarehouseDashboard() {
 
   const [items, setItems] = useState<OrderItem[]>([createEmptyItem()]);
   const [requester, setRequester] = useState<AutocompleteItem | null>(null);
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  // Локальная дата, а не UTC: toISOString() в UTC+2/+3 до 02:59 даёт «вчера»
+  const [date, setDate] = useState(() => getLocalDateISO());
 
   function updateItem(id: string, patch: Partial<OrderItem>) {
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
@@ -234,7 +236,13 @@ export function WarehouseDashboard() {
             <div className="space-y-4">
             {items.map((item, idx) => (
               <div key={item.id} className="space-y-2">
-                <div className="items-end gap-3 sm:grid sm:grid-cols-[3fr_80px_100px_32px] max-sm:space-y-3">
+                <div
+                  className={
+                    items.length > 1
+                      ? "items-end gap-3 sm:grid sm:grid-cols-[3fr_80px_100px_32px] max-sm:space-y-3"
+                      : "items-end gap-3 sm:grid sm:grid-cols-[3fr_80px_100px] max-sm:space-y-3"
+                  }
+                >
                   <Autocomplete
                     placeholder="ТМЦ"
                     items={
@@ -273,16 +281,19 @@ export function WarehouseDashboard() {
                     className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary"
                   />
 
-                    <button
-                      type="button"
-                      onClick={() => removeItem(item.id)}
-                      disabled={items.length === 1}
-                      className="flex h-9 w-8 shrink-0 items-center justify-center rounded-md text-text-secondary transition-colors enabled:hover:bg-red-50 enabled:hover:text-red-500 disabled:opacity-0 dark:enabled:hover:bg-red-950 dark:enabled:hover:text-red-400 max-sm:h-11 max-sm:w-11"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4 max-sm:size-5">
-                        <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-                      </svg>
-                    </button>
+                    {/* Кнопка удаления рендерится только когда позиций > 1 —
+                        иначе вместо неё остаётся пустая колонка (UI-аудит L5) */}
+                    {items.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeItem(item.id)}
+                        className="flex h-9 w-8 shrink-0 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950 dark:hover:text-red-400 max-sm:h-11 max-sm:w-11"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4 max-sm:size-5">
+                          <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+                        </svg>
+                      </button>
+                    )}
                   </div>
                 </div>
 

@@ -16,8 +16,8 @@ import {
   useState,
   useCallback,
   useRef,
-  useEffect,
 } from "react";
+import { useFocusTrap } from "./useFocusTrap";
 
 type ConfirmVariant = "danger" | "default";
 
@@ -94,15 +94,9 @@ export function ConfirmProvider({
     resolveRef.current = null;
   }, []);
 
-  useEffect(() => {
-    if (!open) return;
-
-    function handleEscape(e: KeyboardEvent) {
-      if (e.key === "Escape") handleCancel();
-    }
-    document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, [open, handleCancel]);
+  // Focus-trap: фокус не уходит из диалога, Escape закрывает, фокус возвращается.
+  // Вызывается после определения handleCancel (см. TDZ).
+  useFocusTrap(open, dialogRef, handleCancel);
 
   return (
     <ConfirmContext.Provider value={{ confirm }}>

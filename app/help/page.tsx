@@ -6,18 +6,25 @@
  * Server component, без интерактива.
  */
 import { BackLink } from "./BackLink";
+import { STATUS_LABELS } from "@/hooks/useOrders";
+import { ORDER_STATUS_SEQUENCE, STATUS_BADGE_COLORS } from "@/app/lib/orderStatuses";
 
+/*
+ * STATUSES: подписи статусов берутся из STATUS_LABELS (единый источник в
+ * hooks/useOrders.ts), чтобы help-страница не расходилась с реальным UI.
+ * ORDER_STATUS_SEQUENCE задаёт канонический порядок жизненного цикла.
+ */
 const STATUSES = [
-  { id: "PENDING_DIRECTORATE", label: "Ожидает одобрения", desc: "Новая заявка ожидает одобрения начальником снабжения или директором" },
-  { id: "DIRECTORATE_APPROVED", label: "Одобрено", desc: "Заявка одобрена, ожидает отправки в работу заявителем" },
-  { id: "ACCEPTED", label: "Принято в работу", desc: "Заявка принята отделом снабжения" },
-  { id: "REQUEST_SENT", label: "Запрос отправлен", desc: "Отправлен запрос поставщику, ожидается счёт" },
-  { id: "INVOICE_RECEIVED", label: "Счёт получен", desc: "Поставщик выставил счёт, документ получен" },
-  { id: "INVOICE_PAID", label: "Счёт оплачен", desc: "Счёт оплачен, ожидается отгрузка" },
-  { id: "SHIPPED", label: "Отправлено поставщиком", desc: "Товар отгружен, ожидается поступление на склад" },
-  { id: "RECEIVED", label: "Получено на склад", desc: "Товар оприходован на складе" },
-  { id: "SENT_TO_REQUESTER", label: "Отправлено заявителю", desc: "Товар передан/отправлен заявителю со склада" },
-  { id: "ORDER_CONFIRMED", label: "Получено заказчиком", desc: "Заявитель подтвердил получение товара" },
+  { id: "PENDING_DIRECTORATE", desc: "Новая заявка ожидает одобрения начальником снабжения или директором" },
+  { id: "DIRECTORATE_APPROVED", desc: "Заявка одобрена, ожидает отправки в работу заявителем" },
+  { id: "ACCEPTED", desc: "Заявка принята отделом снабжения" },
+  { id: "REQUEST_SENT", desc: "Отправлен запрос поставщику, ожидается счёт" },
+  { id: "INVOICE_RECEIVED", desc: "Поставщик выставил счёт, документ получен" },
+  { id: "INVOICE_PAID", desc: "Счёт оплачен, ожидается отгрузка" },
+  { id: "SHIPPED", desc: "Товар отгружен, ожидается поступление на склад" },
+  { id: "RECEIVED", desc: "Товар оприходован на складе" },
+  { id: "SENT_TO_REQUESTER", desc: "Товар передан/отправлен заявителю со склада" },
+  { id: "ORDER_CONFIRMED", desc: "Заявитель подтвердил получение товара" },
 ];
 
 export default function HelpPage() {
@@ -67,10 +74,11 @@ export default function HelpPage() {
             <li className="rounded-lg border border-border bg-surface p-4">
               <strong className="text-foreground">Склад</strong>
               <p className="mt-1 text-sm text-text-secondary">
-                Четыре вкладки: «Приёмка» (позиции со статусом «Отправлено поставщиком»,
+                Пять вкладок: «Приёмка» (позиции со статусом «Отправлено поставщиком»,
                 ожидающие поступления), «Выполнение заявок» (просмотр всех заявок),
-                «Ожидание подтверждения» (список ссылок для подтверждения получения заявителями)
-                и «Создать пропуски».                 Склад может менять статусы: «Получено на склад»,
+                «Новая заявка» (создание заявок), «Ожидание подтверждения»
+                (список ссылок для подтверждения получения заявителями)
+                и «Создать пропуски». Склад может менять статусы: «Получено на склад»,
                 «Отправлено заявителю». После отправки заявитель сам подтверждает получение.
               </p>
             </li>
@@ -152,7 +160,7 @@ export default function HelpPage() {
                   {i + 1}
                 </div>
                 <div>
-                  <strong className="text-foreground">{s.label}</strong>
+                  <strong className="text-foreground">{STATUS_LABELS[s.id as keyof typeof STATUS_LABELS]}</strong>
                   <p className="mt-0.5 text-sm text-text-secondary">{s.desc}</p>
                 </div>
               </div>
@@ -170,16 +178,14 @@ export default function HelpPage() {
             в виде цветного бейджа:
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
-            <span className="rounded-md bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700 dark:bg-red-900/40 dark:text-red-300">Ожидает одобрения</span>
-            <span className="rounded-md bg-teal-100 px-2.5 py-1 text-xs font-medium text-teal-700 dark:bg-teal-900/40 dark:text-teal-300">Одобрено</span>
-            <span className="rounded-md bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">Принято в работу</span>
-            <span className="rounded-md bg-sky-100 px-2.5 py-1 text-xs font-medium text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">Запрос отправлен</span>
-            <span className="rounded-md bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">Счёт получен</span>
-            <span className="rounded-md bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">Счёт оплачен</span>
-            <span className="rounded-md bg-cyan-100 px-2.5 py-1 text-xs font-medium text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300">Отправлено поставщиком</span>
-            <span className="rounded-md bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700 dark:bg-green-900/40 dark:text-green-300">Получено на склад</span>
-            <span className="rounded-md bg-orange-100 px-2.5 py-1 text-xs font-medium text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">Отправлено заявителю</span>
-            <span className="rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">Получено заказчиком</span>
+            {ORDER_STATUS_SEQUENCE.map((s) => (
+              <span
+                key={s}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium ${STATUS_BADGE_COLORS[s]}`}
+              >
+                {STATUS_LABELS[s]}
+              </span>
+            ))}
           </div>
           <div className="mt-4 space-y-3">
             <div className="rounded-lg border border-border bg-surface p-4">
@@ -424,17 +430,8 @@ export default function HelpPage() {
           </div>
         </section>
 
-        {/* Оповещения склада */}
-        <section>
-          <h2 className="text-xl font-semibold text-foreground">
-            Оповещения склада
-          </h2>
-          <p className="mt-2 leading-relaxed text-text-secondary">
-            На вкладке склада есть кнопка «Проверить поставки» — она проверяет,
-            появились ли новые позиции со статусом «Отправлено поставщиком».
-            При наличии новых поставок показывается всплывающее уведомление.
-          </p>
-        </section>
+        {/* Оповещения склада (удалено: кнопки «Проверить поставки» в приложении нет,
+            описание ссылалось на несуществующий функционал) */}
 
         {/* Переключение темы */}
         <section>

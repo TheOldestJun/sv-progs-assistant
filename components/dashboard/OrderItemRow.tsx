@@ -16,19 +16,7 @@ import type { StatusLogEntry } from "@/hooks/useOrders";
 import { STATUS_LABELS } from "@/hooks/useOrders";
 import { StatusIcon } from "@/components/dashboard/StatusIcon";
 import { ItemStatusHistory } from "@/components/dashboard/ItemStatusHistory";
-
-const STATUS_COLORS: Record<OrderItemStatus, string> = {
-  PENDING_DIRECTORATE: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
-  DIRECTORATE_APPROVED: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300",
-  ACCEPTED: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-  REQUEST_SENT: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
-  INVOICE_RECEIVED: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  INVOICE_PAID: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
-  SHIPPED: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300",
-  RECEIVED: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
-  SENT_TO_REQUESTER: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300",
-  ORDER_CONFIRMED: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
-};
+import { STATUS_BADGE_COLORS } from "@/app/lib/orderStatuses";
 
 interface ItemData {
   id: string;
@@ -183,7 +171,7 @@ export function OrderItemRow({
   function renderStatusControl() {
     if (readOnly && !(requesterMode && item.status === "SENT_TO_REQUESTER")) {
       return (
-        <span className={`inline-flex max-sm:min-h-11 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 ${STATUS_COLORS[item.status]}`}>
+        <span className={`inline-flex max-sm:min-h-11 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 ${STATUS_BADGE_COLORS[item.status]}`}>
           <StatusIcon status={item.status} />
           {STATUS_LABELS[item.status]}
         </span>
@@ -195,7 +183,7 @@ export function OrderItemRow({
         <button
           onClick={onConfirmReceipt}
           disabled={isPending}
-          className={`inline-flex max-sm:min-h-11 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 transition-colors disabled:opacity-50 cursor-pointer ${STATUS_COLORS["ORDER_CONFIRMED"]}`}
+          className={`inline-flex max-sm:min-h-11 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 transition-colors disabled:opacity-50 cursor-pointer ${STATUS_BADGE_COLORS["ORDER_CONFIRMED"]}`}
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-3.5">
             <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
@@ -212,7 +200,7 @@ export function OrderItemRow({
             if (item.status !== "ORDER_CONFIRMED") onOpenMenu(e.currentTarget);
           }}
           disabled={isPending}
-          className={`inline-flex max-sm:min-h-11 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 transition-colors ${STATUS_COLORS[item.status]} disabled:opacity-50 ${item.status === "ORDER_CONFIRMED" ? "cursor-default" : "cursor-pointer"}`}
+          className={`inline-flex max-sm:min-h-11 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 transition-colors ${STATUS_BADGE_COLORS[item.status]} disabled:opacity-50 ${item.status === "ORDER_CONFIRMED" ? "cursor-default" : "cursor-pointer"}`}
         >
           <StatusIcon status={item.status} />
           {STATUS_LABELS[item.status]}
@@ -224,7 +212,7 @@ export function OrderItemRow({
   function renderStatusControlMobile() {
     if (readOnly && !(requesterMode && item.status === "SENT_TO_REQUESTER")) {
       return (
-        <span className={`inline-flex max-sm:flex max-sm:min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium max-sm:w-full max-sm:justify-center max-sm:px-3 max-sm:py-1.5 max-sm:text-sm ring-1 ring-inset ring-black/5 ${STATUS_COLORS[item.status]}`}>
+        <span className={`inline-flex max-sm:flex max-sm:min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium max-sm:w-full max-sm:justify-center max-sm:px-3 max-sm:py-1.5 max-sm:text-sm ring-1 ring-inset ring-black/5 ${STATUS_BADGE_COLORS[item.status]}`}>
           <StatusIcon status={item.status} />
           {STATUS_LABELS[item.status]}
         </span>
@@ -236,7 +224,7 @@ export function OrderItemRow({
         <button
           onClick={onConfirmReceipt}
           disabled={isPending}
-          className={`flex w-full max-sm:min-h-11 items-center justify-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 transition-colors disabled:opacity-50 cursor-pointer ${STATUS_COLORS["ORDER_CONFIRMED"]}`}
+          className={`flex w-full max-sm:min-h-11 items-center justify-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 transition-colors disabled:opacity-50 cursor-pointer ${STATUS_BADGE_COLORS["ORDER_CONFIRMED"]}`}
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-3.5">
             <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
@@ -253,7 +241,7 @@ export function OrderItemRow({
             if (item.status !== "ORDER_CONFIRMED") onOpenMenu(e.currentTarget);
           }}
           disabled={isPending}
-          className={`inline-flex max-sm:flex max-sm:min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium max-sm:w-full max-sm:justify-center max-sm:px-3 max-sm:py-1.5 max-sm:text-sm ring-1 ring-inset ring-black/5 transition-colors ${STATUS_COLORS[item.status]} disabled:opacity-50 ${item.status === "ORDER_CONFIRMED" ? "cursor-default" : "cursor-pointer"}`}
+          className={`inline-flex max-sm:flex max-sm:min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium max-sm:w-full max-sm:justify-center max-sm:px-3 max-sm:py-1.5 max-sm:text-sm ring-1 ring-inset ring-black/5 transition-colors ${STATUS_BADGE_COLORS[item.status]} disabled:opacity-50 ${item.status === "ORDER_CONFIRMED" ? "cursor-default" : "cursor-pointer"}`}
         >
           <StatusIcon status={item.status} />
           {STATUS_LABELS[item.status]}

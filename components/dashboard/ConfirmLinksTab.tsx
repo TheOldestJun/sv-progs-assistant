@@ -7,6 +7,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { useChatVisibility } from "@/hooks/useChat";
 
 interface ConfirmLink {
   tokenId: string;
@@ -37,6 +38,10 @@ function getConfirmUrl(token: string): string {
 
 export function ConfirmLinksTab() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  // Visibility-aware polling 10s: пауза в скрытой вкладке + мгновенный refetch
+  // при возврате (после подтверждения токена в отдельной вкладке кнопка
+  // «Ссылка» исчезает сразу по возвращении на вкладку)
+  const refetchInterval = useChatVisibility();
 
   const { data: links = [], isLoading } = useQuery<ConfirmLink[]>({
     queryKey: ["confirm-tokens"],
@@ -45,7 +50,7 @@ export function ConfirmLinksTab() {
       if (!res.ok) throw new Error("Failed to fetch");
       return res.json();
     },
-    refetchInterval: 30_000,
+    refetchInterval,
   });
 
   async function copyLink(token: string, tokenId: string) {

@@ -37,12 +37,18 @@ export function DatePicker({
   onChange,
   label,
   portal,
+  min,
+  max,
 }: {
   value: string;
   onChange: (val: string) => void;
   label?: string;
   /** Рендерить календарь вне потока (fixed позиционирование) — для использования внутри диалогов/модалок */
   portal?: boolean;
+  /** Нижняя граница выбора (YYYY-MM-DD) — дни раньше будут недоступны */
+  min?: string;
+  /** Верхняя граница выбора (YYYY-MM-DD) — дни позже будут недоступны */
+  max?: string;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -202,26 +208,30 @@ export function DatePicker({
                 {wd}
               </div>
             ))}
-            {days.map((day, i) =>
-              day === null ? (
-                <div key={`e-${i}`} />
-              ) : (
+            {days.map((day, i) => {
+              if (day === null) return <div key={`e-${i}`} />;
+              // Строковое сравнение YYYY-MM-DD корректно для границ диапазона
+              const dayStr = formatDateValue(viewYear, viewMonth, day);
+              const isOutOfRange = dayStr < (min ?? "") || dayStr > (max ?? "9999-12-31");
+              return (
                 <button
                   key={day}
                   type="button"
                   onClick={() => selectDay(day)}
-                  className={`flex max-sm:min-h-11 w-full items-center justify-center rounded-md py-1 text-sm transition-colors hover:bg-surface-secondary ${
-                    formatDateValue(viewYear, viewMonth, day) === value
+                  disabled={isOutOfRange}
+                  aria-disabled={isOutOfRange}
+                  className={`flex max-sm:min-h-11 w-full items-center justify-center rounded-md py-1 text-sm transition-colors hover:bg-surface-secondary disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:opacity-40 ${
+                    dayStr === value
                       ? "bg-primary text-primary-foreground hover:bg-primary-hover"
-                      : formatDateValue(viewYear, viewMonth, day) === todayStr
+                      : dayStr === todayStr
                         ? "font-semibold text-foreground ring-1 ring-inset ring-border"
                         : "text-foreground"
                   }`}
                 >
                   {day}
                 </button>
-              ),
-            )}
+              );
+            })}
           </div>
 
           {value && (

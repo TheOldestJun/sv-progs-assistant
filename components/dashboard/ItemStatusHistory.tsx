@@ -6,19 +6,7 @@ import type { OrderItemStatus } from "@prisma/client";
 import type { StatusLogEntry } from "@/hooks/useOrders";
 import { STATUS_LABELS } from "@/hooks/useOrders";
 import { StatusIcon } from "@/components/dashboard/StatusIcon";
-
-const STATUS_COLORS: Record<OrderItemStatus, string> = {
-  PENDING_DIRECTORATE: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
-  DIRECTORATE_APPROVED: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300",
-  ACCEPTED: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-  REQUEST_SENT: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
-  INVOICE_RECEIVED: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  INVOICE_PAID: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
-  SHIPPED: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300",
-  RECEIVED: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
-  SENT_TO_REQUESTER: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300",
-  ORDER_CONFIRMED: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
-};
+import { STATUS_BADGE_COLORS } from "@/app/lib/orderStatuses";
 
 interface ItemStatusHistoryProps {
   comment: string | null;
@@ -56,7 +44,7 @@ export function ItemStatusHistory({ comment, logs }: ItemStatusHistoryProps) {
                 <span
                   className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-medium ${
                     log.oldStatus
-                      ? STATUS_COLORS[log.oldStatus]
+                      ? STATUS_BADGE_COLORS[log.oldStatus]
                       : "bg-surface text-text-secondary"
                   }`}
                 >
@@ -76,7 +64,7 @@ export function ItemStatusHistory({ comment, logs }: ItemStatusHistoryProps) {
                   />
                 </svg>
                 <span
-                  className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-medium ${STATUS_COLORS[log.newStatus]}`}
+                  className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-medium ${STATUS_BADGE_COLORS[log.newStatus]}`}
                 >
                   <StatusIcon status={log.newStatus} />
                   {STATUS_LABELS[log.newStatus]}
