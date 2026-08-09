@@ -1,8 +1,9 @@
 /*
  * RequesterDashboard — дашборд заявителя (роль REQUESTER).
- * Две вкладки:
- * - «Новая заявка» — упрощённая форма (без выбора заявителя, привязывается автоматически)
+ * Вкладки:
  * - «Мои заявки» — таблица собственных заявок (только просмотр)
+ * - «Новая заявка» — упрощённая форма (без выбора заявителя, привязывается автоматически)
+ * - «Создать пропуски» — форма пропусков
  * API автоматически определяет заявителя по сессии (userId → Requester).
  */
 "use client";
@@ -179,11 +180,15 @@ export function RequesterDashboard() {
 
       <DashboardTabs
         tabs={[
-          { role: "create", label: "Новая заявка", icon: "✏️" },
           { role: "orders", label: "Мои заявки", icon: "📋" },
+          { role: "create", label: "Новая заявка", icon: "✏️" },
           { role: "passes", label: "Создать пропуски", icon: "🪪" },
         ]}
       >
+        <div>
+          <OrderStatusTable requesterMode />
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-5">
           <DatePicker label="Дата" value={date} onChange={setDate} />
 
@@ -291,10 +296,6 @@ export function RequesterDashboard() {
             </button>
           </div>
         </form>
-
-        <div>
-          <OrderStatusTable requesterMode />
-        </div>
 
         <PassForm />
       </DashboardTabs>
