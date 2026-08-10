@@ -44,12 +44,16 @@ interface OrderItemRowProps {
   onEditProduct: () => void;
   /** Callback для кнопки «Задать вопрос заявителю» (иконка ? рядом с карандашом) */
   onAskRequester?: () => void;
+  /** Режим выбора позиций для создания пропуска (warehouseMode) */
+  selected?: boolean;
+  onSelectChange?: (itemId: string, checked: boolean) => void;
 }
 
 export function OrderItemRow({
   item,
   readOnly,
   requesterMode,
+  warehouseMode,
   expanded,
   logs,
   isPending,
@@ -58,11 +62,42 @@ export function OrderItemRow({
   onConfirmReceipt,
   onEditProduct,
   onAskRequester,
+  selected,
+  onSelectChange,
 }: OrderItemRowProps) {
   return (
     <>
       <tr className="hover:bg-surface max-sm:flex max-sm:flex-col max-sm:border-b max-sm:border-border max-sm:px-4 max-sm:py-2.5 max-sm:gap-1 max-sm:last:border-b-0">
-        <td className="px-2 py-1.5 sm:px-4 sm:py-0.5 max-sm:flex max-sm:items-center max-sm:gap-2 max-sm:p-0">
+        <td className="px-2 py-1.5 sm:px-4 sm:py-0.5 max-sm:flex max-sm:items-center max-sm:gap-2 max-sm:p-0 sm:flex sm:items-start sm:gap-2">
+          {warehouseMode && onSelectChange && (
+            <label
+              onClick={(e) => e.stopPropagation()}
+              title={item.status !== "RECEIVED" ? "Только позиции со статусом «Получено на склад»" : ""}
+              className={`mt-0.5 flex size-4 shrink-0 items-center justify-center ${item.status === "RECEIVED" ? "cursor-pointer" : ""}`}
+            >
+              <input
+                type="checkbox"
+                aria-label={`Выбрать «${item.product.title}» для создания пропуска`}
+                checked={selected ?? false}
+                onChange={(e) => onSelectChange(item.id, e.target.checked)}
+                disabled={item.status !== "RECEIVED"}
+                className="peer sr-only"
+              />
+              <span className="flex size-4 items-center justify-center rounded-[4px] border border-border bg-surface text-primary-foreground transition-colors peer-checked:border-primary peer-checked:bg-primary peer-checked:ring-1 peer-checked:ring-primary/40 peer-enabled:border-primary/50 peer-enabled:hover:ring-1 peer-enabled:hover:ring-primary/30 peer-disabled:opacity-40">
+                <svg
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={`size-3 ${selected ? "opacity-100" : "opacity-0"}`}
+                >
+                  <path d="M4 10.5l4 4 8-8" />
+                </svg>
+              </span>
+            </label>
+          )}
           <span className="text-xs text-text-secondary sm:hidden shrink-0">ТМЦ:</span>
           <button
             onClick={onToggle}

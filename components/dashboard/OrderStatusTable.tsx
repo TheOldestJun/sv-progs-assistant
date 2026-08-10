@@ -34,6 +34,7 @@ import { ConfirmLinkDialog } from "@/components/dashboard/ConfirmLinkDialog";
 import { AskQuestionDialog } from "@/components/dashboard/AskQuestionDialog";
 import { StatusMenu, getStatusChoices } from "@/components/dashboard/StatusMenu";
 import { downloadRequestExcel } from "@/components/orders/requestExcel";
+import { PassFormDialog, type PassItem } from "@/components/passes/PassFormDialog";
 import type { Order } from "@/hooks/useOrders";
 
 const PAGE_SIZE = 10;
@@ -76,6 +77,23 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
   } | null>(null);
 
   const [downloadingExcelId, setDownloadingExcelId] = useState<string | null>(null);
+
+  // Выбранные позиции для создания пропуска на ввоз (только warehouseMode)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [passDialogOpen, setPassDialogOpen] = useState(false);
+
+  function toggleSelected(itemId: string, checked: boolean) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(itemId);
+      else next.delete(itemId);
+      return next;
+    });
+  }
+
+  function clearSelected() {
+    setSelectedIds(new Set());
+  }
 
   // Скачивание заявки в Excel по шаблону REQUEST.xlsx (для «Мои заявки»)
   async function handleOrderExcel(order: Order) {
@@ -224,6 +242,25 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
 
   const paged = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
+  // Выбранные позиции в формате PassFormDialog (warehouseMode)
+  const passPrefill: PassItem[] = useMemo(() => {
+    if (!orders || selectedIds.size === 0) return [];
+    const result: PassItem[] = [];
+    for (const o of orders) {
+      for (const item of o.items) {
+        if (!selectedIds.has(item.id)) continue;
+        result.push({
+          id: `pass_${item.id}`,
+          product: { id: item.productId, title: item.product.title },
+          unit: { id: item.unitId, title: item.units.title },
+          quantity: String(item.quantity),
+        });
+        if (result.length === 31) return result; // MAX_ITEMS в PassFormDialog
+      }
+    }
+    return result;
+  }, [orders, selectedIds]);
+
   if (isLoading) return (
     <div className="flex items-center justify-center py-12">
       <div className="size-6 animate-spin rounded-full border-2 border-border border-t-primary" />
@@ -254,6 +291,32 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
           className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-sm text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary"
         />
       </div>
+
+      {warehouseMode && selectedIds.size > 0 && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5">
+          <span className="text-sm font-medium text-foreground">
+            Выбрано: {selectedIds.size}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={clearSelected}
+              className="rounded-md px-3 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-secondary max-sm:min-h-11"
+            >
+              Сбросить
+            </button>
+            <button
+              onClick={() => setPassDialogOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover max-sm:min-h-11"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
+                <path fillRule="evenodd" d="M2.5 3A1.5 1.5 0 0 1 4 1.5h11A1.5 1.5 0 0 1 16.5 3v1.62c.13.11.26.24.37.38l1.5 1.88A1.5 1.5 0 0 1 18.7 8.5V9a5 5 0 1 1-10 0v-.5c0-.53.21-1.01.55-1.36l1.5-1.88c.1-.14.23-.27.36-.38V3Zm-1 6.22V10a7 7 0 1 0 14 0v-.78l-.88-1.1a1 1 0 0 0-.62-.37V3h-11v4.75a1 1 0 0 0-.62.38L1.5 9.22Z" clipRule="evenodd" />
+                <path d="M4 11.5a7.51 7.51 0 0 0 1.74 4.6L4 15.06A7 7 0 0 1 4 11.5Zm9.7 4.6A7.51 7.51 0 0 0 16 11.5v3.56l-1.74 1.74-1.56.3Z" />
+              </svg>
+              Создать пропуск на ввоз
+            </button>
+          </div>
+        </div>
+      )}
 
       {paged.map((order) => (
         <div key={order.id} className="overflow-hidden rounded-lg border border-border">
@@ -317,6 +380,8 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
                       requesterUserId: order.requester.userId!,
                       orderDate: order.created.slice(0, 10),
                     }) : undefined}
+                    selected={warehouseMode ? selectedIds.has(item.id) : undefined}
+                    onSelectChange={warehouseMode ? toggleSelected : undefined}
                   />
                 ))}
               </tbody>
@@ -408,6 +473,14 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
           itemsMap={itemsMap}
           onSelect={handleStatusClick}
           onClose={closeMenu}
+        />
+      )}
+
+      {passDialogOpen && (
+        <PassFormDialog
+          open
+          prefillItems={passPrefill}
+          onClose={() => { setPassDialogOpen(false); clearSelected(); }}
         />
       )}
     </div>
