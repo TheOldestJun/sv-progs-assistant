@@ -69,6 +69,10 @@ export function KitchenPassDialog({ open, onClose, title, dishes, dishIds, onSav
   function handleCreate(title: string): AutocompleteItem {
     const optimisticId = `optimistic-${Date.now()}`;
     addItem({ id: optimisticId, title });
+    // TODO(ОБЯЗАТЕЛЬНО): здесь не передаётся type — API ставит DishType.SOUP по
+    // умолчанию (app/api/dishes/route.ts:71), поэтому напиток/гарнир, созданный из
+    // «Пропусков», не появляется в правильной строке меню. Нужно добавить выбор
+    // категории блюда перед созданием и передать { name: title, type }.
     createDish.mutate(
       { name: title },
       {
