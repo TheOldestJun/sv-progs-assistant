@@ -17,6 +17,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Uses `@prisma/adapter-mariadb` with `prisma-client-js` generator. `PrismaClient` from `@prisma/client` requires `{ adapter }` in Prisma v7.
 - `DATABASE_URL` env var for connection (MySQL/MariaDB).
 - `serverExternalPackages` in `next.config.ts`: `["@prisma/client", "@prisma/adapter-mariadb", "mariadb"]`
+- **⚠️ НИКОГДА не менять файлы миграций после того, как они были применены!** После коммитов постоянно вылезают ошибки миграций. Если нужна новая схема — создавать НОВУЮ миграцию через `prisma migrate dev`, а не редактировать существующую.
 
 ## Вercel
 

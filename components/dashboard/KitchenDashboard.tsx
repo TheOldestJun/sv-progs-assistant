@@ -1,9 +1,10 @@
 /*
  * KitchenDashboard — дашборд «Кухня» (вкладка в дашборде снабжения).
- * Начальная версия-заглушка: структура и стили по образцу остальных дашбордов,
- * контент будет добавлен позже.
+ * Содержит планировщик недельного меню (MenuPlanner).
  */
 "use client";
+
+import { MenuPlanner } from "@/components/dashboard/kitchen/MenuPlanner";
 
 export function KitchenDashboard() {
   return (
@@ -15,20 +16,12 @@ export function KitchenDashboard() {
             Кухня
           </h2>
           <p className="text-sm text-text-secondary">
-            Раздел для работы со снабжением кухни
+            Планирование недельного меню
           </p>
         </div>
       </div>
 
-      <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-surface-secondary px-4 py-16 text-center">
-        <span className="text-3xl" aria-hidden="true">🚧</span>
-        <p className="text-sm font-medium text-foreground">
-          Раздел «Кухня» в разработке
-        </p>
-        <p className="text-sm text-text-secondary">
-          Здесь появится функциональность снабжения кухни
-        </p>
-      </div>
+      <MenuPlanner />
     </section>
   );
 }
