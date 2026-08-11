@@ -6,9 +6,9 @@
  * и единиц — по ТЗ). Если сохранённых позиций ещё нет — предзаполняется
  * автоматически блюдами из меню этого дня (решение пользователя).
  *
- * Autocomplete синхронный: onCreate возвращает optimistic-id и открывает окно
- * создания блюда (как в MenuPlanner) через useCreateDish, после ответа сервера
- * optimistic-id заменяется на реальный.
+ * Autocomplete синхронный: onCreate возвращает optimistic-id и создаёт блюдо
+ * через useCreateDish с выбранной пользователем категорией (newDishType), после
+ * ответа сервера optimistic-id заменяется на реальный.
  */
 "use client";
 
@@ -17,6 +17,7 @@ import { Autocomplete, type AutocompleteItem } from "@/components/ui/Autocomplet
 import { useToast } from "@/components/ui/Toast";
 import { useCreateDish, type Dish } from "@/hooks/useDishes";
 import { useFocusTrap } from "@/components/ui/useFocusTrap";
+import { MEAL_TYPES } from "./kitchenWeek";
 
 const MAX_ITEMS = 31;
 
@@ -49,6 +50,9 @@ export function KitchenPassDialog({ open, onClose, title, dishes, dishIds, onSav
       .filter((x): x is AutocompleteItem => x !== null),
   );
 
+  // Категория для НОВОГО блюда, создаваемого прямо из диалога пропуска
+  const [newDishType, setNewDishType] = useState<Dish["type"]>(MEAL_TYPES[0].dishType);
+
   const options: AutocompleteItem[] = dishes.map((d) => ({ id: d.id, title: d.name }));
 
   function addItem(item: AutocompleteItem) {
@@ -69,12 +73,10 @@ export function KitchenPassDialog({ open, onClose, title, dishes, dishIds, onSav
   function handleCreate(title: string): AutocompleteItem {
     const optimisticId = `optimistic-${Date.now()}`;
     addItem({ id: optimisticId, title });
-    // TODO(ОБЯЗАТЕЛЬНО): здесь не передаётся type — API ставит DishType.SOUP по
-    // умолчанию (app/api/dishes/route.ts:71), поэтому напиток/гарнир, созданный из
-    // «Пропусков», не появляется в правильной строке меню. Нужно добавить выбор
-    // категории блюда перед созданием и передать { name: title, type }.
+    // Категория выбирается пользователем в диалоге (newDishType) — без неё API
+    // ставит DishType.SOUP по умолчанию, и блюдо не попадёт в нужную строку меню.
     createDish.mutate(
-      { name: title },
+      { name: title, type: newDishType },
       {
         onSuccess: (res) => {
           showToast(`Блюдо «${res.dish.name}» создано`, "success");
@@ -125,6 +127,26 @@ export function KitchenPassDialog({ open, onClose, title, dishes, dishIds, onSav
                 onSelect={addItem}
                 onCreate={handleCreate}
               />
+            </div>
+
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <label htmlFor="new-dish-type" className="mb-1 block text-xs text-text-secondary">
+                  Категория нового блюда
+                </label>
+                <select
+                  id="new-dish-type"
+                  value={newDishType}
+                  onChange={(e) => setNewDishType(e.target.value as Dish["type"])}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+                >
+                  {MEAL_TYPES.map((m) => (
+                    <option key={m.id} value={m.dishType}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {items.length > 0 ? (

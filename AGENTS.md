@@ -53,8 +53,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## Kitchen
 
-- **⚠️ СРОЧНОЕ ОБЯЗАТЕЛЬНОЕ ИСПРАВЛЕНИЕ**: в `components/dashboard/kitchen/KitchenPassDialog.tsx` функция `handleCreate` создаёт блюдо БЕЗ `type` → API (`app/api/dishes/route.ts:71`) ставит `DishType.SOUP` по умолчанию. Поэтому напиток/гарнир/салат, созданный через вкладку «Пропуски», не отображается в правильной строке планировщика меню («Напиток» и т.д.). Исправить: добавить выбор категории блюда при создании и передавать `{ name, type }`.
-- В планировщике меню (MenuPlanner) тип блюда передаётся корректно (`type: meal.dishType`), проблема только в KitchenPassDialog.
+- **ИСПРАВЛЕНО**: блюда, созданные в `KitchenPassDialog.tsx`, теперь получают выбранную пользователем категорию (`newDishType` селектор + `{ name, type }`) — раньше API ставил `DishType.SOUP` по умолчанию, и напиток/гарнир/салат не попадал в правильную строку планировщика меню. В MenuPlanner тип передаётся корректно (`type: meal.dishType`).
 - Пропуска кухни: диалог на день (Ввоз/Вывоз), блюда без количества и единиц, Excel-экспорт через клон листов IN/OUT шаблона (lib/exportKitchenPasses.ts).
 
 ## Help page
