@@ -51,6 +51,12 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 - Cover all code with necessary comments clear enough for AI agents to understand context across different machines
 
+## Kitchen
+
+- **⚠️ СРОЧНОЕ ОБЯЗАТЕЛЬНОЕ ИСПРАВЛЕНИЕ**: в `components/dashboard/kitchen/KitchenPassDialog.tsx` функция `handleCreate` создаёт блюдо БЕЗ `type` → API (`app/api/dishes/route.ts:71`) ставит `DishType.SOUP` по умолчанию. Поэтому напиток/гарнир/салат, созданный через вкладку «Пропуски», не отображается в правильной строке планировщика меню («Напиток» и т.д.). Исправить: добавить выбор категории блюда при создании и передавать `{ name, type }`.
+- В планировщике меню (MenuPlanner) тип блюда передаётся корректно (`type: meal.dishType`), проблема только в KitchenPassDialog.
+- Пропуска кухни: диалог на день (Ввоз/Вывоз), блюда без количества и единиц, Excel-экспорт через клон листов IN/OUT шаблона (lib/exportKitchenPasses.ts).
+
 ## Help page
 
 - Админ-функции НИКОГДА не появляются в странице помощи (/help). Help только для рядовых пользователей (снабжение, склад, заявители).
