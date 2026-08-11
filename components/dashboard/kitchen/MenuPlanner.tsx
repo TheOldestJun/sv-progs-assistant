@@ -1,5 +1,5 @@
 /*
- * MenuPlanner — планировщик недельного меню (вкладка «Кухня»).
+ * MenuPlanner — планировщик недельного меню (вкладка «Меню» дашборда «Кухня»).
  *
  * Перенесено из my-ai-helper (MenuPlanner.jsx) на наш стек:
  * - Autocomplete (наш, синхронный onCreate → optimistic-паттерн)
@@ -8,161 +8,44 @@
  * - Создание блюда «на лету» прямо из автокомплита (как везде: только название)
  * - Меню и выбор дней хранятся в localStorage (weeklyMenu / selectedDays)
  * - Экспорт в PDF через html2pdf.js (lib/exportMenuPDF.ts)
+ *
+ * Состояние недели (startDate/selectedDays/menu/visibleDays/dishes) живёт в
+ * KitchenWeekProvider (./kitchenWeek.tsx) — общее с вкладкой «Пропуски».
  */
 "use client";
 
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { Autocomplete, type AutocompleteItem } from "@/components/ui/Autocomplete";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { useToast } from "@/components/ui/Toast";
-import { useDishes, useCreateDish, useUpdateDish, type Dish } from "@/hooks/useDishes";
-import { exportMenuPDF, type MenuDay } from "@/lib/exportMenuPDF";
-
-type DishType = Dish["type"];
-
-const WEEKDAYS: { id: string; label: string }[] = [
-  { id: "monday", label: "Понедельник" },
-  { id: "tuesday", label: "Вторник" },
-  { id: "wednesday", label: "Среда" },
-  { id: "thursday", label: "Четверг" },
-  { id: "friday", label: "Пятница" },
-  { id: "saturday", label: "Суббота" },
-  { id: "sunday", label: "Воскресенье" },
-];
-const DEFAULT_DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday"];
-
-const MEAL_TYPES: { id: string; label: string; dishType: DishType }[] = [
-  { id: "soup", label: "Первое блюдо", dishType: "SOUP" },
-  { id: "garnish", label: "Гарнир", dishType: "GARNISH" },
-  { id: "meat", label: "Мясное блюдо", dishType: "MEAT" },
-  { id: "salad", label: "Салат", dishType: "SALAD" },
-  { id: "bakery", label: "Выпечка", dishType: "BAKERY" },
-  { id: "drink", label: "Напиток", dishType: "DRINK" },
-];
-
-/** Меню в localStorage: { [dayId]: { [mealTypeId]: [dishId] } } */
-type MenuShape = Record<string, Record<string, string[]>>;
-
-function formatISO(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-/** Понедельник текущей недели (локальная дата) */
-function mondayOfWeek(d: Date): string {
-  const day = d.getDay();
-  const diff = day === 0 ? 6 : day - 1;
-  const monday = new Date(d);
-  monday.setDate(d.getDate() - diff);
-  return formatISO(monday);
-}
-
-function addDays(iso: string, n: number): Date {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d + n);
-}
-
-function loadJSON<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = window.localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-/** Оставляет в меню только блюда, присутствующие в справочнике */
-function sanitizeMenu(raw: MenuShape, dishes: Dish[]): MenuShape {
-  const valid = new Set(dishes.map((d) => d.id));
-  const result: MenuShape = {};
-  for (const [dayId, meals] of Object.entries(raw)) {
-    const cleanMeals: Record<string, string[]> = {};
-    for (const [mealId, dishIds] of Object.entries(meals)) {
-      const kept = (Array.isArray(dishIds) ? dishIds : []).filter((id) => valid.has(id));
-      if (kept.length > 0) cleanMeals[mealId] = kept;
-    }
-    if (Object.keys(cleanMeals).length > 0) result[dayId] = cleanMeals;
-  }
-  return result;
-}
+import { useCreateDish, useUpdateDish } from "@/hooks/useDishes";
+import { exportMenuPDF } from "@/lib/exportMenuPDF";
+import {
+  useKitchenWeek,
+  WEEKDAYS,
+  MEAL_TYPES,
+} from "./kitchenWeek";
 
 export function MenuPlanner() {
-  const { data, isLoading } = useDishes();
+  const {
+    startDate,
+    setStartDate,
+    selectedDays,
+    toggleDay,
+    menu,
+    setMenu,
+    visibleDays,
+    dishes,
+    dishById,
+    isLoading,
+  } = useKitchenWeek();
+
   const createDish = useCreateDish();
   const updateDish = useUpdateDish();
   const { showToast } = useToast();
 
-  const dishes = data?.dishes ?? [];
-
-  const [startDate, setStartDate] = useState<string>(() => mondayOfWeek(new Date()));
-  // SSR-safe: состояние стартует с fallback, а localStorage подтягивается в
-  // useEffect на маунте — иначе гидратация ломается (сервер/клиент расхождение)
-  const [selectedDays, setSelectedDays] = useState<string[]>(DEFAULT_DAYS);
-  const [menu, setMenu] = useState<MenuShape>({});
-
   // Черновики цен (локальный ввод до сохранения)
   const [priceInputs, setPriceInputs] = useState<Record<string, string>>({});
-
-  const prevDishesRef = useRef<Dish[] | null>(null);
-
-  // Гидратация из localStorage после монтирования (SSR-safe)
-  useEffect(() => {
-    setSelectedDays(loadJSON("selectedDays", DEFAULT_DAYS));
-    setMenu(loadJSON("weeklyMenu", {}));
-  }, []);
-
-  // Персист меню и дней
-  useEffect(() => {
-    try {
-      window.localStorage.setItem("weeklyMenu", JSON.stringify(menu));
-    } catch {
-      /* noop */
-    }
-  }, [menu]);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem("selectedDays", JSON.stringify(selectedDays));
-    } catch {
-      /* noop */
-    }
-  }, [selectedDays]);
-
-  // Санация меню при загрузке блюд
-  useEffect(() => {
-    if (prevDishesRef.current === null && dishes.length > 0) {
-      const cleaned = sanitizeMenu(menu, dishes);
-      if (JSON.stringify(cleaned) !== JSON.stringify(menu)) {
-        setMenu(cleaned);
-      }
-      prevDishesRef.current = dishes;
-    }
-  }, [dishes, menu]);
-
-  const dishById = useMemo(() => new Map(dishes.map((d) => [d.id, d])), [dishes]);
-
-  const visibleDays: MenuDay[] = useMemo(() => {
-    const days: MenuDay[] = [];
-    for (let i = 0; i < 7; i++) {
-      const date = addDays(startDate, i);
-      const weekdayIdx = (date.getDay() + 6) % 7;
-      const weekday = WEEKDAYS[weekdayIdx];
-      if (!selectedDays.includes(weekday.id)) continue;
-      days.push({
-        id: weekday.id,
-        label: weekday.label,
-        dateStr: date.toLocaleDateString("ru-RU", { day: "numeric", month: "long" }),
-        dateISO: formatISO(date),
-      });
-    }
-    return days;
-  }, [startDate, selectedDays]);
-
-  function toggleDay(dayId: string) {
-    setSelectedDays((prev) =>
-      prev.includes(dayId) ? prev.filter((d) => d !== dayId) : [...prev, dayId],
-    );
-  }
 
   function handleAddDish(dayId: string, mealTypeId: string, dishId: string) {
     setMenu((prev) => ({

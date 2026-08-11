@@ -34,7 +34,7 @@ async function fetchDishes(): Promise<DishesResponse> {
 
 async function createDish(payload: {
   name: string;
-  type: DishType;
+  type?: DishType;
   price?: number;
 }): Promise<DishResponse> {
   const res = await fetch("/api/dishes", {
@@ -75,7 +75,7 @@ export function useDishes() {
 
 export function useCreateDish() {
   const queryClient = useQueryClient();
-  return useMutation<DishResponse, Error, { name: string; type: DishType; price?: number }>({
+  return useMutation<DishResponse, Error, { name: string; type?: DishType; price?: number }>({
     mutationFn: createDish,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dishes"] });

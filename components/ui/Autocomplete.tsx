@@ -12,6 +12,7 @@ import {
   useState,
   useRef,
   useMemo,
+  useCallback,
   useEffect,
   type KeyboardEvent,
   type ChangeEvent,
@@ -45,6 +46,7 @@ export function Autocomplete({
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [focusedIdx, setFocusedIdx] = useState(-1);
+  const [listPos, setListPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
@@ -58,9 +60,44 @@ export function Autocomplete({
 
   const noMatch = query.trim().length > 0 && filtered.length === 0;
 
+  /*
+   * Приблизительная высота выпадающего списка — для решения «открыть вниз или вверх»:
+   * если под инпутом не хватает места до низа экрана, список рендерится НАД инпутом,
+   * чтобы пользователь всегда видел его целиком (проблема близких к низу ячеек таблиц).
+   */
+  const listHeight = useMemo(() => {
+    const perItem = 38; // py-2 + text-sm
+    return Math.min(240, filtered.length * perItem + 8 + (noMatch ? perItem : 0));
+  }, [filtered.length, noMatch]);
+
   useEffect(() => {
     setFocusedIdx(-1);
   }, [query]);
+
+  const updateListPos = useCallback(() => {
+    const input = inputRef.current;
+    if (!input) return;
+    const rect = input.getBoundingClientRect();
+    const gap = 4;
+    const fitsBelow = rect.bottom + gap + listHeight <= window.innerHeight;
+    const top = fitsBelow ? rect.bottom + gap : Math.max(8, rect.top - listHeight - gap);
+    const left = Math.max(8, Math.min(rect.left, window.innerWidth - rect.width - 8));
+    setListPos({ top, left, width: rect.width });
+  }, [listHeight]);
+
+  useEffect(() => {
+    if (!open) {
+      setListPos(null);
+      return;
+    }
+    updateListPos();
+    window.addEventListener("scroll", updateListPos, true);
+    window.addEventListener("resize", updateListPos);
+    return () => {
+      window.removeEventListener("scroll", updateListPos, true);
+      window.removeEventListener("resize", updateListPos);
+    };
+  }, [open, updateListPos]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent | TouchEvent) {
@@ -153,10 +190,11 @@ export function Autocomplete({
         className={`w-full rounded-lg border border-border bg-surface text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary ${inputClassName || "px-3 py-2 text-sm max-sm:py-2.5 max-sm:min-h-11"}`}
 
       />
-      {open && (filtered.length > 0 || noMatch) && (
+      {open && listPos && (filtered.length > 0 || noMatch) && (
         <ul
           ref={listRef}
-          className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-border bg-surface p-1 shadow-lg"
+          style={{ top: listPos.top, left: listPos.left, width: listPos.width }}
+          className="fixed z-[100] max-h-60 overflow-auto rounded-lg border border-border bg-surface p-1 shadow-lg"
         >
           {filtered.map((item, idx) => (
             <li
