@@ -9,6 +9,7 @@
 import { OrderStatusTable } from "./OrderStatusTable";
 import { DashboardTabs } from "./DashboardTabs";
 import { PassForm } from "@/components/passes/PassForm";
+import { KitchenDashboard } from "./KitchenDashboard";
 
 export function SupplyDeptDashboard() {
   return (
@@ -29,11 +30,14 @@ export function SupplyDeptDashboard() {
         tabs={[
           { role: "orders", label: "Выполнение заявок", icon: "📋" },
           { role: "passes", label: "Создать пропуски", icon: "🪪" },
+          { role: "kitchen", label: "Кухня", icon: "🍳" },
         ]}
       >
         <OrderStatusTable passSelectionStatuses={["SHIPPED"]} passType="import" />
 
         <PassForm />
+
+        <KitchenDashboard />
       </DashboardTabs>
     </section>
   );

@@ -17,6 +17,7 @@ import { OrderStatusTable } from "./OrderStatusTable";
 import { DashboardTabs } from "./DashboardTabs";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { PassForm } from "@/components/passes/PassForm";
+import { KitchenDashboard } from "./KitchenDashboard";
 
 interface OrderItem {
   id: string;
@@ -206,6 +207,7 @@ export function HeadOfSupplyDashboard() {
           { role: "orders", label: "Выполнение заявок", icon: "📋" },
           { role: "create", label: "Новая заявка", icon: "✏️" },
           { role: "passes", label: "Создать пропуски", icon: "🪪" },
+          { role: "kitchen", label: "Кухня", icon: "🍳" },
         ]}
       >
         <div>
@@ -326,6 +328,8 @@ export function HeadOfSupplyDashboard() {
         </form>
 
         <PassForm />
+
+        <KitchenDashboard />
       </DashboardTabs>
     </section>
   );

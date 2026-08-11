@@ -32,6 +32,15 @@ enum Role {
   DIRECTORATE
 }
 
+enum DishType {
+  SOUP
+  GARNISH
+  MEAT
+  SALAD
+  BAKERY
+  DRINK
+}
+
 model User {
   id                 String                  @id @default(cuid())
   name               String
@@ -76,6 +85,23 @@ model Unit {
   id     String      @id @default(cuid())
   title  String
   items  OrderItem[]
+}
+
+// Справочник блюд для дашборда «Кухня».
+// type — категория блюда (суп, гарнир, мясо, салат, выпечка, напиток).
+// active — мягкое скрытие блюда из меню без удаления (сезонные/недоступные позиции).
+model Dish {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  type        DishType  @default(SOUP)
+  price       Float     @default(0)
+  description String? // Описание/состав блюда (необязательное)
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([type])
+  @@index([active])
 }
 
 model Requester {
