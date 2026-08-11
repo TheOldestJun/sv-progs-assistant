@@ -31,7 +31,7 @@ export function SupplyDeptDashboard() {
           { role: "passes", label: "Создать пропуски", icon: "🪪" },
         ]}
       >
-        <OrderStatusTable />
+        <OrderStatusTable passSelectionStatuses={["SHIPPED"]} passType="import" />
 
         <PassForm />
       </DashboardTabs>

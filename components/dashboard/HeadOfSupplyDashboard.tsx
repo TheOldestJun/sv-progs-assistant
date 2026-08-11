@@ -209,7 +209,7 @@ export function HeadOfSupplyDashboard() {
         ]}
       >
         <div>
-          <OrderStatusTable showDirectorateOptions />
+          <OrderStatusTable showDirectorateOptions passSelectionStatuses={["SHIPPED"]} passType="import" />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">

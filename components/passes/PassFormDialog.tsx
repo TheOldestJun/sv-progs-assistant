@@ -1,9 +1,13 @@
 /*
- * PassFormDialog — модальная версия PassForm для создания пропуска на ввоз.
+ * PassFormDialog — модальная версия PassForm для создания пропуска (ввоз / вывоз / ввоз-вывоз).
  * Открывается из таблицы выполнения заявок (OrderStatusTable) с предзаполнением
  * выбранных позиций (prefillItems). Генерирует Excel через exceljs + шаблон IN_OUT.xlsx.
  * Логика генерации скопирована из PassForm.tsx; здесь добавляется фокус-ловушка (L2)
  * и предзаполнение выбранными позициями при открытии.
+ *
+ * lockedType — если задан, тип пропуска фиксируется (переключатель скрывается).
+ * Отдел снабжения (SHIPPED) → «Ввоз»; склад (RECEIVED) → «Ввоз/Вывоз».
+ * Смена типа не сбрасывает уже заполненные позиции.
  */
 "use client";
 
@@ -54,9 +58,11 @@ interface PassFormDialogProps {
   onClose: () => void;
   /** Позиции, которые нужно предзаполнить в пропуске (выбранные в таблице заявок) */
   prefillItems?: PassItem[];
+  /** Если задан — тип пропуска фиксируется, переключатель типов скрывается */
+  lockedType?: PassType;
 }
 
-export function PassFormDialog({ open, onClose, prefillItems }: PassFormDialogProps) {
+export function PassFormDialog({ open, onClose, prefillItems, lockedType }: PassFormDialogProps) {
   const { data: products, creation: productCreation } = useReferenceData("products", "/api/products");
   const { data: units, creation: unitCreation } = useReferenceData("units", "/api/units");
   const { showToast } = useToast();
@@ -66,9 +72,7 @@ export function PassFormDialog({ open, onClose, prefillItems }: PassFormDialogPr
   // Focus-trap: фокус не уходит, Escape закрывает, фокус возвращается (UI-аудит L2).
   useFocusTrap(open, dialogRef, onClose);
 
-  const [selectedType, setSelectedType] = useState<PassType>(() =>
-    prefillItems && prefillItems.length > 0 ? "import" : "import",
-  );
+  const [selectedType, setSelectedType] = useState<PassType>(() => lockedType ?? "import");
   const [startDate, setStartDate] = useState("");
   const [items, setItems] = useState<PassItem[]>(() => {
     const pre = prefillItems ?? [];
@@ -78,12 +82,9 @@ export function PassFormDialog({ open, onClose, prefillItems }: PassFormDialogPr
   });
 
   function handleTypeChange(type: PassType) {
-    if (selectedType === type) {
-      setSelectedType(type);
-      return;
-    }
+    if (selectedType === type) return;
+    // Смена типа не сбрасывает уже заполненные позиции (общая логика PassForm)
     setSelectedType(type);
-    setItems([emptyItem()]);
   }
 
   function updateItem(id: string, patch: Partial<PassItem>) {
@@ -225,7 +226,9 @@ export function PassFormDialog({ open, onClose, prefillItems }: PassFormDialogPr
             Создание пропуска
           </h3>
           <p className="mt-1 text-sm text-text-secondary">
-            Выберите дату начала действия и тип пропуска
+            {lockedType
+              ? "Выберите дату начала действия и заполните позиции"
+              : "Выберите дату начала действия и тип пропуска"}
           </p>
 
           <div className="mt-4">
@@ -233,28 +236,30 @@ export function PassFormDialog({ open, onClose, prefillItems }: PassFormDialogPr
           </div>
 
           <div className="mt-4 space-y-2">
-            {PASS_TYPES.map((type) => {
+            {(lockedType ? PASS_TYPES.filter((t) => t.id === lockedType) : PASS_TYPES).map((type) => {
               const isActive = selectedType === type.id;
               return (
                 <div key={type.id} className="rounded-lg border border-border">
                   <label
-                    className={`flex cursor-pointer items-center gap-3 p-4 transition-colors rounded-t-lg ${
-                      isActive ? "bg-primary/5" : "hover:bg-surface-secondary rounded-lg"
+                    className={`flex items-center gap-3 p-4 transition-colors ${
+                      lockedType ? "" : "cursor-pointer " + (isActive ? "bg-primary/5 rounded-t-lg" : "hover:bg-surface-secondary rounded-lg")
                     }`}
                   >
-                    <input
-                      type="radio"
-                      name="passType"
-                      value={type.id}
-                      checked={isActive}
-                      onChange={() => handleTypeChange(type.id)}
-                      className="accent-primary"
-                    />
+                    {!lockedType && (
+                      <input
+                        type="radio"
+                        name="passType"
+                        value={type.id}
+                        checked={isActive}
+                        onChange={() => handleTypeChange(type.id)}
+                        className="accent-primary"
+                      />
+                    )}
                     <div className="flex flex-1 items-center gap-2">
                       <span className="text-sm text-text-secondary">🚛</span>
                       <span className="font-medium text-foreground">{type.label}</span>
                     </div>
-                    {isActive && (
+                    {!lockedType && isActive && (
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4 text-text-secondary">
                         <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
                       </svg>

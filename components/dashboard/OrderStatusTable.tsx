@@ -7,6 +7,12 @@
  *   отображается кнопка «Подтвердить получение» (SENT_TO_REQUESTER → ORDER_CONFIRMED)
  * - readOnly: только просмотр без возможности изменения статусов
  *
+ * Выбор позиций для создания пропуска (bulk action bar):
+ * - passSelectionStatuses: статусы, в которых позиции можно отметить чекбоксом.
+ *   Склад: RECEIVED (поставка пришла). Снабжение/начальник снабжения: SHIPPED.
+ * - passType: "import" — пропуск фиксирован «Ввоз» (снабжение/начальник снабжения),
+ *   "import_with_export" — фиксирован «Ввоз/Вывоз» без выбора (склад).
+ *
  * Для снабжения (supply) рядом с названием ТМЦ отображается иконка ? —
  * задать вопрос заявителю через внутренний чат (см. AskQuestionDialog).
  *
@@ -40,7 +46,23 @@ import type { Order } from "@/hooks/useOrders";
 const PAGE_SIZE = 10;
 const FINAL_STATUSES = new Set(["RECEIVED", "SENT_TO_REQUESTER", "ORDER_CONFIRMED"]);
 
-export function OrderStatusTable({ warehouseMode = false, readOnly = false, requesterMode = false, showDirectorateOptions = false }: { warehouseMode?: boolean; readOnly?: boolean; requesterMode?: boolean; showDirectorateOptions?: boolean }) {
+export function OrderStatusTable({
+  warehouseMode = false,
+  readOnly = false,
+  requesterMode = false,
+  showDirectorateOptions = false,
+  passSelectionStatuses,
+  passType = "import_with_export",
+}: {
+  warehouseMode?: boolean;
+  readOnly?: boolean;
+  requesterMode?: boolean;
+  showDirectorateOptions?: boolean;
+  /** Статусы позиций, которые можно отметить для создания пропуска (по умолчанию выбор отключён) */
+  passSelectionStatuses?: OrderItemStatus[];
+  /** Тип пропуска (фиксируется, выбора нет): "import" — «Ввоз» (снабжение), "import_with_export" — «Ввоз/Вывоз» (склад) */
+  passType?: "import" | "import_with_export";
+}) {
   const { data: orders, isLoading, isError, error } = useOrders();
   const updateStatus = useUpdateOrderItemStatus();
   const deleteOrder = useDeleteOrder();
@@ -78,9 +100,19 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
 
   const [downloadingExcelId, setDownloadingExcelId] = useState<string | null>(null);
 
-  // Выбранные позиции для создания пропуска на ввоз (только warehouseMode)
+  // Выбранные позиции для создания пропуска (включается при заданном passSelectionStatuses)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [passDialogOpen, setPassDialogOpen] = useState(false);
+
+  // Режим выбора активен только когда задан список допустимых статусов
+  const selectionEnabled = !!passSelectionStatuses && passSelectionStatuses.length > 0;
+
+  // Подсказка на невыбираемых позициях: «Только позиции со статусом «…»»
+  const selectionHint = useMemo(() => {
+    if (!selectionEnabled) return undefined;
+    const labels = passSelectionStatuses!.map((s) => STATUS_LABELS[s]).join(" или ");
+    return `Только позиции со статусом «${labels}»`;
+  }, [selectionEnabled, passSelectionStatuses]);
 
   function toggleSelected(itemId: string, checked: boolean) {
     setSelectedIds((prev) => {
@@ -292,7 +324,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
         />
       </div>
 
-      {warehouseMode && selectedIds.size > 0 && (
+      {selectionEnabled && selectedIds.size > 0 && (
         <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5">
           <span className="text-sm font-medium text-foreground">
             Выбрано: {selectedIds.size}
@@ -312,7 +344,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
                 <path fillRule="evenodd" d="M2.5 3A1.5 1.5 0 0 1 4 1.5h11A1.5 1.5 0 0 1 16.5 3v1.62c.13.11.26.24.37.38l1.5 1.88A1.5 1.5 0 0 1 18.7 8.5V9a5 5 0 1 1-10 0v-.5c0-.53.21-1.01.55-1.36l1.5-1.88c.1-.14.23-.27.36-.38V3Zm-1 6.22V10a7 7 0 1 0 14 0v-.78l-.88-1.1a1 1 0 0 0-.62-.37V3h-11v4.75a1 1 0 0 0-.62.38L1.5 9.22Z" clipRule="evenodd" />
                 <path d="M4 11.5a7.51 7.51 0 0 0 1.74 4.6L4 15.06A7 7 0 0 1 4 11.5Zm9.7 4.6A7.51 7.51 0 0 0 16 11.5v3.56l-1.74 1.74-1.56.3Z" />
               </svg>
-              Создать пропуск на ввоз
+              {passType === "import" ? "Создать пропуск на ввоз" : "Создать пропуск на ввоз/вывоз"}
             </button>
           </div>
         </div>
@@ -358,7 +390,6 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
                     item={item}
                     readOnly={readOnly}
                     requesterMode={requesterMode}
-                    warehouseMode={warehouseMode}
                     expanded={expandedItem === item.id}
                     logs={logsMap[item.id]}
                     isPending={updateStatus.isPending}
@@ -380,8 +411,10 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
                       requesterUserId: order.requester.userId!,
                       orderDate: order.created.slice(0, 10),
                     }) : undefined}
-                    selected={warehouseMode ? selectedIds.has(item.id) : undefined}
-                    onSelectChange={warehouseMode ? toggleSelected : undefined}
+                    selectable={selectionEnabled && passSelectionStatuses!.includes(item.status)}
+                    selectionHint={selectionHint}
+                    selected={selectionEnabled ? selectedIds.has(item.id) : undefined}
+                    onSelectChange={selectionEnabled ? toggleSelected : undefined}
                   />
                 ))}
               </tbody>
@@ -480,6 +513,7 @@ export function OrderStatusTable({ warehouseMode = false, readOnly = false, requ
         <PassFormDialog
           open
           prefillItems={passPrefill}
+          lockedType={passType === "import" ? "import" : "import_with_export"}
           onClose={() => { setPassDialogOpen(false); clearSelected(); }}
         />
       )}

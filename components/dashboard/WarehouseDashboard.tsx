@@ -210,7 +210,7 @@ export function WarehouseDashboard() {
             { role: "passes", label: "Создать пропуски", icon: "🪪" },
           ]}
         >
-          <OrderStatusTable warehouseMode />
+          <OrderStatusTable warehouseMode passSelectionStatuses={["RECEIVED"]} passType="import_with_export" />
 
           <OrderStatusTable readOnly />
 
