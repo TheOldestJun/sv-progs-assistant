@@ -53,6 +53,7 @@ export function OrderStatusTable({
   showDirectorateOptions = false,
   passSelectionStatuses,
   passType = "import_with_export",
+  allowStatusRollback = false,
 }: {
   warehouseMode?: boolean;
   readOnly?: boolean;
@@ -62,6 +63,8 @@ export function OrderStatusTable({
   passSelectionStatuses?: OrderItemStatus[];
   /** Тип пропуска (фиксируется, выбора нет): "import" — «Ввоз» (снабжение), "import_with_export" — «Ввоз/Вывоз» (склад) */
   passType?: "import" | "import_with_export";
+  /** true — в меню статусов показывать более ранние этапы для отката (начальник снабжения) */
+  allowStatusRollback?: boolean;
 }) {
   const { data: orders, isLoading, isError, error } = useOrders();
   const updateStatus = useUpdateOrderItemStatus();
@@ -152,7 +155,7 @@ export function OrderStatusTable({
     if (openSelect === itemId) { setOpenSelect(null); setMenuPos(null); return; }
     const rect = buttonEl.getBoundingClientRect();
     const item = itemsMap.get(itemId);
-    const statusChoices = item ? getStatusChoices(item.status, warehouseMode, showDirectorateOptions, requesterMode) : [];
+    const statusChoices = item ? getStatusChoices(item.status, warehouseMode, showDirectorateOptions, requesterMode, allowStatusRollback) : [];
     if (statusChoices.length === 0) return;
     const menuHeight = statusChoices.length * 36 + 16;
     const menuWidth = 224;
@@ -503,6 +506,7 @@ export function OrderStatusTable({
           warehouseMode={warehouseMode}
           showDirectorateOptions={showDirectorateOptions}
           requesterMode={requesterMode}
+          allowRollback={allowStatusRollback}
           itemsMap={itemsMap}
           onSelect={handleStatusClick}
           onClose={closeMenu}

@@ -166,6 +166,13 @@ export async function PATCH(
     }
 
     const isAdmin = session.roles.includes(Role.ADMIN);
+    // Начальник снабжения, как и админ, может откатывать заявку на более ранний этап
+    const isHeadOfSupply = session.roles.includes(Role.HEAD_OF_SUPPLY);
+
+    // Позиция в каноническом порядке + флаг отката (переход на более ранний этап)
+    const currentIdx = STATUS_ORDER.indexOf(item.status);
+    const targetIdx = STATUS_ORDER.indexOf(status);
+    const isRollback = targetIdx < currentIdx;
 
     // Статус одобрения директора — только ADMIN, HEAD_OF_SUPPLY или DIRECTORATE
     if (status === OrderItemStatus.DIRECTORATE_APPROVED) {
@@ -176,7 +183,9 @@ export async function PATCH(
           { status: 403 },
         );
       }
-      if (item.status !== OrderItemStatus.PENDING_DIRECTORATE) {
+      // Штатно — только из статуса ожидания; при откате (rollback) админу или
+      // начальнику снабжения разрешено вернуться на этот шаг из более позднего этапа
+      if (item.status !== OrderItemStatus.PENDING_DIRECTORATE && !(isRollback && (isAdmin || isHeadOfSupply))) {
         return NextResponse.json(
           { error: "Одобрение директора возможно только из статуса ожидания" },
           { status: 400 },
@@ -242,12 +251,11 @@ export async function PATCH(
       );
     }
 
-    // Forward-only: нельзя откатить статус на более ранний этап (для не-админов).
+    // Forward-only для обычных отделов: нельзя откатить статус на более ранний этап.
+    // Админ и начальник снабжения могут откат (isRollback — см. выше).
     // Пропуск этапов вперёд разрешён — UI «основного флоу» позволяет выбрать любой
     // последующий статус; строгий пошаговый порядок не навязываем, чтобы не ломать сценарии.
-    const currentIdx = STATUS_ORDER.indexOf(item.status);
-    const targetIdx = STATUS_ORDER.indexOf(status);
-    if (!isAdmin && targetIdx < currentIdx) {
+    if (isRollback && !isAdmin && !isHeadOfSupply) {
       return NextResponse.json(
         { error: "Нельзя изменить статус на более ранний этап" },
         { status: 400 },
