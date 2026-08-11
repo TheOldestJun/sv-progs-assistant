@@ -1,21 +1,14 @@
 /*
  * KitchenDashboard — дашборд «Кухня» (вкладка в дашборде снабжения).
  *
- * Две внутренние вкладки:
- * - «Меню» — планировщик недельного меню (MenuPlanner)
- * - «Пропуски» — пропуска ввоза/вывоза на каждый день недели (KitchenPasses)
- *
- * Обе вкладки оборачиваются в KitchenWeekProvider: общее состояние недели
- * (startDate/selectedDays/menu/visibleDays/dishes). DashboardTabs держит панели
- * смонтированными, поэтому переключение вкладок не теряет ни состояние форм,
- * ни localStorage-данные.
+ * Содержит планировщик недельного меню (MenuPlanner).
+ * Оборачивается в KitchenWeekProvider: общее состояние недели
+ * (startDate/selectedDays/menu/visibleDays/dishes).
  */
 "use client";
 
-import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
 import { KitchenWeekProvider } from "@/components/dashboard/kitchen/kitchenWeek";
 import { MenuPlanner } from "@/components/dashboard/kitchen/MenuPlanner";
-import { KitchenPasses } from "@/components/dashboard/kitchen/KitchenPasses";
 
 export function KitchenDashboard() {
   return (
@@ -27,21 +20,13 @@ export function KitchenDashboard() {
             Кухня
           </h2>
           <p className="text-sm text-text-secondary">
-            Планирование недельного меню и пропусков
+            Планирование недельного меню
           </p>
         </div>
       </div>
 
       <KitchenWeekProvider>
-        <DashboardTabs
-          tabs={[
-            { role: "menu", label: "Меню", icon: "🍽️" },
-            { role: "passes", label: "Пропуски", icon: "🚛" },
-          ]}
-        >
-          <MenuPlanner />
-          <KitchenPasses />
-        </DashboardTabs>
+        <MenuPlanner />
       </KitchenWeekProvider>
     </section>
   );
