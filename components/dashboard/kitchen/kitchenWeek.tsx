@@ -10,6 +10,8 @@
  * - startDate (ISO YYYY-MM-DD, понедельник недели)
  * - selectedDays (id дней недели, localStorage 'selectedDays')
  * - menu (MenuShape, localStorage 'weeklyMenu')
+ * - breadPrices (цены хлеба по дням, localStorage 'breadPrices') — хлеб не
+ *   хранится в БД, это постоянная строка меню, меняется только цена
  * - dishes (useDishes + dishById)
  * - visibleDays (производное от startDate+selectedDays, 7 дней с датами)
  * - дни недели/типы приёмов пищи (WEEKDAYS / MEAL_TYPES) — общие константы
@@ -104,6 +106,9 @@ interface KitchenWeekValue {
   toggleDay: (dayId: string) => void;
   menu: MenuShape;
   setMenu: React.Dispatch<React.SetStateAction<MenuShape>>;
+  /** Цены хлеба по дням (dayId → цена строкой) — хлеб не в БД, только цена */
+  breadPrices: Record<string, string>;
+  setBreadPrices: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   visibleDays: MenuDay[];
   dishes: Dish[];
   dishById: Map<string, Dish>;
@@ -121,6 +126,8 @@ export function KitchenWeekProvider({ children }: { children: ReactNode }) {
   // useEffect на маунте — иначе гидратация ломается (сервер/клиент расхождение)
   const [selectedDays, setSelectedDays] = useState<string[]>(DEFAULT_DAYS);
   const [menu, setMenu] = useState<MenuShape>({});
+  // Цены хлеба по дням — хлеб постоянная строка, не хранится в БД
+  const [breadPrices, setBreadPrices] = useState<Record<string, string>>({});
 
   const prevDishesRef = useRef<Dish[] | null>(null);
 
@@ -128,6 +135,7 @@ export function KitchenWeekProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setSelectedDays(loadJSON("selectedDays", DEFAULT_DAYS));
     setMenu(loadJSON("weeklyMenu", {}));
+    setBreadPrices(loadJSON("breadPrices", {}));
   }, []);
 
   // Персист меню и дней
@@ -146,6 +154,14 @@ export function KitchenWeekProvider({ children }: { children: ReactNode }) {
       /* noop */
     }
   }, [selectedDays]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("breadPrices", JSON.stringify(breadPrices));
+    } catch {
+      /* noop */
+    }
+  }, [breadPrices]);
 
   // Санация меню при загрузке блюд
   useEffect(() => {
@@ -190,6 +206,8 @@ export function KitchenWeekProvider({ children }: { children: ReactNode }) {
     toggleDay,
     menu,
     setMenu,
+    breadPrices,
+    setBreadPrices,
     visibleDays,
     dishes,
     dishById,

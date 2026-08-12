@@ -6,6 +6,8 @@
  * Структура повторяет проверенный оригинал my-ai-helper (exportMenuPDF.js):
  * innerHTML-строка, обычный поток документа, без абсолютного позиционирования —
  * иначе html2canvas рендерит пустой или смещённый PDF.
+ * Отдельная строка «Хліб» (постоянная, не из БД) с ценой из breadPrices —
+ * включается в итог дня.
  *
  * Используется в MenuPlanner (вкладка «Кухня»).
  */
@@ -53,6 +55,8 @@ interface ExportMenuPDFArgs {
   /** menu[dayId][mealTypeId] = [dishId] */
   menu: Record<string, Record<string, string[]>>;
   dishes: Dish[];
+  /** Цены хлеба по дням (dayId → цена) — хлеб не в БД, постоянная строка */
+  breadPrices?: Record<string, string>;
 }
 
 function esc(s: string): string {
@@ -65,7 +69,7 @@ function formatUkDate(iso: string): string {
   return new Date(y, m - 1, d).toLocaleDateString("uk-UA", { day: "numeric", month: "long" });
 }
 
-export async function exportMenuPDF({ visibleDays, menu, dishes }: ExportMenuPDFArgs): Promise<void> {
+export async function exportMenuPDF({ visibleDays, menu, dishes, breadPrices = {} }: ExportMenuPDFArgs): Promise<void> {
   const html2pdf = (await import("html2pdf.js")).default;
 
   const dishById = new Map(dishes.map((d) => [d.id, d]));
@@ -80,6 +84,8 @@ export async function exportMenuPDF({ visibleDays, menu, dishes }: ExportMenuPDF
       const dish = dishById.get(dishId);
       if (dish) total += dish.price;
     }
+    const bread = parseFloat((breadPrices[day.id] ?? "").replace(",", "."));
+    if (!Number.isNaN(bread) && bread > 0) total += bread;
     totalByDay[day.id] = total;
   }
 
@@ -87,7 +93,7 @@ export async function exportMenuPDF({ visibleDays, menu, dishes }: ExportMenuPDF
   // background на обёртке; отступы (padding) — на каждой секции-дне, чтобы
   // первая страница не начиналась ниже остальных (иначе offset только на стр.1)
   element.style.cssText =
-    "font-family:Arial,sans-serif;color:#000000;background-color:#FFFFFF;";
+    "font-family:Arial,sans-serif;color:#000000;";
 
   let htmlContent = "";
 
@@ -136,6 +142,20 @@ export async function exportMenuPDF({ visibleDays, menu, dishes }: ExportMenuPDF
       `;
     });
 
+    // Хлеб — постоянная строка меню (не из БД), цена из breadPrices
+    // Заливка шахматкой как у остальных строк (хлеб идёт после 6 строк блюд → чётный индекс)
+    const breadBg = "#F8FAFC";
+    const breadBorder = "#E2E8F0";
+    const breadRaw = (breadPrices[day.id] ?? "").replace(",", ".");
+    const breadPrice = parseFloat(breadRaw);
+    const breadPriceStr = !Number.isNaN(breadPrice) && breadPrice > 0 ? `${breadPrice.toFixed(2)}₴` : "-";
+    htmlContent += `
+      <tr style="background-color: ${breadBg}; color: #000000;">
+        <td colspan="2" style="padding: 14px; border: 1px solid ${breadBorder}; font-weight: bold; color: #507850;">Хліб</td>
+        <td style="padding: 14px; border: 1px solid ${breadBorder}; text-align: center;">${breadPriceStr}</td>
+      </tr>
+    `;
+
     htmlContent += `
           </tbody>
           <tfoot>
@@ -160,7 +180,7 @@ export async function exportMenuPDF({ visibleDays, menu, dishes }: ExportMenuPDF
       scale: 2,
       useCORS: true,
       letterRendering: true,
-      backgroundColor: "#FFFFFF",
+      backgroundColor: null,
     },
     jsPDF: { unit: "mm" as const, format: "a4" as const, orientation: "portrait" as const },
   };

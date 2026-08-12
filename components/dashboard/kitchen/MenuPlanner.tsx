@@ -34,6 +34,8 @@ export function MenuPlanner() {
     toggleDay,
     menu,
     setMenu,
+    breadPrices,
+    setBreadPrices,
     visibleDays,
     dishes,
     dishById,
@@ -138,7 +140,7 @@ export function MenuPlanner() {
 
   async function handleExportPDF() {
     try {
-      await exportMenuPDF({ visibleDays, menu, dishes });
+      await exportMenuPDF({ visibleDays, menu, dishes, breadPrices });
       showToast("Меню экспортировано в PDF", "success");
     } catch {
       showToast("Ошибка при создании PDF", "error");
@@ -272,6 +274,32 @@ export function MenuPlanner() {
                   })}
                 </tr>
               ))}
+
+              {/* Хлеб — постоянная строка меню, не хранится в БД, меняется только цена */}
+              <tr key="bread" className="align-top bg-surface/60">
+                <td className="whitespace-nowrap px-3 py-2 font-medium text-foreground sm:px-4">
+                  Хлеб
+                </td>
+                {visibleDays.map((day) => (
+                  <td key={day.id} className="px-3 py-2 sm:px-4">
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={breadPrices[day.id] ?? ""}
+                        onChange={(e) =>
+                          setBreadPrices((prev) => ({ ...prev, [day.id]: e.target.value }))
+                        }
+                        aria-label={`Цена хлеба на ${day.dateStr}`}
+                        placeholder="Цена"
+                        className="w-20 rounded-md border border-border bg-surface px-2 py-1 text-xs text-foreground outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary max-sm:min-h-9"
+                      />
+                      <span className="text-xs text-text-secondary">₴</span>
+                    </div>
+                  </td>
+                ))}
+              </tr>
             </tbody>
           </table>
         </div>
