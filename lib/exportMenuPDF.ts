@@ -105,22 +105,22 @@ export async function exportMenuPDF({ visibleDays, menu, dishes, breadPrices = {
     const dateStr = formatUkDate(day.dateISO);
 
     htmlContent += `
-      <div style="padding: 30px; margin-bottom: 30px; ${pageBreakStyle}">
-        <div style="display: flex; align-items: center; margin-bottom: 20px;">
-          <span style="font-size: 72px; margin-right: 20px;">${emoji}</span>
+        <div style="padding: 24px; margin-bottom: 24px; ${pageBreakStyle}">
+        <div style="display: flex; align-items: center; margin-bottom: 18px;">
+          <span style="font-size: 80px; margin-right: 18px;">${emoji}</span>
           <div>
-            <h2 style="color: #507850; font-size: 32px; margin: 0; font-weight: bold;">
+            <h2 style="color: #507850; font-size: 40px; margin: 0; font-weight: bold;">
               ${esc(label)}
             </h2>
-            <p style="color: #6b7280; font-size: 18px; margin: 8px 0 0 0;">${esc(dateStr)}</p>
+            <p style="color: #6b7280; font-size: 22px; margin: 6px 0 0 0;">${esc(dateStr)}</p>
           </div>
         </div>
-        <table style="width: 100%; border-collapse: collapse; font-size: 16px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 20px;">
           <thead>
             <tr style="background: linear-gradient(135deg, #507850 0%, #3c78c8 100%); color: #FFFFFF;">
-              <th style="padding: 14px; text-align: left; border: 1px solid #507850;">Категорія</th>
-              <th style="padding: 14px; text-align: left; border: 1px solid #507850;">Страва</th>
-              <th style="padding: 14px; text-align: center; border: 1px solid #507850; width: 110px;">Ціна, ₴</th>
+              <th style="padding: 12px; text-align: left; border: 1px solid #507850;">Категорія</th>
+              <th style="padding: 12px; text-align: left; border: 1px solid #507850;">Страва</th>
+              <th style="padding: 12px; text-align: center; border: 1px solid #507850; width: 120px;">Ціна, ₴</th>
             </tr>
           </thead>
           <tbody>
@@ -135,9 +135,9 @@ export async function exportMenuPDF({ visibleDays, menu, dishes, breadPrices = {
 
       htmlContent += `
         <tr style="background-color: ${bgColor}; color: #000000;">
-          <td style="padding: 14px; border: 1px solid ${borderColor}; font-weight: bold; color: #507850;">${esc(meal.label)}</td>
-          <td style="padding: 14px; border: 1px solid ${borderColor};">${dish ? esc(dish.name) : "-"}</td>
-          <td style="padding: 14px; border: 1px solid ${borderColor}; text-align: center;">${price}</td>
+          <td style="padding: 12px; border: 1px solid ${borderColor}; font-weight: bold; color: #507850;">${esc(meal.label)}</td>
+          <td style="padding: 12px; border: 1px solid ${borderColor};">${dish ? esc(dish.name) : "-"}</td>
+          <td style="padding: 12px; border: 1px solid ${borderColor}; text-align: center;">${price}</td>
         </tr>
       `;
     });
@@ -151,8 +151,8 @@ export async function exportMenuPDF({ visibleDays, menu, dishes, breadPrices = {
     const breadPriceStr = !Number.isNaN(breadPrice) && breadPrice > 0 ? `${breadPrice.toFixed(2)}₴` : "-";
     htmlContent += `
       <tr style="background-color: ${breadBg}; color: #000000;">
-        <td colspan="2" style="padding: 14px; border: 1px solid ${breadBorder}; font-weight: bold; color: #507850;">Хліб</td>
-        <td style="padding: 14px; border: 1px solid ${breadBorder}; text-align: center;">${breadPriceStr}</td>
+        <td colspan="2" style="padding: 12px; border: 1px solid ${breadBorder}; font-weight: bold; color: #507850;">Хліб</td>
+        <td style="padding: 12px; border: 1px solid ${breadBorder}; text-align: center;">${breadPriceStr}</td>
       </tr>
     `;
 
@@ -160,8 +160,8 @@ export async function exportMenuPDF({ visibleDays, menu, dishes, breadPrices = {
           </tbody>
           <tfoot>
             <tr style="background-color: #F0F7F0; font-weight: bold;">
-              <td style="padding: 14px; border: 1px solid #CBD5E1; text-align: right;" colspan="2">Разом за день:</td>
-              <td style="padding: 14px; border: 1px solid #CBD5E1; text-align: center; color: #507850;">${totalByDay[day.id].toFixed(2)}₴</td>
+              <td style="padding: 12px; border: 1px solid #CBD5E1; text-align: right;" colspan="2">Разом за день:</td>
+              <td style="padding: 12px; border: 1px solid #CBD5E1; text-align: center; color: #507850;">${totalByDay[day.id].toFixed(2)}₴</td>
             </tr>
           </tfoot>
         </table>

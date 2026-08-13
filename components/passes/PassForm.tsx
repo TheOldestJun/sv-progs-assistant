@@ -145,7 +145,9 @@ export function PassForm() {
       const wb = new ExcelJS.Workbook();
       await wb.xlsx.load(buf);
 
-      const allSheets = ["IN", "OUT", "IN_OUT"];
+      // Удаляем все листы шаблона, кроме нужного для выбранного типа пропуска
+      // (включая KITCHEN — он используется только для кухонных пропусков)
+      const allSheets = ["IN", "OUT", "IN_OUT", "KITCHEN"];
       allSheets.forEach((name) => {
         if (name !== sheetName) {
           const s = wb.getWorksheet(name);

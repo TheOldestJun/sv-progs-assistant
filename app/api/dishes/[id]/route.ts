@@ -1,11 +1,12 @@
 /*
- * PATCH /api/dishes/:id — обновление блюда (цена/название)
+ * PATCH /api/dishes/:id — обновление блюда (название/тип/цена)
+ * DELETE /api/dishes/:id — удаление блюда (только ADMIN)
  * Только снабжение + админ.
  */
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 import { getSession } from "@/app/lib/auth";
-import { Role } from "@prisma/client";
+import { Role, DishType } from "@prisma/client";
 import { verifyCsrf } from "@/app/lib/csrf";
 import { handleApiError } from "@/app/lib/api-errors";
 
@@ -32,7 +33,7 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
 
-    const data: { name?: string; price?: number } = {};
+    const data: { name?: string; price?: number; type?: DishType } = {};
 
     if (body?.name !== undefined) {
       const raw: string = body.name;
@@ -48,6 +49,14 @@ export async function PATCH(
         );
       }
       data.name = name;
+    }
+
+    if (body?.type !== undefined) {
+      const typeRaw: unknown = body.type;
+      if (typeof typeRaw !== "string" || !(typeRaw in DishType)) {
+        return NextResponse.json({ error: "Некорректный тип блюда" }, { status: 400 });
+      }
+      data.type = typeRaw as DishType;
     }
 
     if (body?.price !== undefined) {
@@ -71,5 +80,34 @@ export async function PATCH(
     return NextResponse.json({ dish });
   } catch (error) {
     return handleApiError(error, "dishes / [id]");
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const csrf = verifyCsrf(request);
+  if (!csrf.valid) {
+    return NextResponse.json({ error: "CSRF validation failed" }, { status: 403 });
+  }
+
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!session.roles.includes(Role.ADMIN)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  try {
+    const { id } = await params;
+    // Блюда не имеют внешних связей в БД (недельное меню хранится в localStorage),
+    // поэтому удаление безопасно. Устаревшие id в сохранённых меню просто
+    // игнорируются (dishById.get(id) → undefined).
+    await db.dish.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return handleApiError(error, "dishes / [id] DELETE");
   }
 }
