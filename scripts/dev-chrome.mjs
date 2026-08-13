@@ -1,7 +1,8 @@
 /*
  * dev-chrome.mjs — кроссплатформенный запуск dev-сервера + Chrome с чистым профилем.
- * Windows: два окна cmd (сервер + Chrome после ожидания)
- * macOS: новое окно Terminal (сервер) + Chrome после ожидания
+ * Windows: два окна cmd (сервер + Chrome после ожидания). Содержит Windows-only
+ * фикс запуска сервера (start /d) — НЕ применять его к macOS.
+ * macOS: новое окно Terminal (сервер) + Chrome после ожидания (без фиксов).
  *
  * Используется: npm run dev:chrome
  */
@@ -40,16 +41,19 @@ function getTempDir() {
 
 function startDevServer() {
   if (isWin) {
-    spawn("cmd", ["/c", "start", "Next.js Dev", "cmd", "/c", "npm run dev"], {
-      shell: true,
-      stdio: "inherit",
-      cwd: process.cwd(),
-    });
+    // ⚠️ WINDOWS-ONLY фикс: start /d задаёт стартовую директорию нового окна cmd —
+    // без неё окно может стартовать из System32 и не найти next в node_modules/.bin.
+    // Команду передаём ОДНОЙ строкой: при shell:true Node склеивает аргументы
+    // массива БЕЗ кавычек, и `start "Next.js Dev"` (заголовок с пробелом) ломается.
+    // НЕ применять этот фикс к macOS — там команда работает без него.
+    const projectDir = process.cwd();
+    const cmdLine = `start "Next.js Dev" /d "${projectDir}" cmd /k npm run dev`;
+    spawn("cmd", ["/c", cmdLine], { shell: true, stdio: "inherit", cwd: projectDir });
     console.log("> Сервер запущен в новом окне cmd");
     return;
   }
 
-  // macOS — новое окно Terminal
+  // macOS — новое окно Terminal (проверено, работает без изменений)
   const script = `tell app "Terminal" to do script "cd ${process.cwd()} && npm run dev"`;
   spawn("osascript", ["-e", script], { stdio: "inherit" });
   console.log("> Сервер запущен в новом окне Terminal");

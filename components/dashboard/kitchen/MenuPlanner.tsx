@@ -278,7 +278,7 @@ export function MenuPlanner() {
               {/* Хлеб — постоянная строка меню, не хранится в БД, меняется только цена */}
               <tr key="bread" className="align-top bg-surface/60">
                 <td className="whitespace-nowrap px-3 py-2 font-medium text-foreground sm:px-4">
-                  Хлеб
+                  ХЛІБ
                 </td>
                 {visibleDays.map((day) => (
                   <td key={day.id} className="px-3 py-2 sm:px-4">
