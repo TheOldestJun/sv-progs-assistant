@@ -32,6 +32,8 @@ interface AutocompleteProps {
   placeholder?: string;
   /** Дополнительные классы для input */
   inputClassName?: string;
+  /** Смена значения фокусирует input — для программного перехода между строками формы */
+  focusKey?: number | string | null;
 }
 
 export function Autocomplete({
@@ -42,6 +44,7 @@ export function Autocomplete({
   label,
   placeholder = "Поиск...",
   inputClassName = "",
+  focusKey = null,
 }: AutocompleteProps) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -69,6 +72,10 @@ export function Autocomplete({
     const perItem = 38; // py-2 + text-sm
     return Math.min(240, filtered.length * perItem + 8 + (noMatch ? perItem : 0));
   }, [filtered.length, noMatch]);
+
+  useEffect(() => {
+    if (focusKey != null) inputRef.current?.focus();
+  }, [focusKey]);
 
   useEffect(() => {
     setFocusedIdx(-1);
