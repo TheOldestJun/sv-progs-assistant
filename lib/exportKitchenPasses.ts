@@ -78,22 +78,27 @@ function addDays(iso: string, days: number): string {
 }
 
 /** Заполняет один блок-пропуск данными дня */
-function fillBlock(ws: ExcelJS.Worksheet, base: number, day: KitchenPassDay): void {
-  // Даты «від» — слева (B) и справа (I); формат ячейки dd.mm.yyyy
-  ws.getCell(`B${base + DATE_ROW_OFFSET}`).value = isoToDate(day.dateISO);
-  ws.getCell(`I${base + DATE_ROW_OFFSET}`).value = isoToDate(day.dateISO);
+function fillBlock(
+  ws: ExcelJS.Worksheet,
+  base: number,
+  day: KitchenPassDay,
+  weekStartISO: string,
+): void {
+  // Даты «від» — слева (B) и справа (I); на всех пропусках дата начала недели
+  ws.getCell(`B${base + DATE_ROW_OFFSET}`).value = isoToDate(weekStartISO);
+  ws.getCell(`I${base + DATE_ROW_OFFSET}`).value = isoToDate(weekStartISO);
 
-  // «ПОГОДЖЕНО ДзБ: З … ПО»: «з» = дата дня, «по» = дата дня + 7 дней (G — слева,
-  // N справа зеркалит формулой IF(...), поэтому достаточно заполнить левую сторону).
-  // Формат дат — как у «від» пропуска: dd.mm.yyyy
+  // «ПОГОДЖЕНО ДзБ: З … ПО»: «з» = начало недели, «по» = начало недели + 7 дней
+  // (G — слева, N справа зеркалит формулой IF(...), поэтому достаточно заполнить
+  // левую сторону). Формат дат — как у «від» пропуска: dd.mm.yyyy
   const agreeFrom = ws.getCell(`G${base + AGREE_FROM_ROW_OFFSET}`);
-  agreeFrom.value = isoToDate(day.dateISO);
+  agreeFrom.value = isoToDate(weekStartISO);
   agreeFrom.numFmt = "dd.mm.yyyy;@";
   const agreeTo = ws.getCell(`G${base + AGREE_TO_ROW_OFFSET}`);
-  agreeTo.value = isoToDate(addDays(day.dateISO, 7));
+  agreeTo.value = isoToDate(addDays(weekStartISO, 7));
   agreeTo.numFmt = "dd.mm.yyyy;@";
 
-  // Зеркальные ячейки справа (формулы IF(...)) — тот же формат даты
+  // Зеркальные ячейки справа (формулы IF(...)) — тот же формат дат
   ws.getCell(`N${base + AGREE_FROM_ROW_OFFSET}`).numFmt = "dd.mm.yyyy;@";
   ws.getCell(`N${base + AGREE_TO_ROW_OFFSET}`).numFmt = "dd.mm.yyyy;@";
 
@@ -110,9 +115,13 @@ function fillBlock(ws: ExcelJS.Worksheet, base: number, day: KitchenPassDay): vo
 /**
  * Генерирует Excel с пропусками кухни и скачивает его.
  * days — дни с блюдами (в порядке недели). Удаляет из файла листы IN/OUT/IN_OUT,
- * оставляет только KITCHEN.
+ * оставляет только KITCHEN. Дата «від»/«з»/«по» на ВСЕХ пропусках берётся из
+ * weekStartISO (начало недели; «по» = начало недели + 7 дней).
  */
-export async function exportKitchenPasses(days: KitchenPassDay[]): Promise<void> {
+export async function exportKitchenPasses(
+  days: KitchenPassDay[],
+  weekStartISO: string,
+): Promise<void> {
   const resp = await fetch(TEMPLATE_URL);
   const buf = await resp.arrayBuffer();
   const wb = new ExcelJS.Workbook();
@@ -130,7 +139,7 @@ export async function exportKitchenPasses(days: KitchenPassDay[]): Promise<void>
   }
 
   days.slice(0, MAX_BLOCKS).forEach((day, i) => {
-    fillBlock(ws, BLOCK_BASE + i * BLOCK_STEP, day);
+    fillBlock(ws, BLOCK_BASE + i * BLOCK_STEP, day, weekStartISO);
   });
 
   // Обрезаем не заполненные блоки-пропуски (хвост листа).

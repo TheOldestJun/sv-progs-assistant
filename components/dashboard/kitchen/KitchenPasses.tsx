@@ -45,7 +45,7 @@ interface DayDish {
 }
 
 export function KitchenPasses() {
-  const { visibleDays, menu, dishById, breadPrices, isLoading } = useKitchenWeek();
+  const { visibleDays, startDate, menu, dishById, breadPrices, isLoading } = useKitchenWeek();
   const { showToast } = useToast();
 
   const [portions, setPortions] = useState<PortionsShape>({});
@@ -117,6 +117,26 @@ export function KitchenPasses() {
 
   /** Экспорт пропусков в Excel: дни с блюдами (порции > 0) по порядку → 5 блоков */
   async function handleExport() {
+    // Валидация: у каждого блюда дней с блюдами должно быть заполнено количество порций
+    const emptyPortions: { dayLabel: string; dishName: string }[] = [];
+    for (const day of visibleDays) {
+      const dayDishes = getDayDishes(day.id);
+      if (dayDishes.length === 0) continue;
+      for (const d of dayDishes) {
+        if (portionNum(day.id, d.dishId) <= 0) {
+          emptyPortions.push({ dayLabel: day.label, dishName: d.name });
+        }
+      }
+    }
+    if (emptyPortions.length > 0) {
+      const first = emptyPortions[0];
+      showToast(
+        `Заполните порции: «${first.dishName}» (${first.dayLabel})${emptyPortions.length > 1 ? ` и ещё ${emptyPortions.length - 1}` : ""}`,
+        "error",
+      );
+      return;
+    }
+
     const days: KitchenPassDay[] = [];
     for (const day of visibleDays) {
       const items = getDayDishes(day.id)
@@ -130,7 +150,7 @@ export function KitchenPasses() {
     }
 
     try {
-      await exportKitchenPasses(days);
+      await exportKitchenPasses(days, startDate);
       showToast("Пропуска сформированы", "success");
     } catch {
       showToast("Ошибка при формировании пропусков", "error");
