@@ -1,8 +1,11 @@
 /*
  * HeadOfSupplyDashboard — дашборд начальника снабжения.
- * Две вкладки:
- * - «Новая заявка» — общая форма RequestForm (с выбором заявителя)
+ * Вкладки:
  * - «Выполнение заявок» — таблица с управлением статусами
+ * - «Новая заявка» — форма RequestForm (с выбором заявителя)
+ * - «Создать пропуски» — пропуска
+ * - «Кухня» — кухонный дашборд
+ * - «Тендеры» — тендерные процедуры (мок)
  * Требуется роль HEAD_OF_SUPPLY.
  */
 "use client";
@@ -12,6 +15,7 @@ import { DashboardTabs } from "./DashboardTabs";
 import { PassForm } from "@/components/passes/PassForm";
 import { KitchenDashboard } from "./KitchenDashboard";
 import { RequestForm } from "@/components/orders/RequestForm";
+import { TendersTab } from "./TendersTab";
 
 export function HeadOfSupplyDashboard() {
   return (
@@ -34,6 +38,7 @@ export function HeadOfSupplyDashboard() {
           { role: "create", label: "Новая заявка", icon: "✏️" },
           { role: "passes", label: "Создать пропуски", icon: "🪪" },
           { role: "kitchen", label: "Кухня", icon: "🍳" },
+          { role: "tenders", label: "Тендеры", icon: "🏛️" },
         ]}
       >
         <div>
@@ -45,6 +50,8 @@ export function HeadOfSupplyDashboard() {
         <PassForm />
 
         <KitchenDashboard />
+
+        <TendersTab />
       </DashboardTabs>
     </section>
   );
