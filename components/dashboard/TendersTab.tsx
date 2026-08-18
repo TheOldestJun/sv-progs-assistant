@@ -17,9 +17,9 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const SUB_TABS = [
-  { key: "all", label: "Все тендеры" },
-  { key: "new", label: "Новый тендер" },
-  { key: "invoices", label: "Создать счета" },
+  { key: "all", label: "Все тендеры", icon: "📋" },
+  { key: "new", label: "Новый тендер", icon: "➕" },
+  { key: "invoices", label: "Создать счета", icon: "🧾" },
 ];
 
 function AllTenders() {
@@ -87,12 +87,13 @@ export function TendersTab() {
               aria-selected={sub === t.key}
               onClick={() => setSub(t.key)}
               className={
-                "px-3 py-1.5 text-xs font-medium transition-colors sm:text-sm " +
+                "flex items-center gap-1 px-3 py-1.5 text-xs font-medium transition-colors sm:gap-2 sm:text-sm " +
                 (sub === t.key
                   ? "border-b-2 border-accent-blue text-accent-blue"
                   : "border-b-2 border-transparent text-text-secondary hover:border-border hover:text-foreground")
               }
             >
+              <span aria-hidden="true">{t.icon}</span>
               {t.label}
             </button>
           ))}
