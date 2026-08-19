@@ -27,7 +27,8 @@ interface AutocompleteProps {
   items: AutocompleteItem[];
   value: AutocompleteItem | null;
   onSelect: (item: AutocompleteItem) => void;
-  onCreate: (title: string) => AutocompleteItem;
+  /** Если задан — при отсутствии совпадений показывается «Добавить …» */
+  onCreate?: (title: string) => AutocompleteItem;
   label?: string;
   placeholder?: string;
   /** Дополнительные классы для input */
@@ -61,7 +62,7 @@ export function Autocomplete({
       : items;
   }, [items, query]);
 
-  const noMatch = query.trim().length > 0 && filtered.length === 0;
+  const noMatch = onCreate ? query.trim().length > 0 && filtered.length === 0 : false;
 
   /*
    * Приблизительная высота выпадающего списка — для решения «открыть вниз или вверх»:
@@ -137,6 +138,7 @@ export function Autocomplete({
   }
 
   function handleCreate() {
+    if (!onCreate) return;
     const trimmed = query.trim();
     if (!trimmed) return;
     const newItem = onCreate(trimmed);

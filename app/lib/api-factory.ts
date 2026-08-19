@@ -10,7 +10,7 @@ import { verifyCsrf } from "@/app/lib/csrf";
 import type { Role } from "@prisma/client";
 import { REFERENCE_CREATE_ROLES } from "@/app/lib/orderStatuses";
 
-type DbModel = "product" | "unit" | "requester";
+type DbModel = "product" | "unit" | "requester" | "passProduct";
 
 interface FactoryOptions {
   model: DbModel;

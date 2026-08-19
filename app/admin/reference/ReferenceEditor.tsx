@@ -297,6 +297,7 @@ export function ReferenceEditor() {
   const [selectedProduct, setSelectedProduct] = useState<AutocompleteItem | null>(null);
   const [selectedUnit, setSelectedUnit] = useState<AutocompleteItem | null>(null);
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
+  const [selectedPassProduct, setSelectedPassProduct] = useState<AutocompleteItem | null>(null);
 
   // Products
   const { data: products = [] } = useQuery<AutocompleteItem[]>({
@@ -499,8 +500,74 @@ export function ReferenceEditor() {
     onError: (err) => showToast(err.message, "error"),
   });
 
+  // PassProducts (ТМЦ для пропусков — отдельный от Product справочник)
+  const { data: passProducts = [] } = useQuery<AutocompleteItem[]>({
+    queryKey: ["admin-passProducts"],
+    queryFn: async () => {
+      const res = await fetch("/api/pass-products");
+      if (!res.ok) throw new Error("Failed to fetch pass-products");
+      return res.json();
+    },
+  });
+
+  const addPassProduct = useMutation({
+    mutationFn: async (title: string) => {
+      const res = await fetch("/api/pass-products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Ошибка");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-passProducts"] });
+      setSelectedPassProduct({ id: data.id, title: data.title });
+    },
+    onError: (err) => showToast(err.message, "error"),
+  });
+
+  const renamePassProduct = useMutation({
+    mutationFn: async ({ id, title }: { id: string; title: string }) => {
+      const res = await fetch(`/api/pass-products/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Ошибка");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-passProducts"] });
+      setSelectedPassProduct({ id: data.id, title: data.title });
+    },
+    onError: (err) => showToast(err.message, "error"),
+  });
+
+  const deletePassProduct = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/pass-products/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Ошибка");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-passProducts"] });
+      setSelectedPassProduct(null);
+    },
+    onError: (err) => showToast(err.message, "error"),
+  });
+
   return (
-    <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-10 md:grid-cols-2 xl:grid-cols-4">
       <div>
         <h2 className="mb-3 text-base font-semibold text-foreground">ТМЦ</h2>
         <Autocomplete
@@ -568,6 +635,29 @@ export function ReferenceEditor() {
               dish={selectedDish}
               onUpdate={async (patch) => { await updateDish.mutateAsync({ id: selectedDish.id, patch }); }}
               onDelete={async (id) => deleteDish.mutateAsync(id)}
+            />
+          </div>
+        )}
+      </div>
+
+      <div>
+        <h2 className="mb-3 text-base font-semibold text-foreground">ТМЦ пропусков</h2>
+        <Autocomplete
+          items={passProducts}
+          value={selectedPassProduct}
+          onSelect={(item) => setSelectedPassProduct(item)}
+          onCreate={(title) => {
+            addPassProduct.mutate(title);
+            return { id: "optimistic", title };
+          }}
+          placeholder="Поиск или создание ТМЦ…"
+        />
+        {selectedPassProduct && (
+          <div className="mt-4">
+            <SelectedCard
+              item={selectedPassProduct}
+              onRename={async (id, title) => renamePassProduct.mutateAsync({ id, title })}
+              onDelete={async (id) => deletePassProduct.mutateAsync(id)}
             />
           </div>
         )}

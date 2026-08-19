@@ -48,8 +48,13 @@ function isFilled(item: PassItem): boolean {
 
 export function PassForm() {
   const { data: products, creation: productCreation } = useReferenceData("products", "/api/products");
+  const { data: passProducts, creation: passProductCreation } = useReferenceData("passProducts", "/api/pass-products");
   const { data: units, creation: unitCreation } = useReferenceData("units", "/api/units");
   const { showToast } = useToast();
+
+  // Объединённый список ТМЦ: обычные (из заявок) + пропусков — для автокомплита
+  const allProducts = [...products, ...passProducts];
+
 
   const [selectedType, setSelectedType] = useState<PassType | null>(null);
   const [startDate, setStartDate] = useState("");
@@ -82,7 +87,8 @@ export function PassForm() {
 
   function handleProductCreate(title: string): { id: string; title: string } {
     const optimisticId = `optimistic-${Date.now()}`;
-    productCreation.mutate(title, {
+    // Новые ТМЦ создаются в справочнике пропусков (passProducts), чтобы не засорять Product
+    passProductCreation.mutate(title, {
       onSuccess: (p) => {
         showToast(`ТМЦ «${p.title}» создан`, "success");
         setItems((prev) =>
@@ -249,9 +255,9 @@ export function PassForm() {
                           <Autocomplete
                             placeholder="Поиск товара..."
                             items={
-                              productCreation.isPending
-                                ? [...products, { id: "pending", title: "Сохранение..." }]
-                                : products
+                              passProductCreation.isPending
+                                ? [...allProducts, { id: "pending", title: "Сохранение..." }]
+                                : allProducts
                             }
                             value={item.product}
                             onSelect={(p) => updateItem(item.id, { product: p })}

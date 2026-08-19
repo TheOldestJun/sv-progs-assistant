@@ -63,7 +63,7 @@ interface PassFormDialogProps {
 }
 
 export function PassFormDialog({ open, onClose, prefillItems, lockedType }: PassFormDialogProps) {
-  const { data: products, creation: productCreation } = useReferenceData("products", "/api/products");
+  const { data: products } = useReferenceData("products", "/api/products");
   const { data: units, creation: unitCreation } = useReferenceData("units", "/api/units");
   const { showToast } = useToast();
 
@@ -100,24 +100,6 @@ export function PassFormDialog({ open, onClose, prefillItems, lockedType }: Pass
 
   function removeItem(id: string) {
     setItems((prev) => prev.filter((it) => it.id !== id));
-  }
-
-  function handleProductCreate(title: string): { id: string; title: string } {
-    const optimisticId = `optimistic-${Date.now()}`;
-    productCreation.mutate(title, {
-      onSuccess: (p) => {
-        showToast(`ТМЦ «${p.title}» создан`, "success");
-        setItems((prev) =>
-          prev.map((it) =>
-            it.product?.id === optimisticId
-              ? { ...it, product: { id: p.id, title: p.title } }
-              : it,
-          ),
-        );
-      },
-      onError: (err) => showToast(err.message, "error"),
-    });
-    return { id: optimisticId, title };
   }
 
   function handleUnitCreate(title: string): { id: string; title: string } {
@@ -276,14 +258,9 @@ export function PassFormDialog({ open, onClose, prefillItems, lockedType }: Pass
                             {idx === 0 && <label className="mb-1 block text-xs text-text-secondary">Товар</label>}
                             <Autocomplete
                               placeholder="Поиск товара..."
-                              items={
-                                productCreation.isPending
-                                  ? [...products, { id: "pending", title: "Сохранение..." }]
-                                  : products
-                              }
+                              items={products}
                               value={item.product}
                               onSelect={(p) => updateItem(item.id, { product: p })}
-                              onCreate={handleProductCreate}
                             />
                           </div>
                           <div>
