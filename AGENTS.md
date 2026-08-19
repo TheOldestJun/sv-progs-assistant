@@ -55,6 +55,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 - В MenuPlanner тип блюда передаётся корректно (`type: meal.dishType`) — созданные блюда попадают в правильную строку планировщика меню.
 - Пропуска кухни (Ввоз/Вывоз) — вкладка «Создание пропусков» в KitchenDashboard (KitchenPasses + lib/exportKitchenPasses). Используется лист KITCHEN шаблона IN_OUT.xlsx: 5 блоков по 65 строк (базы 2/67/132/197/262). Заполняются дни с порциями > 0; пустые блоки хвоста обрезаются. Ед. изм.: блюда — «ПОРЦ», хлеб — «КУС». Обычные пропуски (PassForm/PassFormDialog) удаляют все листы кроме своего, включая KITCHEN.
+- ТМЦ для пропусков (`PassProduct`) — отдельная таблица (не `Product`), чтобы не засорять справочник ТМЦ для заявок. PassForm: автокомплит показывает Product + PassProduct, создание → PassProduct. PassFormDialog: только выбор из Product (без создания). Админ может управлять ТМЦ пропусков на вкладке «Исправления/добавления» (`/admin/reference`).
 
 ## Help page
 
