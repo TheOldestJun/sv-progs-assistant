@@ -13,18 +13,22 @@ import { Autocomplete } from "@/components/ui/Autocomplete";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { numToWordsUpper } from "@/lib/numToWords";
 
-type PassType = "import" | "export" | "import_with_export";
+type PassType = "import" | "export" | "import_with_export" | "rail_in" | "rail_out";
 
-const PASS_TYPES: { id: PassType; label: string }[] = [
-  { id: "import", label: "Ввоз" },
-  { id: "export", label: "Вывоз" },
-  { id: "import_with_export", label: "Ввоз/Вывоз" },
+const PASS_TYPES: { id: PassType; label: string; icon: string }[] = [
+  { id: "import", label: "Ввоз", icon: "🚛" },
+  { id: "export", label: "Вывоз", icon: "🚛" },
+  { id: "import_with_export", label: "Ввоз/Вывоз", icon: "🚛" },
+  { id: "rail_in", label: "На ЖДЦ", icon: "🚂" },
+  { id: "rail_out", label: "С ЖДЦ", icon: "🚂" },
 ];
 
 const SHEET_MAP: Record<PassType, string> = {
   import: "IN",
   export: "OUT",
   import_with_export: "IN_OUT",
+  rail_in: "RAIL_IN",
+  rail_out: "RAIL_OUT",
 };
 
 const MAX_ITEMS = 31;
@@ -153,7 +157,7 @@ export function PassForm() {
 
       // Удаляем все листы шаблона, кроме нужного для выбранного типа пропуска
       // (включая KITCHEN — он используется только для кухонных пропусков)
-      const allSheets = ["IN", "OUT", "IN_OUT", "KITCHEN"];
+      const allSheets = ["IN", "OUT", "IN_OUT", "KITCHEN", "RAIL_IN", "RAIL_OUT"];
       allSheets.forEach((name) => {
         if (name !== sheetName) {
           const s = wb.getWorksheet(name);
@@ -167,8 +171,15 @@ export function PassForm() {
         return;
       }
 
+      const isRail = selectedType === "rail_in" || selectedType === "rail_out";
+
       ws.getCell("G56").value = fmt(start);
       ws.getCell("G57").value = fmt(end);
+
+      if (isRail) {
+        ws.getCell("U56").value = fmt(start);
+        ws.getCell("U57").value = fmt(end);
+      }
 
       filledItems.forEach((item, i) => {
         const row = 18 + i;
@@ -178,6 +189,14 @@ export function PassForm() {
         ws.getCell(`D${row}`).value = item.unit?.title || "";
         ws.getCell(`E${row}`).value = item.quantity ? Number(item.quantity) : "";
         ws.getCell(`F${row}`).value = item.quantity ? numToWordsUpper(Number(item.quantity)) : "";
+
+        if (isRail) {
+          ws.getCell(`O${row}`).value = i + 1;
+          ws.getCell(`P${row}`).value = item.product?.title || "";
+          ws.getCell(`R${row}`).value = item.unit?.title || "";
+          ws.getCell(`S${row}`).value = item.quantity ? Number(item.quantity) : "";
+          ws.getCell(`T${row}`).value = item.quantity ? numToWordsUpper(Number(item.quantity)) : "";
+        }
       });
 
       const day = String(start.getDate()).padStart(2, "0");
@@ -236,7 +255,7 @@ export function PassForm() {
                     className="accent-primary"
                   />
                   <div className="flex flex-1 items-center gap-2">
-                    <span className="text-sm text-text-secondary">🚛</span>
+                    <span className="text-sm text-text-secondary">{type.icon}</span>
                     <span className="font-medium text-foreground">{type.label}</span>
                   </div>
                   {isActive && (
