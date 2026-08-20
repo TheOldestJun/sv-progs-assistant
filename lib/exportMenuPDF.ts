@@ -1,6 +1,6 @@
 /*
  * exportMenuPDF — экспорт недельного меню в PDF (html2pdf.js).
- * На каждый видимый день строится блок-страница (страница по дням), печать A4.
+ * На каждый видимый день строится блок-страница (страница по дням), печать A4 альбом.
  * Вся текстовая часть — на украинском языке. Брендовые цвета из нашей палитры.
  *
  * Структура повторяет проверенный оригинал my-ai-helper (exportMenuPDF.js):
@@ -105,14 +105,14 @@ export async function exportMenuPDF({ visibleDays, menu, dishes, breadPrices = {
     const dateStr = formatUkDate(day.dateISO);
 
     htmlContent += `
-        <div style="padding: 24px; margin-bottom: 24px; ${pageBreakStyle}">
-        <div style="display: flex; align-items: center; margin-bottom: 18px;">
-          <span style="font-size: 80px; margin-right: 18px;">${emoji}</span>
+        <div style="padding: 20px 28px; margin-bottom: 20px; ${pageBreakStyle}">
+        <div style="display: flex; align-items: center; margin-bottom: 16px;">
+          <span style="font-size: 64px; margin-right: 16px;">${emoji}</span>
           <div>
-            <h2 style="color: #507850; font-size: 40px; margin: 0; font-weight: bold;">
+            <h2 style="color: #507850; font-size: 36px; margin: 0; font-weight: bold;">
               ${esc(label)}
             </h2>
-            <p style="color: #6b7280; font-size: 22px; margin: 6px 0 0 0;">${esc(dateStr)}</p>
+            <p style="color: #6b7280; font-size: 20px; margin: 4px 0 0 0;">${esc(dateStr)}</p>
           </div>
         </div>
         <table style="width: 100%; border-collapse: collapse; font-size: 20px;">
@@ -182,7 +182,7 @@ export async function exportMenuPDF({ visibleDays, menu, dishes, breadPrices = {
       letterRendering: true,
       backgroundColor: null,
     },
-    jsPDF: { unit: "mm" as const, format: "a4" as const, orientation: "portrait" as const },
+    jsPDF: { unit: "mm" as const, format: "a4" as const, orientation: "landscape" as const },
   };
 
   try {
