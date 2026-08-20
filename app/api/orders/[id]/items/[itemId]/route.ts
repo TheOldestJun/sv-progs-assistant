@@ -286,6 +286,14 @@ export async function PATCH(
             }),
           ]
         : []),
+      ...(status === OrderItemStatus.ORDER_CONFIRMED
+        ? [
+            db.orderConfirmToken.updateMany({
+              where: { orderItemId: itemId, usedAt: null },
+              data: { usedAt: new Date() },
+            }),
+          ]
+        : []),
     ]);
 
     // При переводе в ORDER_CONFIRMED — удаляем уведомление, которое было отправлено при SENT_TO_REQUESTER
