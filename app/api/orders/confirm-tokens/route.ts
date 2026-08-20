@@ -1,7 +1,7 @@
 /*
- * GET /api/orders/confirm-tokens — список неиспользованных токенов подтверждения.
- * Только для склада/админа. Показывает позиции заявок в статусе SENT_TO_REQUESTER с ссылками.
- * Каждый токен привязан к конкретному пункту заявки.
+ * GET  /api/orders/confirm-tokens — список неиспользованных токенов подтверждения.
+ * DELETE /api/orders/confirm-tokens — удаление «мёртвых» токенов: usedAt=null, но позиция уже ORDER_CONFIRMED.
+ * Только для склада/админа.
  */
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
@@ -16,7 +16,10 @@ export async function GET() {
 
   try {
     const tokens = await db.orderConfirmToken.findMany({
-      where: { usedAt: null },
+      where: {
+        usedAt: null,
+        orderItem: { status: { not: "ORDER_CONFIRMED" } },
+      },
       include: {
         orderItem: {
           select: {
@@ -61,5 +64,25 @@ export async function GET() {
     return NextResponse.json(result);
   } catch (error) {
     return handleApiError(error, "orders / confirm-tokens");
+  }
+}
+
+export async function DELETE() {
+  const session = await getSession();
+  if (!session || !(session.roles.includes("WAREHOUSE") || session.roles.includes("ADMIN"))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  try {
+    const { count } = await db.orderConfirmToken.deleteMany({
+      where: {
+        usedAt: null,
+        orderItem: { status: "ORDER_CONFIRMED" },
+      },
+    });
+
+    return NextResponse.json({ deleted: count });
+  } catch (error) {
+    return handleApiError(error, "orders / confirm-tokens DELETE");
   }
 }
